@@ -48,11 +48,7 @@
     </div>
 
     <script>
-        async function checkSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) window.location.href = 'dashboard.html';
-        }
-        checkSession();
+        // HAPUS auto redirect! Jangan panggil checkSession() otomatis
         
         function showAlert(msg, type) {
             document.getElementById('msg').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
@@ -63,8 +59,12 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const { error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) showAlert(error.message, 'error');
-            else window.location.href = 'dashboard.html';
+            if (error) {
+                showAlert(error.message, 'error');
+            } else {
+                // Redirect ke dashboard setelah login sukses
+                window.location.href = 'dashboard.html';
+            }
         };
         
         document.getElementById('registerBtn').onclick = async () => {
@@ -73,8 +73,11 @@
             const password = prompt('Password (minimal 6 karakter):');
             if (!password || password.length < 6) { alert('Password minimal 6 karakter!'); return; }
             const { error } = await sb.auth.signUp({ email, password });
-            if (error) showAlert(error.message, 'error');
-            else showAlert('Pendaftaran berhasil! Silakan login.', 'success');
+            if (error) {
+                showAlert(error.message, 'error');
+            } else {
+                showAlert('Pendaftaran berhasil! Silakan login.', 'success');
+            }
         };
     </script>
 </body>
