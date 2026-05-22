@@ -2,12 +2,9 @@
 const SUPABASE_URL = 'https://txvgclavcmhyxamxgvsi.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY';
 
-// Hindari deklarasi ganda
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
+// Buat client Supabase
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const sb = window.supabaseClient;
 // ==================== FUNGSI ROLE & LOG ====================
 
 // Ambil role user
@@ -43,16 +40,20 @@ async function checkRole(allowedRoles) {
 
 // Tambah log aktivitas
 async function addLog(aksi, detail) {
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return;
-    
-    const role = await getUserRole(user.email);
-    await sb.from('log_aktivitas').insert([{
-        user_email: user.email,
-        user_role: role,
-        aksi: aksi,
-        detail: detail
-    }]);
+    try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
+        
+        const role = await getUserRole(user.email);
+        await sb.from('log_aktivitas').insert([{
+            user_email: user.email,
+            user_role: role,
+            aksi: aksi,
+            detail: detail
+        }]);
+    } catch(e) {
+        console.log('Log error:', e);
+    }
 }
 
 // Redirect jika tidak punya akses
@@ -77,10 +78,7 @@ async function filterMenuByRole() {
     const role = await getCurrentUserRole();
     const isAdmin = role === 'admin';
     
-    // Sembunyikan menu yang tidak sesuai role
     const adminMenus = document.querySelectorAll('.menu-admin-only');
-    const operatorMenus = document.querySelectorAll('.menu-operator-only');
-    
     if (adminMenus.length) {
         adminMenus.forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
     }
