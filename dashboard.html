@@ -115,23 +115,14 @@
             <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
             <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-divider"></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="master"><span class="icon">⚙️</span><span class="text">Master Barang</span></div>
-            <div class="menu-item" data-menu="supplier"><span class="icon">🏢</span><span class="text">Supplier</span></div>
-            <div class="menu-item" data-menu="po"><span class="icon">📑</span><span class="text">Purchase Order</span></div>
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-            <!-- MENU KHUSUS ADMIN (hanya muncul untuk role admin) -->
-            <div class="menu-item menu-admin-only" data-menu="manage-users">
-                <span class="icon">👥</span>
-                <span class="text">Kelola User</span>
-            </div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
-                <span class="icon">📜</span>
-                <span class="text">Log Aktivitas</span>
-            </div>
-            <div class="menu-divider menu-admin-only"></div>
+            <div class="menu-divider"></div>
             <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
     </div>
@@ -147,16 +138,22 @@
     <div class="container" id="mainContent"><div class="loading">Loading...</div></div>
 
     <script>
+        // Cek session - TANPA REDIRECT OTOMATIS! Hanya return true/false
+        async function isLoggedIn() {
+            const { data: { session } } = await sb.auth.getSession();
+            return !!session;
+        }
+
         function goToMenu(menu) {
             if (menu === 'dashboard') window.location.href = 'dashboard.html';
             else if (menu === 'pi-input') window.location.href = 'pi-input.html';
             else if (menu === 'stock-in') window.location.href = 'stock-in.html';
             else if (menu === 'stock-out') window.location.href = 'stock-out.html';
             else if (menu === 'stock-report') window.location.href = 'stock-report.html';
-            else if (menu === 'export') window.location.href = 'export-final3.html';
             else if (menu === 'executive') window.location.href = 'executive-report.html';
             else if (menu === 'manage-users') window.location.href = 'manage-users.html';
             else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
+            else if (menu === 'export') window.location.href = 'export-final3.html';
             else alert('Menu ' + menu + ' akan segera tersedia');
         }
 
@@ -192,7 +189,7 @@
                     </tr>`;
                 }
             } else {
-                tableHtml = '<td><td colspan="4">Belum ada data PI</td></tr>';
+                tableHtml = '<tr><td colspan="4">Belum ada data PI</td></tr>';
             }
             
             container.innerHTML = `
@@ -203,18 +200,13 @@
                 <div class="card">
                     <div class="card-title">📋 5 PI Terbaru</div>
                     <div class="table-wrapper">
-                        <table style="width:100%">
+                        <table>
                             <thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Brand</th></tr></thead>
                             <tbody>${tableHtml}</tbody>
                         </table>
                     </div>
                 </div>
             `;
-        }
-
-        async function checkSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
         }
 
         function setupEventListeners() {
@@ -240,14 +232,22 @@
         }
 
         async function init() {
-            await checkSession();
+            // TIDAK ADA REDIRECT OTOMATIS! Hanya cek status
+            const loggedIn = await isLoggedIn();
             
-            // Cek role: admin dan operator boleh akses dashboard
-            const allowed = await requireRole(['admin', 'operator']);
-            if (!allowed) return;
+            if (!loggedIn) {
+                // Tampilkan pesan bahwa belum login
+                document.getElementById('mainContent').innerHTML = `
+                    <div class="card" style="text-align:center; padding:30px">
+                        <h3>⚠️ Belum Login</h3>
+                        <p>Silakan login terlebih dahulu</p>
+                        <button onclick="window.location.href='login.html'" style="margin-top:15px; padding:10px 20px; background:#3b82f6; color:white; border:none; border-radius:8px">Ke Halaman Login</button>
+                    </div>
+                `;
+                return;
+            }
             
             setupEventListeners();
-            await filterMenuByRole();
             await loadDashboard();
         }
         
