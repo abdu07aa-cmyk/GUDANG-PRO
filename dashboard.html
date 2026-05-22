@@ -109,22 +109,31 @@
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
-       <div class="sidebar-menu">
-    <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-    <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-    <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-    <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-    <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-    <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="master"><span class="icon">⚙️</span><span class="text">Master Barang</span></div>
-    <div class="menu-item" data-menu="supplier"><span class="icon">🏢</span><span class="text">Supplier</span></div>
-    <div class="menu-item" data-menu="po"><span class="icon">📑</span><span class="text">Purchase Order</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
-</div>
+        <div class="sidebar-menu">
+            <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="master"><span class="icon">⚙️</span><span class="text">Master Barang</span></div>
+            <div class="menu-item" data-menu="supplier"><span class="icon">🏢</span><span class="text">Supplier</span></div>
+            <div class="menu-item" data-menu="po"><span class="icon">📑</span><span class="text">Purchase Order</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <!-- MENU KHUSUS ADMIN (hanya muncul untuk role admin) -->
+            <div class="menu-item menu-admin-only" data-menu="manage-users">
+                <span class="icon">👥</span>
+                <span class="text">Kelola User</span>
+            </div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
+                <span class="icon">📜</span>
+                <span class="text">Log Aktivitas</span>
+            </div>
+            <div class="menu-divider menu-admin-only"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
     </div>
 
     <div class="overlay" id="overlay"></div>
@@ -139,14 +148,16 @@
 
     <script>
         function goToMenu(menu) {
-    if (menu === 'dashboard') window.location.href = 'dashboard.html';
-    else if (menu === 'pi-input') window.location.href = 'pi-input.html';
-    else if (menu === 'stock-in') window.location.href = 'stock-in.html';
-    else if (menu === 'stock-out') window.location.href = 'stock-out.html';
-    else if (menu === 'stock-report') window.location.href = 'stock-report.html';
-    else if (menu === 'export') window.location.href = 'export-final3.html';
-    else if (menu === 'executive') window.location.href = 'executive-report.html';
-    else alert('Menu ' + menu + ' akan segera tersedia');
+            if (menu === 'dashboard') window.location.href = 'dashboard.html';
+            else if (menu === 'pi-input') window.location.href = 'pi-input.html';
+            else if (menu === 'stock-in') window.location.href = 'stock-in.html';
+            else if (menu === 'stock-out') window.location.href = 'stock-out.html';
+            else if (menu === 'stock-report') window.location.href = 'stock-report.html';
+            else if (menu === 'export') window.location.href = 'export-final3.html';
+            else if (menu === 'executive') window.location.href = 'executive-report.html';
+            else if (menu === 'manage-users') window.location.href = 'manage-users.html';
+            else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
+            else alert('Menu ' + menu + ' akan segera tersedia');
         }
 
         async function logout() {
@@ -173,10 +184,15 @@
                     const items = details ? details.filter(d => d.pi_id === h.id) : [];
                     const itemCount = items.length;
                     const brands = [...new Set(items.map(i => i.brand))].join(', ');
-                    tableHtml += `<tr><br> <td><b>${h.no_pi}</b></td> <td>${h.tanggal}</td> <td>${itemCount} item</td> <td>${brands}</td> </tr>`;
+                    tableHtml += `<tr>
+                        <td><b>${h.no_pi}</b></td>
+                        <td>${h.tanggal}</td>
+                        <td>${itemCount} item</td>
+                        <td>${brands}</td>
+                    </tr>`;
                 }
             } else {
-                tableHtml = '<tr><td colspan="4">Belum ada data PI</td></tr>';
+                tableHtml = '<td><td colspan="4">Belum ada data PI</td></tr>';
             }
             
             container.innerHTML = `
@@ -187,7 +203,7 @@
                 <div class="card">
                     <div class="card-title">📋 5 PI Terbaru</div>
                     <div class="table-wrapper">
-                        <table>
+                        <table style="width:100%">
                             <thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Brand</th></tr></thead>
                             <tbody>${tableHtml}</tbody>
                         </table>
@@ -225,7 +241,13 @@
 
         async function init() {
             await checkSession();
+            
+            // Cek role: admin dan operator boleh akses dashboard
+            const allowed = await requireRole(['admin', 'operator']);
+            if (!allowed) return;
+            
             setupEventListeners();
+            await filterMenuByRole();
             await loadDashboard();
         }
         
