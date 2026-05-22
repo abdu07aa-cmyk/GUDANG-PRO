@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cek Status</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h2>Cek Koneksi Supabase</h2>
+    <div id="hasil"></div>
+
+    <script>
+        async function cek() {
+            const hasil = document.getElementById('hasil');
+            hasil.innerHTML = 'Mengecek session...<br>';
+            
+            const { data: { session }, error } = await sb.auth.getSession();
+            if (error) {
+                hasil.innerHTML += '❌ Error session: ' + error.message;
+                return;
+            }
+            
+            if (session) {
+                hasil.innerHTML += '✅ Session aktif!<br>';
+                hasil.innerHTML += 'Email: ' + session.user.email + '<br>';
+                hasil.innerHTML += '<a href="dashboard.html">Ke Dashboard</a>';
+            } else {
+                hasil.innerHTML += '❌ Tidak ada session. Silakan login.<br>';
+                hasil.innerHTML += '<a href="login.html">Ke Login</a>';
+            }
+        }
+        
+        cek();
+    </script>
+</body>
+</html>
