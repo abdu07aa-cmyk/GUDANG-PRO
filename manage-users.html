@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kelola User - Gudang Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 15px; padding-bottom: 70px; }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        select, button { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; }
+        button { background: #3b82f6; color: white; border: none; cursor: pointer; }
+        .btn-refresh { background: #10b981; margin-bottom: 15px; }
+        .role-admin { color: #10b981; font-weight: bold; }
+        .role-operator { color: #f59e0b; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📦 GUDANG PRO</h3>
+            <p>Manajemen Inventory</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 GUDANG PRO</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-title">👥 KELOLA USER & AKSES</div>
+            <button class="btn-refresh" onclick="loadUsers()">🔄 Refresh</button>
+            <div id="userList">Memuat...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadUsers() {
+            const container = document.getElementById('userList');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+            
+            // Ambil semua user dari auth (memerlukan admin access)
+            const { data: { users }, error } = await sb.auth.admin.listUsers();
+            if (error) {
+                container.innerHTML = '<div class="loading">❌ Gagal mengambil data user. Pastikan Anda login sebagai Admin.</div>';
+                return;
+            }
+            
+            const { data: profiles } = await sb.from('user_profiles').select('*');
+            
+            let html = '<table><thead><tr><th>Email</th><th>Role</th><th>Aksi</th></tr></thead><tbody>';
+            for (const user of users) {
+                const profile = profiles?.find(p => p.email === user.email);
+                const role = profile?.role || 'operator';
+                const roleClass = role === 'admin' ? 'role-admin' : 'role-operator';
+                
+                html += `
+                    <tr>
+                        <td>${user.email}</td>
+                        <td class="${roleClass}">${role.toUpperCase()}</td>
+                        <td>
+                            <select id="role_${user.id}" onchange="updateRole('${user.id}', '${user.email}', this.value)">
+                                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+                                <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        async function updateRole(userId, email, newRole) {
+            const { error } = await sb.from('user_profiles').upsert({ 
+                id: userId, 
+                email: email, 
+                role: newRole 
+            });
+            
+            if (error) {
+                alert('Gagal update role: ' + error.message);
+            } else {
+                alert(`✅ Role ${email} berhasil diubah menjadi ${newRole.toUpperCase()}`);
+                await addLog('UPDATE ROLE', `User ${email} diubah menjadi role ${newRole}`);
+                loadUsers();
+            }
+        }
+        
+        function goToMenu(menu) {
+            if (menu === 'dashboard') window.location.href = 'dashboard.html';
+            else if (menu === 'pi-input') window.location.href = 'pi-input.html';
+            else if (menu === 'stock-in') window.location.href = 'stock-in.html';
+            else if (menu === 'stock-out') window.location.href = 'stock-out.html';
+            else if (menu === 'stock-report') window.location.href = 'stock-report.html';
+            else if (menu === 'executive') window.location.href = 'executive-report.html';
+            else if (menu === 'manage-users') window.location.href = 'manage-users.html';
+            else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
+            else if (menu === 'export') window.location.href = 'export-final3.html';
+        }
+        
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        
+        async function init() {
+            const allowed = await requireRole(['admin']);
+            if (!allowed) return;
+            
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            
+            document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+                item.addEventListener('click', () => goToMenu(item.getAttribute('data-menu')));
+            });
+            
+            await loadUsers();
+            await filterMenuByRole();
+        }
+        
+        init();
+    </script>
+</body>
+</html>
