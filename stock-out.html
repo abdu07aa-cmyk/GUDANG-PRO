@@ -103,7 +103,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
-        
+
         .stok-info {
             padding: 10px;
             background: #fef3c7;
@@ -131,9 +131,12 @@
             <div class="menu-item active" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
             <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="master"><span class="icon">⚙️</span><span class="text">Master Barang</span></div>
-            <div class="menu-item" data-menu="supplier"><span class="icon">🏢</span><span class="text">Supplier</span></div>
-            <div class="menu-item" data-menu="po"><span class="icon">📑</span><span class="text">Purchase Order</span></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
@@ -205,17 +208,14 @@
                 return;
             }
             
-            // Tampilkan info stok
             document.getElementById('stokInfo').innerHTML = `
                 <div class="stok-info">
                     📊 Stok Tersedia: <strong style="color:#f59e0b">${stokTersedia}</strong>
                 </div>
             `;
             
-            // Ambil data item lengkap
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             
-            // Ambil histori barang keluar
             const { data: history } = await sb.from('barang_keluar')
                 .select('*')
                 .eq('detail_id', parseInt(itemId))
@@ -241,10 +241,8 @@
                     📊 Total Keluar: <strong style="color:#f59e0b">${totalKeluar}</strong> | Jumlah Transaksi: ${history.length}
                 </div>
                 <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr>
-                        </thead>
+                    </table>
+                        <thead><tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead>
                         <tbody>`;
             
             for (const h of history) {
@@ -256,10 +254,7 @@
                 </tr>`;
             }
             
-            html += `</tbody>
-                    </table>
-                </div>`;
-            
+            html += `</tbody></table></div>`;
             document.getElementById('historyList').innerHTML = html;
         }
         
@@ -269,6 +264,7 @@
                 if (error) {
                     alert('Gagal menghapus: ' + error.message);
                 } else {
+                    await addLog('HAPUS HISTORI', `Menghapus histori barang keluar ID ${id}`);
                     alert('Histori berhasil dihapus');
                     await onPiChange();
                     await onItemChange();
@@ -299,16 +295,27 @@
                 return;
             }
             
+            // Ambil user yang sedang login
+            const { data: { user } } = await sb.auth.getUser();
+            
+            // Ambil info item untuk log
+            const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
+            const itemInfo = `${item?.pi_header?.no_pi} - ${item?.brand} - ${item?.jenis}`;
+            
             const { error } = await sb.from('barang_keluar').insert([{
                 detail_id: parseInt(itemId),
                 tanggal: tanggal,
                 qty: qtyNum,
-                keterangan: keterangan || '-'
+                keterangan: keterangan || '-',
+                created_by: user.email
             }]);
             
             if (error) {
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
             } else {
+                // Tambah log aktivitas
+                await addLog('BARANG KELUAR', `${user.email} mencatat barang keluar ${qtyNum} untuk ${itemInfo}`);
+                
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-success">✅ Barang Keluar dicatat!</div>';
                 document.getElementById('qty_keluar').value = '';
                 document.getElementById('keterangan').value = '';
@@ -373,6 +380,10 @@
             else if (menu === 'stock-in') window.location.href = 'stock-in.html';
             else if (menu === 'stock-out') window.location.href = 'stock-out.html';
             else if (menu === 'stock-report') window.location.href = 'stock-report.html';
+            else if (menu === 'executive') window.location.href = 'executive-report.html';
+            else if (menu === 'manage-users') window.location.href = 'manage-users.html';
+            else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
+            else if (menu === 'export') window.location.href = 'export-final3.html';
             else alert('Menu ' + menu + ' akan segera tersedia');
         }
         
@@ -405,7 +416,13 @@
         
         async function init() {
             await checkSession();
+            
+            // Cek role: operator dan admin boleh akses
+            const allowed = await requireRole(['admin', 'operator']);
+            if (!allowed) return;
+            
             setupEventListeners();
+            await filterMenuByRole();
             await loadHalaman();
         }
         
