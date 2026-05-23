@@ -102,6 +102,9 @@
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
             <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
@@ -162,7 +165,6 @@
             
             let html = '<option value="">-- Pilih Item --</option>';
             for (const item of itemList) {
-                // Hitung stok real-time
                 const { data: masuk } = await sb.from('barang_masuk').select('qty').eq('detail_id', item.id);
                 const { data: keluar } = await sb.from('barang_keluar').select('qty').eq('detail_id', item.id);
                 let totalMasuk = 0, totalKeluar = 0;
@@ -185,7 +187,6 @@
             const itemId = select.value;
             if (!itemId) return;
             
-            // Ambil histori barang keluar
             const { data: history } = await sb.from('barang_keluar').select('*').eq('detail_id', itemId).order('tanggal', { ascending: false });
             if (!history || history.length === 0) {
                 document.getElementById('historyList').innerHTML = '<div class="info-text">Belum ada histori barang keluar</div>';
@@ -194,7 +195,12 @@
             
             let html = '<div class="table-wrapper"><table style="width:100%"><thead><tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody>';
             for (const h of history) {
-                html += `<tr><td>${h.tanggal}</td><td><b>-${h.qty}</b></td><td>${h.keterangan || '-'}</td><td><button class="btn-hapus" onclick="hapusHistory(${h.id})">Hapus</button></td></tr>`;
+                html += `<tr>
+                    <td>${h.tanggal}</td>
+                    <td><b>-${h.qty}</b></td>
+                    <td>${h.keterangan || '-'}</td>
+                    <td><button class="btn-hapus" onclick="hapusHistory(${h.id})">Hapus</button></td>
+                </tr>`;
             }
             html += '</tbody></table></div>';
             document.getElementById('historyList').innerHTML = html;
@@ -255,6 +261,8 @@
                 'stock-out': 'stock-out.html',
                 'stock-report': 'stock-report.html',
                 executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
                 export: 'export-final3.html'
             };
             window.location.href = files[menu] || 'dashboard.html';
@@ -271,7 +279,6 @@
             const loggedIn = await cekSession();
             if (!loggedIn) return;
             
-            // Event listeners
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
