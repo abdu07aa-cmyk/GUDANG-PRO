@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Barang Keluar</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h1>TEST BARANG KELUAR</h1>
+    <div id="hasil">Loading...</div>
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+
+    <script>
+        async function test() {
+            const hasil = document.getElementById('hasil');
+            
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                hasil.innerHTML = '❌ Belum login. <a href="login.html">Login</a>';
+                return;
+            }
+            
+            hasil.innerHTML = '✅ Anda sudah login! Session aktif.<br>';
+            hasil.innerHTML += 'Email: ' + session.user.email;
+        }
+        
+        test();
+    </script>
+</body>
+</html>
