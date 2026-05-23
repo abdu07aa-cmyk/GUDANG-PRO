@@ -121,7 +121,7 @@
     <div class="container" id="mainContent">Memuat...</div>
 
     <script>
-        // Cek session dan role admin
+        // Cek session dan role admin (tanpa getUserRole)
         async function cekAdmin() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) {
@@ -134,8 +134,10 @@
                 return false;
             }
             
-            // Cek role user
-            const role = await getUserRole(session.user.email);
+            // Ambil role dari database langsung
+            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', session.user.email).single();
+            const role = profile?.role || 'operator';
+            
             if (role !== 'admin') {
                 document.getElementById('mainContent').innerHTML = `
                     <div class="card" style="text-align:center">
@@ -157,7 +159,7 @@
             // Ambil semua user dari auth (perlu admin)
             const { data: { users }, error } = await sb.auth.admin.listUsers();
             if (error) {
-                container.innerHTML = `<div class="alert alert-error">❌ Gagal: ${error.message}</div>`;
+                container.innerHTML = `<div style="color:red">❌ Gagal: ${error.message}<br>Pastikan Anda login sebagai ADMIN</div>`;
                 return;
             }
             
@@ -198,7 +200,10 @@
                 alert('Gagal update role: ' + error.message);
             } else {
                 alert(`✅ Role ${email} berhasil diubah menjadi ${newRole.toUpperCase()}`);
-                await addLog('UPDATE ROLE', `User ${email} diubah menjadi role ${newRole}`);
+                // Log aktivitas jika fungsi addLog tersedia
+                if (typeof addLog === 'function') {
+                    await addLog('UPDATE ROLE', `User ${email} diubah menjadi role ${newRole}`);
+                }
                 loadUsers();
             }
         }
