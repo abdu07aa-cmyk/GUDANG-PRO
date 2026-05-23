@@ -241,8 +241,10 @@
                     📊 Total Keluar: <strong style="color:#f59e0b">${totalKeluar}</strong> | Jumlah Transaksi: ${history.length}
                 </div>
                 <div class="table-wrapper">
-                    </table>
-                        <thead><tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+                    <table style="width:100%">
+                        <thead>
+                            <tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr>
+                        </thead>
                         <tbody>`;
             
             for (const h of history) {
@@ -254,7 +256,7 @@
                 </tr>`;
             }
             
-            html += `</tbody></table></div>`;
+            html += `</tbody></td></div>`;
             document.getElementById('historyList').innerHTML = html;
         }
         
@@ -295,10 +297,7 @@
                 return;
             }
             
-            // Ambil user yang sedang login
             const { data: { user } } = await sb.auth.getUser();
-            
-            // Ambil info item untuk log
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             const itemInfo = `${item?.pi_header?.no_pi} - ${item?.brand} - ${item?.jenis}`;
             
@@ -313,9 +312,7 @@
             if (error) {
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
             } else {
-                // Tambah log aktivitas
                 await addLog('BARANG KELUAR', `${user.email} mencatat barang keluar ${qtyNum} untuk ${itemInfo}`);
-                
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-success">✅ Barang Keluar dicatat!</div>';
                 document.getElementById('qty_keluar').value = '';
                 document.getElementById('keterangan').value = '';
@@ -367,13 +364,6 @@
             await loadPiList();
         }
         
-        // ==================== SIDEBAR & NAVIGASI ====================
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-        
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-        
         function goToMenu(menu) {
             if (menu === 'dashboard') window.location.href = 'dashboard.html';
             else if (menu === 'pi-input') window.location.href = 'pi-input.html';
@@ -387,10 +377,11 @@
             else alert('Menu ' + menu + ' akan segera tersedia');
         }
         
-        async function checkSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-        }
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
         
         function setupEventListeners() {
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
@@ -415,14 +406,19 @@
         }
         
         async function init() {
-            await checkSession();
-            
-            // Cek role: operator dan admin boleh akses
-            const allowed = await requireRole(['admin', 'operator']);
-            if (!allowed) return;
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                document.getElementById('mainContent').innerHTML = `
+                    <div class="card" style="text-align:center; padding:30px">
+                        <h3>⚠️ Belum Login</h3>
+                        <p>Silakan login terlebih dahulu</p>
+                        <button onclick="window.location.href='login.html'" style="margin-top:15px; padding:10px 20px; background:#3b82f6; color:white; border:none; border-radius:8px">Ke Halaman Login</button>
+                    </div>
+                `;
+                return;
+            }
             
             setupEventListeners();
-            await filterMenuByRole();
             await loadHalaman();
         }
         
