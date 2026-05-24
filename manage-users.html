@@ -229,7 +229,17 @@
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        async function logout() {
+    // Hapus session lokal
+    await sb.auth.signOut();
+    
+    // Hapus cache browser
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Redirect ke login
+    window.location.href = 'login.html';
+}
         
         async function init() {
             const isAdmin = await cekAdmin();
