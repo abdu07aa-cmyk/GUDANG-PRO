@@ -230,14 +230,12 @@
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
         async function logout() {
-    // Hapus session lokal
-    await sb.auth.signOut();
-    
-    // Hapus cache browser
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // Redirect ke login
+    try {
+        await sb.auth.signOut();
+    } catch(e) {
+        console.log('Sign out error:', e);
+    }
+    // Paksa redirect ke login
     window.location.href = 'login.html';
 }
         
