@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Role</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h2>Debug Role User</h2>
+    <div id="hasil">Loading...</div>
+    <button onclick="window.location.href='dashboard.html'">Ke Dashboard</button>
+
+    <script>
+        async function debug() {
+            const hasil = document.getElementById('hasil');
+            
+            // 1. Cek session
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                hasil.innerHTML = '❌ Belum login. <a href="login.html">Login dulu</a>';
+                return;
+            }
+            
+            hasil.innerHTML = `✅ Session aktif<br>Email: ${session.user.email}<br>ID: ${session.user.id}<br><br>`;
+            
+            // 2. Cek user_profiles
+            const { data: profile, error } = await sb.from('user_profiles').select('*').eq('email', session.user.email).single();
+            
+            if (error) {
+                hasil.innerHTML += `❌ Error ambil role: ${error.message}<br>`;
+                hasil.innerHTML += `📌 Artinya: User ${session.user.email} belum punya role di tabel user_profiles`;
+                hasil.innerHTML += `<br><br><button onclick="fixRole()">🔧 Fix: Tambah Role Admin</button>`;
+            } else {
+                hasil.innerHTML += `✅ Profile ditemukan:<br>`;
+                hasil.innerHTML += `Role: ${profile.role}<br>`;
+                if (profile.role === 'admin') {
+                    hasil.innerHTML += `<span style="color:green">✅ Anda adalah ADMIN! Silakan buka menu Kelola User.</span>`;
+                } else {
+                    hasil.innerHTML += `<span style="color:orange">⚠️ Anda adalah OPERATOR. Role harus diubah menjadi ADMIN.</span>`;
+                }
+            }
+        }
+        
+        async function fixRole() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) return;
+            
+            const { error } = await sb.from('user_profiles').insert([{
+                id: session.user.id,
+                email: session.user.email,
+                role: 'admin'
+            }]);
+            
+            if (error) {
+                alert('Gagal: ' + error.message);
+            } else {
+                alert('✅ Role admin berhasil ditambahkan! Silakan refresh halaman.');
+                window.location.reload();
+            }
+        }
+        
+        window.fixRole = fixRole;
+        debug();
+    </script>
+</body>
+</html>
