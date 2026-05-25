@@ -275,7 +275,26 @@
         
         async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
         
-        async function init() {
+   async function init() {
+    // TAMBAHKAN INI (pengecekan role)
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+        const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+        if (profile?.role !== 'admin') {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card" style="text-align:center; padding:30px">
+                    <h3>⛔ Akses Ditolak</h3>
+                    <p>Halaman Barang Keluar hanya untuk ADMIN.</p>
+                    <button onclick="window.location.href='dashboard.html'">Ke Dashboard</button>
+                </div>
+            `;
+            return;
+        }
+    }
+    // SAMPAI SINI
+    
+    // Lanjutkan kode yang sudah ada...
+  
             const loggedIn = await cekSession();
             if (!loggedIn) return;
             
