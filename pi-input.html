@@ -556,11 +556,28 @@
             });
         }
         
-        async function init() {
-            await checkSession();
-            setupEventListeners();
-            await loadHalaman();
+       async function init() {
+    // TAMBAHKAN INI (pengecekan role)
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+        const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+        if (profile?.role !== 'admin') {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card" style="text-align:center; padding:30px">
+                    <h3>⛔ Akses Ditolak</h3>
+                    <p>Halaman Input PI hanya untuk ADMIN.</p>
+                    <button onclick="window.location.href='dashboard.html'">Ke Dashboard</button>
+                </div>
+            `;
+            return;
         }
+    }
+    // SAMPAI SINI
+    
+    await checkSession();
+    setupEventListeners();
+    await loadHalaman();
+}
         
         window.tambahItem = tambahItem;
         window.hapusItem = hapusItem;
