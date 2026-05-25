@@ -7,34 +7,113 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: Arial;
             background: linear-gradient(135deg, #1e293b, #0f172a);
             min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            margin: 0;
             padding: 20px;
         }
-        .login-card {
+        .login-box {
             background: white;
-            border-radius: 20px;
             padding: 30px;
-            max-width: 350px;
+            border-radius: 15px;
             width: 100%;
+            max-width: 350px;
+            text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        h2 { text-align: center; margin-bottom: 10px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; }
-        button { width: 100%; padding: 12px; margin-top: 10px; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; }
-        .btn-secondary { background: #e2e8f0; color: #1e293b; }
-        .alert { padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 13px; }
-        .alert-error { background: #fee2e2; color: #991b1b; }
-        .alert-success { background: #d1fae5; color: #065f46; }
+        h2 { margin-bottom: 10px; color: #1e293b; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; margin-top: 8px; }
+        .msg { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .success { background: #d1fae5; color: #065f46; }
     </style>
 </head>
 <body>
+    <div class="login-box">
+        <h2>📦 GUDANG PRO</h2>
+        <p>Silakan login</p>
+        <div id="msg"></div>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button class="btn-secondary" onclick="register()">Daftar Akun</button>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showMsg('Isi email dan password!', 'error');
+                return;
+            }
+            
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) {
+                showMsg('Login gagal: ' + error.message, 'error');
+            } else {
+                showMsg('Berhasil! Mengarahkan...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'dashboard-sederhana.html';
+                }, 1000);
+            }
+        }
+        
+        async function register() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showMsg('Isi email dan password!', 'error');
+                return;
+            }
+            if (password.length < 6) {
+                showMsg('Password minimal 6 karakter!', 'error');
+                return;
+            }
+            
+            const { error } = await sb.auth.signUp({ email, password });
+            if (error) {
+                showMsg('Gagal daftar: ' + error.message, 'error');
+            } else {
+                showMsg('Pendaftaran berhasil! Silakan login.', 'success');
+            }
+        }
+        
+        function showMsg(msg, type) {
+            const div = document.getElementById('msg');
+            div.innerHTML = `<div class="msg ${type}">${msg}</div>`;
+            setTimeout(() => div.innerHTML = '', 3000);
+        }
+    </script>
+</body>
+</html><body>
     <div class="login-card">
         <h2>📦 GUDANG PRO</h2>
         <div id="msg"></div>
