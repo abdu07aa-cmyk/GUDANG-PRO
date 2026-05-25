@@ -2,256 +2,49 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Gudang Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: #1e293b;
-            color: white;
-            transition: 0.3s;
-            z-index: 1000;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
         }
-        .sidebar.open { left: 0; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
-        .sidebar-header h3 { font-size: 18px; }
-        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
-        .sidebar-menu { padding: 10px 0; }
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
-            cursor: pointer;
-        }
-        .menu-item:hover { background: #334155; color: white; }
-        .menu-item.active { background: #3b82f6; color: white; }
-        .menu-item .icon { width: 30px; font-size: 20px; }
-        .menu-item .text { font-size: 14px; }
-        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
-        .overlay.show { display: block; }
-
-        .header {
+        .card {
             background: white;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
         }
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-        }
-        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
-        .logout-btn {
-            background: #ef4444;
+        button {
+            background: #3b82f6;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 10px 20px;
             border-radius: 8px;
-            font-size: 12px;
+            margin: 10px;
             cursor: pointer;
         }
-
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1e293b; }
-        .stats { display: flex; gap: 12px; margin-bottom: 20px; }
-        .stat-card { flex: 1; background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .stat-value { font-size: 28px; font-weight: bold; color: #3b82f6; }
-        .stat-label { font-size: 12px; color: #64748b; margin-top: 5px; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-        th { color: #64748b; font-weight: 500; }
-        .loading { text-align: center; padding: 20px; color: #64748b; }
-
-        @media (max-width: 480px) {
-            .stat-value { font-size: 22px; }
-            .card-title { font-size: 14px; }
+        .btn-logout {
+            background: #ef4444;
         }
     </style>
 </head>
 <body>
-
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3>📦 GUDANG PRO</h3>
-            <p>Manajemen Inventory</p>
-        </div>
-        <div class="sidebar-menu">
-            <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
-        </div>
+    <div class="card">
+        <h1>📦 GUDANG PRO</h1>
+        <p>Dashboard Sederhana</p>
+        <p>Anda berhasil login!</p>
+        <button onclick="window.location.href='login.html'" class="btn-logout">🚪 Logout</button>
+        <button onclick="window.location.href='stock-in.html'">📥 Barang Masuk</button>
+        <button onclick="window.location.href='stock-out.html'">📤 Barang Keluar</button>
+        <button onclick="window.location.href='stock-report.html'">📋 Laporan Stok</button>
+        <button onclick="window.location.href='manage-users.html'">👥 Kelola User</button>
     </div>
-
-    <div class="overlay" id="overlay"></div>
-
-    <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 GUDANG PRO</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-    </div>
-
-    <div class="container" id="mainContent"><div class="loading">Loading...</div></div>
-
-    <script>
-        // Cek session - TANPA REDIRECT OTOMATIS! Hanya return true/false
-        async function isLoggedIn() {
-            const { data: { session } } = await sb.auth.getSession();
-            return !!session;
-        }
-
-        function goToMenu(menu) {
-            if (menu === 'dashboard') window.location.href = 'dashboard.html';
-            else if (menu === 'pi-input') window.location.href = 'pi-input.html';
-            else if (menu === 'stock-in') window.location.href = 'stock-in.html';
-            else if (menu === 'stock-out') window.location.href = 'stock-out.html';
-            else if (menu === 'stock-report') window.location.href = 'stock-report.html';
-            else if (menu === 'executive') window.location.href = 'executive-report.html';
-            else if (menu === 'manage-users') window.location.href = 'manage-users.html';
-            else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
-            else if (menu === 'export') window.location.href = 'export-final3.html';
-            else alert('Menu ' + menu + ' akan segera tersedia');
-        }
-
-        async function logout() {
-            await sb.auth.signOut();
-            window.location.href = 'login.html';
-        }
-
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-
-        async function loadDashboard() {
-            const container = document.getElementById('mainContent');
-            const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
-            const { data: details } = await sb.from('pi_detail').select('*');
-            
-            const totalPi = headers ? headers.length : 0;
-            const totalItem = details ? details.length : 0;
-            
-            let tableHtml = '';
-            if (headers && headers.length > 0) {
-                for (let i = 0; i < Math.min(5, headers.length); i++) {
-                    const h = headers[i];
-                    const items = details ? details.filter(d => d.pi_id === h.id) : [];
-                    const itemCount = items.length;
-                    const brands = [...new Set(items.map(i => i.brand))].join(', ');
-                    tableHtml += `<tr>
-                        <td><b>${h.no_pi}</b></td>
-                        <td>${h.tanggal}</td>
-                        <td>${itemCount} item</td>
-                        <td>${brands}</td>
-                    </tr>`;
-                }
-            } else {
-                tableHtml = '<tr><td colspan="4">Belum ada data PI</td></tr>';
-            }
-            
-            container.innerHTML = `
-                <div class="stats">
-                    <div class="stat-card"><div class="stat-value">${totalPi}</div><div class="stat-label">Total PI</div></div>
-                    <div class="stat-card"><div class="stat-value">${totalItem}</div><div class="stat-label">Total Item</div></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">📋 5 PI Terbaru</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Brand</th></tr></thead>
-                            <tbody>${tableHtml}</tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
-            
-            document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    const menu = item.getAttribute('data-menu');
-                    goToMenu(menu);
-                });
-            });
-            
-            let touchStartX = 0;
-            document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
-            document.addEventListener('touchend', (e) => {
-                const diff = e.changedTouches[0].screenX - touchStartX;
-                if (diff > 50 && touchStartX < 30) openSidebar();
-                else if (diff < -50 && document.getElementById('sidebar').classList.contains('open')) closeSidebar();
-            });
-        }
-
-        async function init() {
-            // TIDAK ADA REDIRECT OTOMATIS! Hanya cek status
-            const loggedIn = await isLoggedIn();
-            
-            if (!loggedIn) {
-                // Tampilkan pesan bahwa belum login
-                document.getElementById('mainContent').innerHTML = `
-                    <div class="card" style="text-align:center; padding:30px">
-                        <h3>⚠️ Belum Login</h3>
-                        <p>Silakan login terlebih dahulu</p>
-                        <button onclick="window.location.href='login.html'" style="margin-top:15px; padding:10px 20px; background:#3b82f6; color:white; border:none; border-radius:8px">Ke Halaman Login</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            setupEventListeners();
-            await loadDashboard();
-        }
-        
-        init();
-    </script>
 </body>
 </html>
