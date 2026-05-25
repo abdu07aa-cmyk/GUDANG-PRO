@@ -8,7 +8,7 @@
     <script src="config.js"></script>
     <style>
         body { font-family: Arial; padding: 20px; background: #f0f2f5; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; max-width: 800px; margin: auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin: auto; max-width: 800px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         select, button { padding: 5px 10px; border-radius: 5px; }
@@ -17,7 +17,6 @@
         .btn-back { background: #64748b; margin-top: 20px; width: 100%; padding: 10px; }
         .role-admin { color: green; font-weight: bold; }
         .role-operator { color: orange; }
-        .logout-btn { background: #ef4444; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -26,60 +25,37 @@
         <button class="btn-refresh" onclick="loadUsers()">🔄 Refresh</button>
         <div id="userList">Memuat...</div>
         <button class="btn-back" onclick="window.location.href='dashboard.html'">⬅ Kembali ke Dashboard</button>
-        <button class="logout-btn" onclick="forceLogout()">🚪 Logout Paksa</button>
     </div>
 
     <script>
-        let currentUserRole = null;
-        
-        async function cekAkses() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
-                document.getElementById('userList').innerHTML = '<div style="color:red">❌ Belum login. <a href="login.html">Login</a></div>';
-                return false;
-            }
-            
-            // Cek role user
-            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', session.user.email).single();
-            currentUserRole = profile?.role || 'operator';
-            
-            if (currentUserRole !== 'admin') {
-                document.getElementById('userList').innerHTML = '<div style="color:red">⛔ Akses Ditolak! Halaman ini hanya untuk admin.</div>';
-                return false;
-            }
-            return true;
-        }
-        
         async function loadUsers() {
             const container = document.getElementById('userList');
             container.innerHTML = 'Loading...';
             
-            const hasAccess = await cekAkses();
-            if (!hasAccess) return;
+            // Ambil semua user dari tabel user_profiles (bukan dari auth)
+            const { data: users, error } = await sb.from('user_profiles').select('*');
             
-            // Ambil semua user
-            const { data: { users }, error } = await sb.auth.admin.listUsers();
             if (error) {
                 container.innerHTML = `<div style="color:red">Error: ${error.message}</div>`;
                 return;
             }
             
-            // Ambil role dari user_profiles
-            const { data: profiles } = await sb.from('user_profiles').select('*');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div>Belum ada user terdaftar</div>';
+                return;
+            }
             
-            let html = '<table><thead><tr><th>Email</th><th>Role</th><th>Aksi</th></tr></thead><tbody>';
+            let html = '</table><thead><tr><th>Email</th><th>Role</th><th>Aksi</th></tr></thead><tbody>';
             for (const user of users) {
-                const profile = profiles?.find(p => p.email === user.email);
-                const role = profile?.role || 'operator';
-                const roleClass = role === 'admin' ? 'role-admin' : 'role-operator';
+                const roleClass = user.role === 'admin' ? 'role-admin' : 'role-operator';
                 html += `
                     <tr>
                         <td>${user.email}</td>
-                        <td class="${roleClass}">${role.toUpperCase()}</td>
+                        <td class="${roleClass}">${user.role.toUpperCase()}</td>
                         <td>
                             <select onchange="updateRole('${user.id}', '${user.email}', this.value)">
-                                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
-                                <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                <option value="operator" ${user.role === 'operator' ? 'selected' : ''}>Operator</option>
                             </select>
                         </td>
                     </tr>
@@ -90,20 +66,14 @@
         }
         
         async function updateRole(userId, email, newRole) {
-            const { error } = await sb.from('user_profiles').upsert({ id: userId, email: email, role: newRole });
+            const { error } = await sb.from('user_profiles').update({ role: newRole }).eq('id', userId);
+            
             if (error) {
-                alert('Gagal: ' + error.message);
+                alert('Gagal update role: ' + error.message);
             } else {
-                alert(`✅ Role ${email} diubah menjadi ${newRole.toUpperCase()}`);
+                alert(`✅ Role ${email} berhasil diubah menjadi ${newRole.toUpperCase()}`);
                 loadUsers();
             }
-        }
-        
-        async function forceLogout() {
-            await sb.auth.signOut();
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.href = 'login.html';
         }
         
         // Jalankan
