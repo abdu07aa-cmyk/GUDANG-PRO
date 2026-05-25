@@ -28,13 +28,33 @@
     </div>
 
     <script>
+        let currentUserRole = null;
+
+        async function cekAkses() {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) {
+                document.getElementById('userList').innerHTML = '<div>❌ Belum login. <a href="login.html">Login</a></div>';
+                return false;
+            }
+            
+            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+            currentUserRole = profile?.role || 'operator';
+            
+            if (currentUserRole !== 'admin') {
+                document.getElementById('userList').innerHTML = '<div style="color:red">⛔ Akses Ditolak! Halaman ini hanya untuk admin.</div>';
+                return false;
+            }
+            return true;
+        }
+
         async function loadUsers() {
+            const hasAccess = await cekAkses();
+            if (!hasAccess) return;
+            
             const container = document.getElementById('userList');
             container.innerHTML = 'Loading...';
             
-            // Ambil semua user dari tabel user_profiles (bukan dari auth)
             const { data: users, error } = await sb.from('user_profiles').select('*');
-            
             if (error) {
                 container.innerHTML = `<div style="color:red">Error: ${error.message}</div>`;
                 return;
@@ -45,7 +65,7 @@
                 return;
             }
             
-            let html = '</table><thead><tr><th>Email</th><th>Role</th><th>Aksi</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Email</th><th>Role</th><th>Aksi</th></tr></thead><tbody>';
             for (const user of users) {
                 const roleClass = user.role === 'admin' ? 'role-admin' : 'role-operator';
                 html += `
@@ -67,7 +87,6 @@
         
         async function updateRole(userId, email, newRole) {
             const { error } = await sb.from('user_profiles').update({ role: newRole }).eq('id', userId);
-            
             if (error) {
                 alert('Gagal update role: ' + error.message);
             } else {
@@ -76,7 +95,6 @@
             }
         }
         
-        // Jalankan
         loadUsers();
     </script>
 </body>
