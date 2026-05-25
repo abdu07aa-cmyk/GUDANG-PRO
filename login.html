@@ -113,48 +113,4 @@
         }
     </script>
 </body>
-</html><body>
-    <div class="login-card">
-        <h2>📦 GUDANG PRO</h2>
-        <div id="msg"></div>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button id="loginBtn">Login</button>
-        <button id="registerBtn" class="btn-secondary">Daftar Akun</button>
-    </div>
-
-    <script>
-        // TIDAK ADA auto redirect! Hanya manual
-        
-        document.getElementById('loginBtn').onclick = async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            const { error } = await sb.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                document.getElementById('msg').innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            } else {
-                document.getElementById('msg').innerHTML = `<div class="alert alert-success">✅ Login berhasil! Mengarahkan...</div>`;
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
-            }
-        };
-        
-        document.getElementById('registerBtn').onclick = async () => {
-            const email = prompt('Email:');
-            if (!email) return;
-            const password = prompt('Password (min 6):');
-            if (!password || password.length < 6) { alert('Minimal 6 karakter!'); return; }
-            
-            const { error } = await sb.auth.signUp({ email, password });
-            if (error) {
-                document.getElementById('msg').innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            } else {
-                document.getElementById('msg').innerHTML = `<div class="alert alert-success">✅ Pendaftaran berhasil! Silakan login.</div>`;
-            }
-        };
-    </script>
-</body>
 </html>
