@@ -208,12 +208,45 @@
         
         // Hapus histori
         async function hapusHistory(id) {
-            if (confirm('Hapus histori ini?')) {
-                await sb.from('barang_keluar').delete().eq('id', id);
-                alert('Berhasil dihapus');
-                location.reload();
+    if (confirm('Hapus histori ini?')) {
+        const { error } = await sb.from('barang_keluar').delete().eq('id', id);
+        if (error) {
+            alert('Gagal: ' + error.message);
+        } else {
+            alert('✅ Histori berhasil dihapus');
+            
+            // Simpan PI dan item yang sedang dipilih sebelum refresh
+            const currentPiId = document.getElementById('pi_select').value;
+            const currentItemId = document.getElementById('item_select').value;
+            
+            // Refresh stok dan histori tanpa reload halaman
+            if (currentPiId) {
+                await onPiChange();  // Refresh daftar item (update stok)
+                
+                // Set ulang pilihan PI
+                const piSelect = document.getElementById('pi_select');
+                for (let i = 0; i < piSelect.options.length; i++) {
+                    if (piSelect.options[i].value == currentPiId) {
+                        piSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+                
+                // Set ulang pilihan item
+                if (currentItemId) {
+                    const itemSelect = document.getElementById('item_select');
+                    for (let i = 0; i < itemSelect.options.length; i++) {
+                        if (itemSelect.options[i].value == currentItemId) {
+                            itemSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                await onItemChange();  // Refresh histori
             }
         }
+    }
+}
         
         async function simpanKeluar() {
     const piId = document.getElementById('pi_select').value;
