@@ -539,28 +539,27 @@
             if (!session) window.location.href = 'login.html';
         }
         
-        function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
-            
-            document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    const menu = item.getAttribute('data-menu');
-                    goToMenu(menu);
-                });
-            });
-            
-            let touchStartX = 0;
-            document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
-            document.addEventListener('touchend', (e) => {
-                const diff = e.changedTouches[0].screenX - touchStartX;
-                if (diff > 50 && touchStartX < 30) openSidebar();
-                else if (diff < -50 && document.getElementById('sidebar').classList.contains('open')) closeSidebar();
-            });
-        }
-        
+   function setupEventListeners() {
+    document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
+    document.getElementById('overlay')?.addEventListener('click', closeSidebar);
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    document.getElementById('logoutMenu')?.addEventListener('click', logout);
+    
+    document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            const menu = item.getAttribute('data-menu');
+            goToMenu(menu);
+        });
+    });
+    
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+    document.addEventListener('touchend', (e) => {
+        const diff = e.changedTouches[0].screenX - touchStartX;
+        if (diff > 50 && touchStartX < 30) openSidebar();
+        else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
+    });
+}
   async function init() {
     // Cek role admin
     const { data: { user } } = await sb.auth.getUser();
