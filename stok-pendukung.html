@@ -257,7 +257,7 @@
                 </tr>`;
             }
             if (filtered.length === 0) html += '<tr><td colspan="7">Belum ada data. Klik "Tambah Material"</td></tr>';
-            html += `</tbody>}</div>`;
+            html += `</tbody></div>`;
             
             // Tambah ringkasan stok
             let totalStok = 0;
@@ -306,6 +306,7 @@
             document.getElementById('lokasi').value = item.lokasi || '';
             document.getElementById('itemModal').style.display = 'flex';
         }
+        
         
         async function simpanItem() {
             const id = document.getElementById('editId').value;
