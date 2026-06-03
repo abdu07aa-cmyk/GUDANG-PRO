@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Stok Pendukung - Gudang Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #f4f6f9; padding: 15px; padding-bottom: 70px; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 13px; }
+        th { background: #f8fafc; }
+        button { background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        .btn-success { background: #10b981; }
+        .btn-warning { background: #f59e0b; }
+        .btn-danger { background: #ef4444; }
+        .btn-add { background: #8b5cf6; margin-bottom: 15px; }
+        .btn-edit { background: #3b82f6; padding: 4px 8px; margin: 0 2px; }
+        .btn-hapus { background: #ef4444; padding: 4px 8px; margin: 0 2px; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+        }
+        .modal-content h3 { margin-bottom: 15px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+        .stok-rendah { background: #fef3c7; color: #92400e; font-weight: bold; }
+        .info-text { font-size: 12px; color: #666; margin-top: 5px; }
+        @media (max-width: 600px) { th, td { font-size: 11px; padding: 6px 4px; } }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item active" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 GUDANG PRO</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="container" id="mainContent">Memuat...</div>
+
+    <!-- Modal Tambah/Edit -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Tambah Material</h3>
+            <input type="hidden" id="editId">
+            <label>Kode</label>
+            <input type="text" id="kode" placeholder="Contoh: FLT-W" readonly style="background:#f0f0f0">
+            <label>Nama Material</label>
+            <input type="text" id="nama" placeholder="Contoh: Filter White" required>
+            <label>Satuan</label>
+            <select id="satuan">
+                <option value="roll">Roll</option>
+                <option value="pcs">Pcs</option>
+                <option value="lembar">Lembar</option>
+                <option value="box">Box</option>
+                <option value="kg">Kg</option>
+            </select>
+            <label>Stok Awal</label>
+            <input type="number" id="stok_awal" value="0" min="0">
+            <label>Lokasi Penyimpanan</label>
+            <input type="text" id="lokasi" placeholder="Rak A1">
+            <button onclick="simpanItem()" style="margin-top:15px">💾 Simpan</button>
+            <button onclick="closeModal()" class="btn-danger" style="margin-top:8px">Batal</button>
+        </div>
+    </div>
+
+    <!-- Modal Transaksi (+ Masuk / - Keluar) -->
+    <div id="transaksiModal" class="modal">
+        <div class="modal-content">
+            <h3 id="transaksiTitle">Tambah Stok</h3>
+            <input type="hidden" id="transaksiId">
+            <input type="hidden" id="transaksiJenis">
+            <label>Jumlah</label>
+            <input type="number" id="transaksiQty" min="1" required>
+            <label>Keterangan (opsional)</label>
+            <input type="text" id="transaksiKeterangan" placeholder="Misal: Beli dari supplier, dipakai produksi">
+            <button onclick="prosesTransaksi()" style="margin-top:15px">✅ Proses</button>
+            <button onclick="closeTransaksiModal()" class="btn-danger" style="margin-top:8px">Batal</button>
+        </div>
+    </div>
+
+    <script>
+        let allItems = [];
+
+        async function cekSession() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            return session;
+        }
+
+        async function loadData() {
+            const container = document.getElementById('mainContent');
+            container.innerHTML = '<div class="loading">Loading...</div>';
+            
+            const { data, error } = await sb.from('stok_pendukung').select('*').order('kode');
+            if (error) {
+                container.innerHTML = '<div class="card">Error: ' + error.message + '</div>';
+                return;
+            }
+            allItems = data || [];
+            renderTable();
+        }
+
+        function renderTable() {
+            const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const filtered = allItems.filter(item => 
+                item.kode.toLowerCase().includes(searchText) || 
+                item.nama.toLowerCase().includes(searchText)
+            );
+            
+            let html = `
+                <div class="card">
+                    <div class="card-title">
+                        <span>📦 STOK MATERIAL PENDUKUNG</span>
+                        <button class="btn-add" onclick="showAddModal()">+ Tambah Material</button>
+                    </div>
+                    <div class="filter-bar">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari kode atau nama..." onkeyup="renderTable()">
+                    </div>
+                    <div class="table-wrapper">
+                        <table style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Kode</th><th>Nama Material</th><th>Satuan</th><th>Stok</th><th>Lokasi</th><th>Aksi Stok</th><th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+            
+            for (const item of filtered) {
+                const stokRendah = item.stok <= 5 ? 'stok-rendah' : '';
+                html += `<tr>
+                    <td><b>${item.kode}</b></td>
+                    <td>${item.nama}</td>
+                    <td>${item.satuan}</td>
+                    <td class="${stokRendah}"><b>${item.stok}</b> ${item.stok <= 5 ? '⚠️' : ''}</td>
+                    <td>${item.lokasi || '-'}</td>
+                    <td>
+                        <button class="btn-success" onclick="showTransaksi('masuk', ${item.id})" style="padding:4px 10px">+ Masuk</button>
+                        <button class="btn-warning" onclick="showTransaksi('keluar', ${item.id})" style="padding:4px 10px">- Keluar</button>
+                    </td>
+                    <td>
+                        <button class="btn-edit" onclick="editItem(${item.id})">✏️</button>
+                        <button class="btn-hapus" onclick="hapusItem(${item.id})">🗑️</button>
+                    </td>
+                </tr>`;
+            }
+            if (filtered.length === 0) html += '<tr><td colspan="7">Belum ada data. Klik "Tambah Material"</td></tr>';
+            html += `</tbody>}</div>`;
+            
+            // Tambah ringkasan stok
+            let totalStok = 0;
+            allItems.forEach(item => totalStok += item.stok);
+            html += `<div class="info-text" style="margin-top:10px">📊 Total ${allItems.length} item | Total Stok: ${totalStok}</div>`;
+            html += `</div>`;
+            
+            document.getElementById('mainContent').innerHTML = html;
+        }
+        
+        async function showAddModal() {
+            document.getElementById('modalTitle').innerText = 'Tambah Material';
+            document.getElementById('editId').value = '';
+            document.getElementById('kode').value = '';
+            document.getElementById('nama').value = '';
+            document.getElementById('satuan').value = 'roll';
+            document.getElementById('stok_awal').value = '0';
+            document.getElementById('lokasi').value = '';
+            document.getElementById('itemModal').style.display = 'flex';
+            
+            // Generate kode otomatis
+            const newCode = await generateKode();
+            document.getElementById('kode').value = newCode;
+        }
+        
+        async function generateKode() {
+            const { data } = await sb.from('stok_pendukung').select('kode').order('kode', { ascending: false }).limit(1);
+            if (data && data.length > 0) {
+                const lastCode = data[0].kode;
+                const lastNum = parseInt(lastCode.split('-')[1]) || 0;
+                const newNum = (lastNum + 1).toString().padStart(3, '0');
+                return `SPL-${newNum}`;
+            }
+            return 'SPL-001';
+        }
+        
+        async function editItem(id) {
+            const item = allItems.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('modalTitle').innerText = 'Edit Material';
+            document.getElementById('editId').value = item.id;
+            document.getElementById('kode').value = item.kode;
+            document.getElementById('nama').value = item.nama;
+            document.getElementById('satuan').value = item.satuan;
+            document.getElementById('stok_awal').value = item.stok;
+            document.getElementById('lokasi').value = item.lokasi || '';
+            document.getElementById('itemModal').style.display = 'flex';
+        }
+        
+        async function simpanItem() {
+            const id = document.getElementById('editId').value;
+            const data = {
+                kode: document.getElementById('kode').value,
+                nama: document.getElementById('nama').value,
+                satuan: document.getElementById('satuan').value,
+                stok: parseInt(document.getElementById('stok_awal').value) || 0,
+                lokasi: document.getElementById('lokasi').value
+            };
+            
+            if (!data.nama) {
+                alert('Nama material wajib diisi!');
+                return;
+            }
+            
+            let error;
+            if (id) {
+                const result = await sb.from('stok_pendukung').update(data).eq('id', id);
+                error = result.error;
+            } else {
+                const result = await sb.from('stok_pendukung').insert([data]);
+                error = result.error;
+            }
+            
+            if (error) {
+                alert('Gagal: ' + error.message);
+            } else {
+                alert(id ? '✅ Material berhasil diupdate' : '✅ Material berhasil ditambahkan');
+                closeModal();
+                await loadData();
+            }
+        }
+        
+        async function hapusItem(id) {
+            if (confirm('Yakin ingin menghapus material ini?')) {
+                const { error } = await sb.from('stok_pendukung').delete().eq('id', id);
+                if (error) {
+                    alert('Gagal: ' + error.message);
+                } else {
+                    alert('✅ Material berhasil dihapus');
+                    await loadData();
+                }
+            }
+        }
+        
+        function showTransaksi(jenis, id) {
+            const item = allItems.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('transaksiId').value = id;
+            document.getElementById('transaksiJenis').value = jenis;
+            document.getElementById('transaksiTitle').innerText = jenis === 'masuk' ? '📥 Barang Masuk' : '📤 Barang Keluar';
+            document.getElementById('transaksiQty').value = '';
+            document.getElementById('transaksiKeterangan').value = '';
+            document.getElementById('transaksiModal').style.display = 'flex';
+        }
+        
+        async function prosesTransaksi() {
+            const id = parseInt(document.getElementById('transaksiId').value);
+            const jenis = document.getElementById('transaksiJenis').value;
+            const qty = parseInt(document.getElementById('transaksiQty').value);
+            const keterangan = document.getElementById('transaksiKeterangan').value;
+            
+            if (!qty || qty <= 0) {
+                alert('Masukkan jumlah yang valid!');
+                return;
+            }
+            
+            const item = allItems.find(i => i.id === id);
+            if (!item) return;
+            
+            let newStok = item.stok;
+            if (jenis === 'masuk') {
+                newStok += qty;
+            } else {
+                if (qty > item.stok) {
+                    alert(`Stok tidak mencukupi! Stok saat ini: ${item.stok} ${item.satuan}`);
+                    return;
+                }
+                newStok -= qty;
+            }
+            
+            // Update stok
+            const { error } = await sb.from('stok_pendukung').update({ stok: newStok }).eq('id', id);
+            if (error) {
+                alert('Gagal: ' + error.message);
+            } else {
+                // Simpan ke histori (opsional, jika tabel histori_stok_pendukung ada)
+                try {
+                    await sb.from('histori_stok_pendukung').insert([{
+                        stok_pendukung_id: id,
+                        jenis: jenis === 'masuk' ? 'MASUK' : 'KELUAR',
+                        qty: qty,
+                        keterangan: keterangan || '-',
+                        created_by: (await sb.auth.getUser()).data.user?.email
+                    }]);
+                } catch(e) {}
+                
+                alert(`✅ ${jenis === 'masuk' ? 'Barang masuk' : 'Barang keluar'} dicatat! Stok sekarang: ${newStok}`);
+                closeTransaksiModal();
+                await loadData();
+            }
+        }
+        
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+        
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        
+        function closeModal() { document.getElementById('itemModal').style.display = 'none'; }
+        function closeTransaksiModal() { document.getElementById('transaksiModal').style.display = 'none'; }
+        
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+        
+        async function init() {
+            await cekSession();
+            setupEventListeners();
+            await loadData();
+        }
+        
+        window.renderTable = renderTable;
+        window.showAddModal = showAddModal;
+        window.editItem = editItem;
+        window.simpanItem = simpanItem;
+        window.hapusItem = hapusItem;
+        window.showTransaksi = showTransaksi;
+        window.prosesTransaksi = prosesTransaksi;
+        window.closeModal = closeModal;
+        window.closeTransaksiModal = closeTransaksiModal;
+        
+        init();
+    </script>
+</body>
+</html>
