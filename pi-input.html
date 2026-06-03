@@ -561,8 +561,8 @@
             });
         }
         
-       async function init() {
-    // TAMBAHKAN INI (pengecekan role)
+  async function init() {
+    // Cek role admin
     const { data: { user } } = await sb.auth.getUser();
     if (user) {
         const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
@@ -577,11 +577,10 @@
             return;
         }
     }
-    // SAMPAI SINI
     
     await checkSession();
-    setupEventListeners();
     await loadHalaman();
+    setupEventListeners();
 }
         
         window.tambahItem = tambahItem;
