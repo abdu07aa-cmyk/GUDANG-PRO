@@ -122,6 +122,10 @@
             <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-item" data-menu="stok-pendukung">
+    <span class="icon">📦</span>
+    <span class="text">Stok Pendukung</span>
+</div>
             <div class="menu-divider"></div>
             <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
@@ -186,20 +190,21 @@
             `;
         }
 
-        function goToMenu(menu) {
-            const files = {
-                dashboard: 'dashboard.html',
-                'pi-input': 'pi-input.html',
-                'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html',
-                'stock-report': 'stock-report.html',
-                executive: 'executive-report.html',
-                'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html',
-                export: 'export-final3.html'
-            };
-            window.location.href = files[menu] || 'dashboard.html';
-        }
+ function goToMenu(menu) {
+    const files = {
+        dashboard: 'dashboard.html',
+        'pi-input': 'pi-input.html',
+        'stock-in': 'stock-in.html',
+        'stock-out': 'stock-out.html',
+        'stock-report': 'stock-report.html',
+        'stok-pendukung': 'stok-pendukung.html',
+        executive: 'executive-report.html',
+        'manage-users': 'manage-users.html',
+        'log-aktivitas': 'log-aktivitas.html',
+        export: 'export-final3.html'
+    };
+    window.location.href = files[menu] || 'dashboard.html';
+}
 
         async function logout() {
             await sb.auth.signOut();
