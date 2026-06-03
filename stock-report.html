@@ -164,19 +164,23 @@
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
-        <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-            <div class="menu-item active" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="master"><span class="icon">⚙️</span><span class="text">Master Barang</span></div>
-            <div class="menu-item" data-menu="supplier"><span class="icon">🏢</span><span class="text">Supplier</span></div>
-            <div class="menu-item" data-menu="po"><span class="icon">📑</span><span class="text">Purchase Order</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
-        </div>
+       <div class="sidebar-menu">
+    <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+    <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+    <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+    <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+    <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+    <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+    <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+</div>
     </div>
 
     <div class="overlay" id="overlay"></div>
@@ -409,14 +413,19 @@
         
         async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
         
-        function goToMenu(menu) {
-            if (menu === 'dashboard') window.location.href = 'dashboard.html';
-            else if (menu === 'pi-input') window.location.href = 'pi-input.html';
-            else if (menu === 'stock-in') window.location.href = 'stock-in.html';
-            else if (menu === 'stock-out') window.location.href = 'stock-out.html';
-            else if (menu === 'stock-report') window.location.href = 'stock-report.html';
-            else alert('Menu ' + menu + ' akan segera tersedia');
-        }
+       function goToMenu(menu) {
+    if (menu === 'dashboard') window.location.href = 'dashboard.html';
+    else if (menu === 'pi-input') window.location.href = 'pi-input.html';
+    else if (menu === 'stock-in') window.location.href = 'stock-in.html';
+    else if (menu === 'stock-out') window.location.href = 'stock-out.html';
+    else if (menu === 'stock-report') window.location.href = 'stock-report.html';
+    else if (menu === 'stok-pendukung') window.location.href = 'stok-pendukung.html';
+    else if (menu === 'executive') window.location.href = 'executive-report.html';
+    else if (menu === 'manage-users') window.location.href = 'manage-users.html';
+    else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
+    else if (menu === 'export') window.location.href = 'export-final3.html';
+    else alert('Menu ' + menu + ' akan segera tersedia');
+}
         
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
