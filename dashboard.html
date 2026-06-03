@@ -110,12 +110,19 @@
             <p>Manajemen Inventory</p>
         </div>
         <div class="sidebar-menu">
-    <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-    <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-    <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-    <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-    <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-    <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
@@ -160,7 +167,7 @@
                     </tr>`;
                 }
             } else {
-                tableHtml = '<tr><td colspan="4">Belum ada data PI</td></tr>';
+                tableHtml = '<tr><td colspan="4">Belum ada数据 PI</td><tr>';
             }
             
             container.innerHTML = `
@@ -171,7 +178,7 @@
                 <div class="card">
                     <div class="card-title">📋 5 PI Terbaru</div>
                     <div class="table-wrapper">
-                        <table>
+                        <table style="width:100%">
                             <thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Brand</th></tr></thead>
                             <tbody>${tableHtml}</tbody>
                         </table>
@@ -180,21 +187,21 @@
             `;
         }
 
- function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
 
         async function logout() {
             await sb.auth.signOut();
