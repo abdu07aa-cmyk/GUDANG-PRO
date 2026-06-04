@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Stok Pendukung - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -76,16 +77,17 @@
 
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; min-width: 750px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 13px; }
         th { background: #f8fafc; }
         button { background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
         .btn-success { background: #10b981; }
         .btn-warning { background: #f59e0b; }
         .btn-danger { background: #ef4444; }
-        .btn-add { background: #8b5cf6; margin-bottom: 15px; }
+        .btn-add { background: #8b5cf6; }
+        .btn-export { background: #10b981; }
         .btn-edit { background: #3b82f6; padding: 4px 8px; margin: 0 2px; }
         .btn-hapus { background: #ef4444; padding: 4px 8px; margin: 0 2px; }
         .modal {
@@ -104,14 +106,15 @@
         .modal-content {
             background: white;
             border-radius: 12px;
-            max-width: 400px;
+            max-width: 450px;
             width: 100%;
             padding: 20px;
         }
         .modal-content h3 { margin-bottom: 15px; }
         .modal-content input, .modal-content select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
         .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+        .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .filter-bar button { flex: 0; }
         .stok-rendah { background: #fef3c7; color: #92400e; font-weight: bold; }
         .info-text { font-size: 12px; color: #666; margin-top: 5px; }
         @media (max-width: 600px) { th, td { font-size: 11px; padding: 6px 4px; } }
@@ -156,9 +159,11 @@
             <h3 id="modalTitle">Tambah Material</h3>
             <input type="hidden" id="editId">
             <label>Kode</label>
-            <input type="text" id="kode" placeholder="Contoh: FLT-W" readonly style="background:#f0f0f0">
+            <input type="text" id="kode" placeholder="Contoh: SPL-001" readonly style="background:#f0f0f0">
             <label>Nama Material</label>
             <input type="text" id="nama" placeholder="Contoh: Filter White" required>
+            <label>Size</label>
+            <input type="text" id="size" placeholder="Contoh: 10x10 cm / 1 roll">
             <label>Satuan</label>
             <select id="satuan">
                 <option value="roll">Roll</option>
@@ -169,8 +174,8 @@
             </select>
             <label>Stok Awal</label>
             <input type="number" id="stok_awal" value="0" min="0">
-            <label>Lokasi Penyimpanan</label>
-            <input type="text" id="lokasi" placeholder="Rak A1">
+            <label>Lokasi Box</label>
+            <input type="text" id="lokasi" placeholder="Contoh: Box 1, Box 2, Rak A1">
             <button onclick="simpanItem()" style="margin-top:15px">💾 Simpan</button>
             <button onclick="closeModal()" class="btn-danger" style="margin-top:8px">Batal</button>
         </div>
@@ -217,23 +222,29 @@
             const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
             const filtered = allItems.filter(item => 
                 item.kode.toLowerCase().includes(searchText) || 
-                item.nama.toLowerCase().includes(searchText)
+                item.nama.toLowerCase().includes(searchText) ||
+                (item.size || '').toLowerCase().includes(searchText) ||
+                (item.lokasi || '').toLowerCase().includes(searchText)
             );
             
             let html = `
                 <div class="card">
                     <div class="card-title">
                         <span>📦 STOK MATERIAL PENDUKUNG</span>
-                        <button class="btn-add" onclick="showAddModal()">+ Tambah Material</button>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-add" onclick="showAddModal()">+ Tambah Material</button>
+                            <button class="btn-export" onclick="exportToExcel()">📎 Export Excel</button>
+                        </div>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari kode atau nama..." onkeyup="renderTable()">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari kode, nama, size, atau lokasi..." onkeyup="searchOnKeyup()">
+                        <button onclick="clearSearch()">✖ Reset</button>
                     </div>
                     <div class="table-wrapper">
                         <table style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Kode</th><th>Nama Material</th><th>Satuan</th><th>Stok</th><th>Lokasi</th><th>Aksi Stok</th><th>Aksi</th>
+                                    <th>Kode</th><th>Nama Material</th><th>Size</th><th>Satuan</th><th>Stok</th><th>Lokasi Box</th><th>Aksi Stok</th><th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>`;
@@ -243,6 +254,7 @@
                 html += `<tr>
                     <td><b>${item.kode}</b></td>
                     <td>${item.nama}</td>
+                    <td>${item.size || '-'}</td>
                     <td>${item.satuan}</td>
                     <td class="${stokRendah}"><b>${item.stok}</b> ${item.stok <= 5 ? '⚠️' : ''}</td>
                     <td>${item.lokasi || '-'}</td>
@@ -256,10 +268,9 @@
                     </td>
                 </tr>`;
             }
-            if (filtered.length === 0) html += '<tr><td colspan="7">Belum ada data. Klik "Tambah Material"</td></tr>';
-            html += `</tbody></div>`;
+            if (filtered.length === 0) html += '<tr><td colspan="8">Belum ada data. Klik "Tambah Material"</td></tr>';
+            html += `</tbody>}</div>`;
             
-            // Tambah ringkasan stok
             let totalStok = 0;
             allItems.forEach(item => totalStok += item.stok);
             html += `<div class="info-text" style="margin-top:10px">📊 Total ${allItems.length} item | Total Stok: ${totalStok}</div>`;
@@ -268,17 +279,57 @@
             document.getElementById('mainContent').innerHTML = html;
         }
         
+        function exportToExcel() {
+            if (allItems.length === 0) {
+                alert('Tidak ada data untuk diexport!');
+                return;
+            }
+            
+            const excelData = [['Kode', 'Nama Material', 'Size', 'Satuan', 'Stok', 'Lokasi Box']];
+            for (const item of allItems) {
+                excelData.push([
+                    item.kode,
+                    item.nama,
+                    item.size || '-',
+                    item.satuan,
+                    item.stok,
+                    item.lokasi || '-'
+                ]);
+            }
+            
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Stok Pendukung');
+            
+            // Set lebar kolom
+            ws['!cols'] = [{wch:12}, {wch:25}, {wch:15}, {wch:10}, {wch:10}, {wch:15}];
+            
+            const now = new Date();
+            const fileName = `Stok_Pendukung_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            alert('✅ Export Excel berhasil!');
+        }
+        
+        function searchOnKeyup() {
+            renderTable();
+        }
+        
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            renderTable();
+        }
+        
         async function showAddModal() {
             document.getElementById('modalTitle').innerText = 'Tambah Material';
             document.getElementById('editId').value = '';
             document.getElementById('kode').value = '';
             document.getElementById('nama').value = '';
+            document.getElementById('size').value = '';
             document.getElementById('satuan').value = 'roll';
             document.getElementById('stok_awal').value = '0';
             document.getElementById('lokasi').value = '';
             document.getElementById('itemModal').style.display = 'flex';
             
-            // Generate kode otomatis
             const newCode = await generateKode();
             document.getElementById('kode').value = newCode;
         }
@@ -301,18 +352,19 @@
             document.getElementById('editId').value = item.id;
             document.getElementById('kode').value = item.kode;
             document.getElementById('nama').value = item.nama;
+            document.getElementById('size').value = item.size || '';
             document.getElementById('satuan').value = item.satuan;
             document.getElementById('stok_awal').value = item.stok;
             document.getElementById('lokasi').value = item.lokasi || '';
             document.getElementById('itemModal').style.display = 'flex';
         }
         
-        
         async function simpanItem() {
             const id = document.getElementById('editId').value;
             const data = {
                 kode: document.getElementById('kode').value,
                 nama: document.getElementById('nama').value,
+                size: document.getElementById('size').value,
                 satuan: document.getElementById('satuan').value,
                 stok: parseInt(document.getElementById('stok_awal').value) || 0,
                 lokasi: document.getElementById('lokasi').value
@@ -389,12 +441,10 @@
                 newStok -= qty;
             }
             
-            // Update stok
             const { error } = await sb.from('stok_pendukung').update({ stok: newStok }).eq('id', id);
             if (error) {
                 alert('Gagal: ' + error.message);
             } else {
-                // Simpan ke histori (opsional, jika tabel histori_stok_pendukung ada)
                 try {
                     await sb.from('histori_stok_pendukung').insert([{
                         stok_pendukung_id: id,
@@ -461,6 +511,9 @@
         window.prosesTransaksi = prosesTransaksi;
         window.closeModal = closeModal;
         window.closeTransaksiModal = closeTransaksiModal;
+        window.exportToExcel = exportToExcel;
+        window.searchOnKeyup = searchOnKeyup;
+        window.clearSearch = clearSearch;
         
         init();
     </script>
