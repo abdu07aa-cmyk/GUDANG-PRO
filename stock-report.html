@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Laporan Stok - Gudang Pro</title>
+    <title>Stok Gudang - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -86,20 +86,17 @@
 
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
-        
-        .stok-baik { color: #10b981; font-weight: bold; }
-        .stok-sedikit { color: #f59e0b; font-weight: bold; }
-        .stok-habis { color: #ef4444; font-weight: bold; }
-        
-        .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
-        .loading { text-align: center; padding: 30px; color: #64748b; }
-        
+
+        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+
         .filter-bar {
             display: flex;
             gap: 10px;
@@ -108,6 +105,12 @@
         }
         .filter-bar input {
             flex: 2;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .filter-bar select {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -123,8 +126,13 @@
         }
         .btn-export {
             background: #10b981;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            cursor: pointer;
         }
-        
+
         .summary {
             display: flex;
             gap: 15px;
@@ -150,7 +158,7 @@
             color: #64748b;
             margin-top: 4px;
         }
-        
+
         @media (max-width: 600px) {
             th, td { font-size: 10px; padding: 6px 4px; }
             .summary-value { font-size: 18px; }
@@ -164,23 +172,23 @@
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
-       <div class="sidebar-menu">
-    <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-    <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-    <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-    <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-    <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-    <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
-    <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
-</div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item active" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
     </div>
 
     <div class="overlay" id="overlay"></div>
@@ -191,246 +199,215 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <div class="container" id="mainContent"></div>
+    <div class="container" id="mainContent">
+        <div class="loading">⏳ Memuat data...</div>
+    </div>
 
     <script>
         let allItems = [];
-        let currentFilteredItems = [];
-        
-        async function loadStockReport() {
-            document.getElementById('mainContent').innerHTML = '<div class="loading">⏳ Mengambil data stok...</div>';
+        let currentFiltered = [];
+
+        async function cekSession() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            return session;
+        }
+
+        async function loadData() {
+            const container = document.getElementById('mainContent');
+            container.innerHTML = '<div class="loading">📡 Mengambil data...</div>';
             
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             const { data: details } = await sb.from('pi_detail').select('*');
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            if (!details || details.length === 0) {
-                document.getElementById('mainContent').innerHTML = `
-                    <div class="card">
-                        <div class="card-title">📋 Laporan Stok</div>
-                        <div class="info-text">Belum ada data PI. Silakan input PI terlebih dahulu.</div>
-                    </div>
-                `;
-                return;
-            }
-            
-            const stokMap = {};
+            const items = [];
             for (const detail of details) {
-                let totalMasuk = 0, totalKeluar = 0;
+                const header = headers?.find(h => h.id === detail.pi_id);
+                let totalMasuk = 0;
+                let totalKeluar = 0;
                 if (masuk) masuk.forEach(m => { if (m.detail_id === detail.id) totalMasuk += m.qty; });
                 if (keluar) keluar.forEach(k => { if (k.detail_id === detail.id) totalKeluar += k.qty; });
-                stokMap[detail.id] = {
-                    masuk: totalMasuk,
-                    keluar: totalKeluar,
-                    stok: totalMasuk - totalKeluar
-                };
-            }
-            
-            allItems = [];
-            for (const detail of details) {
-                const header = headers.find(h => h.id === detail.pi_id);
-                const stokData = stokMap[detail.id] || { masuk: 0, keluar: 0, stok: 0 };
-                allItems.push({
-                    no_pi: header ? header.no_pi : '-',
-                    tanggal_pi: header ? header.tanggal : '-',
+                
+                const sisa = detail.qty_pi - totalMasuk;
+                let status = '';
+                let statusClass = '';
+                if (totalMasuk >= detail.qty_pi) {
+                    status = '✅ SELESAI';
+                    statusClass = 'status-selesai';
+                } else if (totalMasuk > 0) {
+                    status = `🔄 PROSES (Kurang ${sisa})`;
+                    statusClass = 'status-proses';
+                } else {
+                    status = '❌ BELUM';
+                    statusClass = 'status-belum';
+                }
+                
+                items.push({
+                    id: detail.id,
+                    no_pi: header?.no_pi || '-',
                     brand: detail.brand,
                     jenis: detail.jenis,
                     paper: detail.paper || '-',
                     size: detail.size || '-',
                     qty_pi: detail.qty_pi,
-                    total_masuk: stokData.masuk,
-                    total_keluar: stokData.keluar,
-                    stok: stokData.stok
+                    total_masuk: totalMasuk,
+                    total_keluar: totalKeluar,
+                    sisa: sisa,
+                    stok: totalMasuk - totalKeluar,
+                    status: status,
+                    statusClass: statusClass
                 });
             }
-            
-            currentFilteredItems = [...allItems];
-            renderTable(currentFilteredItems);
+            allItems = items;
+            currentFiltered = [...allItems];
+            renderTable();
         }
         
-        function renderTable(items) {
-            let totalStok = 0;
-            let totalItemMasuk = 0;
-            let totalItemKeluar = 0;
-            let itemHabis = 0;
-            let itemMenipis = 0;
+        function renderTable() {
+            const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
             
-            for (const item of items) {
-                totalStok += item.stok;
-                totalItemMasuk += item.total_masuk;
-                totalItemKeluar += item.total_keluar;
-                if (item.stok <= 0) itemHabis++;
-                else if (item.stok < 10) itemMenipis++;
+            let filtered = allItems.filter(item => 
+                item.no_pi.toLowerCase().includes(searchText) ||
+                item.brand.toLowerCase().includes(searchText) ||
+                item.jenis.toLowerCase().includes(searchText)
+            );
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(item => {
+                    if (statusFilter === 'selesai') return item.total_masuk >= item.qty_pi;
+                    if (statusFilter === 'proses') return item.total_masuk > 0 && item.total_masuk < item.qty_pi;
+                    if (statusFilter === 'belum') return item.total_masuk === 0;
+                    return true;
+                });
             }
+            currentFiltered = filtered;
+            
+            let totalPi = [...new Set(currentFiltered.map(i => i.no_pi))].length;
+            let totalItem = currentFiltered.length;
+            let totalSelesai = currentFiltered.filter(i => i.total_masuk >= i.qty_pi).length;
+            let totalProses = currentFiltered.filter(i => i.total_masuk > 0 && i.total_masuk < i.qty_pi).length;
+            let totalBelum = currentFiltered.filter(i => i.total_masuk === 0).length;
             
             let tableHtml = '';
-            for (const item of items) {
-                let statusClass = '';
-                let statusText = '';
-                if (item.stok <= 0) { statusClass = 'stok-habis'; statusText = 'Habis'; }
-                else if (item.stok < 10) { statusClass = 'stok-sedikit'; statusText = 'Menipis'; }
-                else { statusClass = 'stok-baik'; statusText = 'Cukup'; }
-                
+            for (const item of currentFiltered) {
                 tableHtml += `<tr>
                     <td><b>${item.no_pi}</b></td>
                     <td>${item.brand}</td>
                     <td>${item.jenis}</td>
                     <td>${item.paper}</td>
                     <td>${item.size}</td>
-                    <td>${item.qty_pi}</td>
-                    <td>${item.total_masuk}</td>
-                    <td>${item.total_keluar}</td>
-                    <td class="${statusClass}">${item.stok} (${statusText})</td>
+                    <td style="text-align:center">${item.qty_pi}</td>
+                    <td style="text-align:center">${item.total_masuk}</td>
+                    <td style="text-align:center">${item.total_keluar}</td>
+                    <td style="text-align:center"><b>${item.stok}</b></td>
+                    <td style="text-align:center"><b class="${item.statusClass}">${item.status}</b></td>
                 </tr>`;
             }
             
-            if (items.length === 0) {
-                tableHtml = '<tr><td colspan="9">Tidak ada data yang cocok</td></tr>';
+            if (currentFiltered.length === 0) {
+                tableHtml = '<tr><td colspan="10" style="text-align:center">Belum ada data<\/td></tr>';
             }
             
             const html = `
                 <div class="summary">
-                    <div class="summary-card"><div class="summary-value">${allItems.length}</div><div class="summary-label">Total Item</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalStok}</div><div class="summary-label">Total Stok</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalItemMasuk}</div><div class="summary-label">Total Masuk</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalItemKeluar}</div><div class="summary-label">Total Keluar</div></div>
-                    <div class="summary-card"><div class="summary-value">${itemHabis}</div><div class="summary-label">Stok Habis</div></div>
-                    <div class="summary-card"><div class="summary-value">${itemMenipis}</div><div class="summary-label">Stok Menipis</div></div>
-                </div>
+                    <div class="summary-card"><div class="summary-value">${totalPi}</div><div class="summary-label">Total PI<\/div><\/div>
+                    <div class="summary-card"><div class="summary-value">${totalItem}</div><div class="summary-label">Total Item<\/div><\/div>
+                    <div class="summary-card"><div class="summary-value">${totalSelesai}</div><div class="summary-label">✅ Selesai<\/div><\/div>
+                    <div class="summary-card"><div class="summary-value">${totalProses}</div><div class="summary-label">🔄 Proses<\/div><\/div>
+                    <div class="summary-card"><div class="summary-value">${totalBelum}</div><div class="summary-label">❌ Belum<\/div><\/div>
+                <\/div>
                 
                 <div class="card">
                     <div class="card-title">
-                        <span>🔍 Filter & Pencarian</span>
-                        <button class="btn-export" onclick="exportToExcel()" style="margin-left:auto">📎 Export ke Excel</button>
-                    </div>
+                        <span>📋 STOK GUDANG & STATUS PI</span>
+                        <button class="btn-export" onclick="exportToExcel()">📎 Export Excel<\/button>
+                    <\/div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="Cari No PI, Brand, Jenis, Paper, Size..." onkeyup="filterTable()">
-                        <button onclick="resetFilter()">Reset</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-title">📋 Laporan Stok Lengkap</div>
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterTable()">
+                        <select id="statusFilter" onchange="filterTable()">
+                            <option value="all">Semua Status</option>
+                            <option value="selesai">✅ Selesai<\/option>
+                            <option value="proses">🔄 Proses<\/option>
+                            <option value="belum">❌ Belum<\/option>
+                        <\/select>
+                        <button onclick="resetFilter()">Reset<\/button>
+                    <\/div>
                     <div class="table-wrapper">
-                        <table id="stockTable">
+                        <table style="width:100%">
                             <thead>
                                 <tr>
                                     <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
-                                    <th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok Akhir</th>
+                                    <th>Qty PI</th><th>Qty Masuk</th><th>Qty Keluar</th><th>Stok</th><th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody">${tableHtml}</tbody>
+                            <tbody>${tableHtml}</tbody>
                         </table>
-                    </div>
-                </div>
+                    <\/div>
+                <\/div>
             `;
             
             document.getElementById('mainContent').innerHTML = html;
         }
         
-        function filterTable() {
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allItems.filter(item => 
-                item.no_pi.toLowerCase().includes(searchText) ||
-                item.brand.toLowerCase().includes(searchText) ||
-                item.jenis.toLowerCase().includes(searchText) ||
-                item.paper.toLowerCase().includes(searchText) ||
-                item.size.toLowerCase().includes(searchText)
-            );
-            currentFilteredItems = filtered;
-            
-            let tableHtml = '';
-            for (const item of filtered) {
-                let statusClass = '';
-                let statusText = '';
-                if (item.stok <= 0) { statusClass = 'stok-habis'; statusText = 'Habis'; }
-                else if (item.stok < 10) { statusClass = 'stok-sedikit'; statusText = 'Menipis'; }
-                else { statusClass = 'stok-baik'; statusText = 'Cukup'; }
-                
-                tableHtml += `<tr>
-                    <td><b>${item.no_pi}</b></td>
-                    <td>${item.brand}</td>
-                    <td>${item.jenis}</td>
-                    <td>${item.paper}</td>
-                    <td>${item.size}</td>
-                    <td>${item.qty_pi}</td>
-                    <td>${item.total_masuk}</td>
-                    <td>${item.total_keluar}</td>
-                    <td class="${statusClass}">${item.stok} (${statusText})</td>
-                </tr>`;
-            }
-            
-            if (filtered.length === 0) {
-                tableHtml = '<tr><td colspan="9">Tidak ada data yang cocok</td></tr>';
-            }
-            
-            document.getElementById('tableBody').innerHTML = tableHtml;
-        }
-        
-        function resetFilter() {
-            document.getElementById('searchInput').value = '';
-            currentFilteredItems = [...allItems];
-            filterTable();
-        }
-        
         function exportToExcel() {
-            if (currentFilteredItems.length === 0) {
+            if (currentFiltered.length === 0) {
                 alert('Tidak ada data untuk diexport!');
                 return;
             }
             
-            const data = currentFilteredItems.map(item => ({
-                'No PI': item.no_pi,
-                'Brand': item.brand,
-                'Jenis': item.jenis,
-                'Paper': item.paper,
-                'Size': item.size,
-                'Qty PI': item.qty_pi,
-                'Total Masuk': item.total_masuk,
-                'Total Keluar': item.total_keluar,
-                'Stok Akhir': item.stok
-            }));
+            const excelData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Qty Masuk', 'Qty Keluar', 'Stok', 'Status']];
+            for (const item of currentFiltered) {
+                excelData.push([
+                    item.no_pi, item.brand, item.jenis, item.paper, item.size,
+                    item.qty_pi, item.total_masuk, item.total_keluar, item.stok, item.status
+                ]);
+            }
             
-            const ws = XLSX.utils.json_to_sheet(data);
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Laporan Stok');
-            
-            const colWidths = [
-                {wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}
-            ];
-            ws['!cols'] = colWidths;
+            XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
+            ws['!cols'] = [{wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:20}];
             
             const now = new Date();
-            const fileName = `Laporan_Stok_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}.xlsx`;
+            const fileName = `Stok_Gudang_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}.xlsx`;
             XLSX.writeFile(wb, fileName);
+            alert('✅ Export Excel berhasil!');
         }
         
-        // ==================== SIDEBAR & NAVIGASI ====================
+        function filterTable() {
+            renderTable();
+        }
+        
+        function resetFilter() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = 'all';
+            renderTable();
+        }
+        
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+        
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
         async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-        
-       function goToMenu(menu) {
-    if (menu === 'dashboard') window.location.href = 'dashboard.html';
-    else if (menu === 'pi-input') window.location.href = 'pi-input.html';
-    else if (menu === 'stock-in') window.location.href = 'stock-in.html';
-    else if (menu === 'stock-out') window.location.href = 'stock-out.html';
-    else if (menu === 'stock-report') window.location.href = 'stock-report.html';
-    else if (menu === 'stok-pendukung') window.location.href = 'stok-pendukung.html';
-    else if (menu === 'executive') window.location.href = 'executive-report.html';
-    else if (menu === 'manage-users') window.location.href = 'manage-users.html';
-    else if (menu === 'log-aktivitas') window.location.href = 'log-aktivitas.html';
-    else if (menu === 'export') window.location.href = 'export-final3.html';
-    else alert('Menu ' + menu + ' akan segera tersedia');
-}
-        
-        async function checkSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-        }
         
         function setupEventListeners() {
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
@@ -455,9 +432,9 @@
         }
         
         async function init() {
-            await checkSession();
+            await cekSession();
             setupEventListeners();
-            await loadStockReport();
+            await loadData();
         }
         
         window.filterTable = filterTable;
