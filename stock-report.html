@@ -89,13 +89,14 @@
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
 
         .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
         .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
         .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+        .status-over { background: #fed7aa; color: #9a3412; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
 
         .filter-bar {
             display: flex;
@@ -230,17 +231,18 @@
                 if (masuk) masuk.forEach(m => { if (m.detail_id === detail.id) totalMasuk += m.qty; });
                 if (keluar) keluar.forEach(k => { if (k.detail_id === detail.id) totalKeluar += k.qty; });
                 
-                const sisa = detail.qty_pi - totalMasuk;
+                const sisaKeluar = detail.qty_pi - totalKeluar;
                 let status = '';
                 let statusClass = '';
-                if (totalMasuk >= detail.qty_pi) {
+                
+                if (totalKeluar >= detail.qty_pi) {
                     status = '✅ SELESAI';
                     statusClass = 'status-selesai';
-                } else if (totalMasuk > 0) {
-                    status = `🔄 PROSES (Kurang ${sisa})`;
+                } else if (totalKeluar > 0) {
+                    status = `🔄 PROSES (Kurang ${sisaKeluar} keluar)`;
                     statusClass = 'status-proses';
                 } else {
-                    status = '❌ BELUM';
+                    status = '❌ BELUM ADA KELUAR';
                     statusClass = 'status-belum';
                 }
                 
@@ -254,7 +256,7 @@
                     qty_pi: detail.qty_pi,
                     total_masuk: totalMasuk,
                     total_keluar: totalKeluar,
-                    sisa: sisa,
+                    sisa_keluar: sisaKeluar,
                     stok: totalMasuk - totalKeluar,
                     status: status,
                     statusClass: statusClass
@@ -277,9 +279,9 @@
             
             if (statusFilter !== 'all') {
                 filtered = filtered.filter(item => {
-                    if (statusFilter === 'selesai') return item.total_masuk >= item.qty_pi;
-                    if (statusFilter === 'proses') return item.total_masuk > 0 && item.total_masuk < item.qty_pi;
-                    if (statusFilter === 'belum') return item.total_masuk === 0;
+                    if (statusFilter === 'selesai') return item.total_keluar >= item.qty_pi;
+                    if (statusFilter === 'proses') return item.total_keluar > 0 && item.total_keluar < item.qty_pi;
+                    if (statusFilter === 'belum') return item.total_keluar === 0;
                     return true;
                 });
             }
@@ -287,9 +289,9 @@
             
             let totalPi = [...new Set(currentFiltered.map(i => i.no_pi))].length;
             let totalItem = currentFiltered.length;
-            let totalSelesai = currentFiltered.filter(i => i.total_masuk >= i.qty_pi).length;
-            let totalProses = currentFiltered.filter(i => i.total_masuk > 0 && i.total_masuk < i.qty_pi).length;
-            let totalBelum = currentFiltered.filter(i => i.total_masuk === 0).length;
+            let totalSelesai = currentFiltered.filter(i => i.total_keluar >= i.qty_pi).length;
+            let totalProses = currentFiltered.filter(i => i.total_keluar > 0 && i.total_keluar < i.qty_pi).length;
+            let totalBelum = currentFiltered.filter(i => i.total_keluar === 0).length;
             
             let tableHtml = '';
             for (const item of currentFiltered) {
@@ -308,30 +310,30 @@
             }
             
             if (currentFiltered.length === 0) {
-                tableHtml = '<tr><td colspan="10" style="text-align:center">Belum ada data<\/td></tr>';
+                tableHtml = '<tr><td colspan="10" style="text-align:center">Belum ada数据<\/td></tr>';
             }
             
             const html = `
                 <div class="summary">
                     <div class="summary-card"><div class="summary-value">${totalPi}</div><div class="summary-label">Total PI<\/div><\/div>
                     <div class="summary-card"><div class="summary-value">${totalItem}</div><div class="summary-label">Total Item<\/div><\/div>
-                    <div class="summary-card"><div class="summary-value">${totalSelesai}</div><div class="summary-label">✅ Selesai<\/div><\/div>
+                    <div class="summary-card"><div class="summary-value">${totalSelesai}</div><div class="summary-label">✅ Selesai (Keluar penuh)<\/div><\/div>
                     <div class="summary-card"><div class="summary-value">${totalProses}</div><div class="summary-label">🔄 Proses<\/div><\/div>
-                    <div class="summary-card"><div class="summary-value">${totalBelum}</div><div class="summary-label">❌ Belum<\/div><\/div>
+                    <div class="summary-card"><div class="summary-value">${totalBelum}</div><div class="summary-label">❌ Belum ada Keluar<\/div><\/div>
                 <\/div>
                 
                 <div class="card">
                     <div class="card-title">
-                        <span>📋 STOK GUDANG & STATUS PI</span>
+                        <span>📋 STOK GUDANG & STATUS PI (Berdasarkan Qty Keluar)</span>
                         <button class="btn-export" onclick="exportToExcel()">📎 Export Excel<\/button>
                     <\/div>
                     <div class="filter-bar">
                         <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterTable()">
                         <select id="statusFilter" onchange="filterTable()">
                             <option value="all">Semua Status</option>
-                            <option value="selesai">✅ Selesai<\/option>
+                            <option value="selesai">✅ Selesai (Keluar penuh)<\/option>
                             <option value="proses">🔄 Proses<\/option>
-                            <option value="belum">❌ Belum<\/option>
+                            <option value="belum">❌ Belum ada Keluar<\/option>
                         <\/select>
                         <button onclick="resetFilter()">Reset<\/button>
                     <\/div>
@@ -340,7 +342,7 @@
                             <thead>
                                 <tr>
                                     <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
-                                    <th>Qty PI</th><th>Qty Masuk</th><th>Qty Keluar</th><th>Stok</th><th>Status</th>
+                                    <th>Qty PI</th><th>Qty Masuk</th><th>Qty Keluar</th><th>Stok</th><th>Status (Berdasarkan Keluar)</th>
                                 </tr>
                             </thead>
                             <tbody>${tableHtml}</tbody>
@@ -358,7 +360,7 @@
                 return;
             }
             
-            const excelData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Qty Masuk', 'Qty Keluar', 'Stok', 'Status']];
+            const excelData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Qty Masuk', 'Qty Keluar', 'Stok', 'Status (Berdasarkan Keluar)']];
             for (const item of currentFiltered) {
                 excelData.push([
                     item.no_pi, item.brand, item.jenis, item.paper, item.size,
@@ -369,7 +371,7 @@
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
-            ws['!cols'] = [{wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:20}];
+            ws['!cols'] = [{wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:25}];
             
             const now = new Date();
             const fileName = `Stok_Gudang_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}.xlsx`;
