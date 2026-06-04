@@ -117,6 +117,10 @@
         .filter-bar button { flex: 0; }
         .stok-rendah { background: #fef3c7; color: #92400e; font-weight: bold; }
         .info-text { font-size: 12px; color: #666; margin-top: 5px; }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .pagination button { padding: 6px 12px; background: #e2e8f0; color: #1e293b; border: none; border-radius: 6px; cursor: pointer; }
+        .pagination button.active { background: #3b82f6; color: white; }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 600px) { th, td { font-size: 11px; padding: 6px 4px; } }
     </style>
 </head>
@@ -198,6 +202,9 @@
 
     <script>
         let allItems = [];
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let currentFiltered = [];
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -215,19 +222,67 @@
                 return;
             }
             allItems = data || [];
+            currentFiltered = [...allItems];
+            currentPage = 1;
             renderTable();
         }
 
         function renderTable() {
             const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
-            const filtered = allItems.filter(item => 
+            currentFiltered = allItems.filter(item => 
                 item.kode.toLowerCase().includes(searchText) || 
                 item.nama.toLowerCase().includes(searchText) ||
                 (item.size || '').toLowerCase().includes(searchText) ||
                 (item.lokasi || '').toLowerCase().includes(searchText)
             );
             
-            let html = `
+            const totalPages = Math.ceil(currentFiltered.length / rowsPerPage);
+            const start = (currentPage - 1) * rowsPerPage;
+            const pageData = currentFiltered.slice(start, start + rowsPerPage);
+            
+            let tableHtml = '';
+            for (const item of pageData) {
+                const stokRendah = item.stok <= 5 ? 'stok-rendah' : '';
+                tableHtml += `<tr>
+                    <td><b>${item.kode}</b></td>
+                    <td>${item.nama}</td>
+                    <td>${item.size || '-'}</td>
+                    <td>${item.satuan}</td>
+                    <td class="${stokRendah}"><b>${item.stok}</b> ${item.stok <= 5 ? '⚠️' : ''}</td>
+                    <td>${item.lokasi || '-'}</td>
+                    <td>
+                        <button class="btn-success" onclick="showTransaksi('masuk', ${item.id})" style="padding:4px 10px">+ Masuk</button>
+                        <button class="btn-warning" onclick="showTransaksi('keluar', ${item.id})" style="padding:4px 10px">- Keluar</button>
+                    </td>
+                    <td>
+                        <button class="btn-edit" onclick="editItem(${item.id})">✏️</button>
+                        <button class="btn-hapus" onclick="hapusItem(${item.id})">🗑️</button>
+                    </td>
+                </tr>`;
+            }
+            
+            if (pageData.length === 0) {
+                tableHtml = '<tr><td colspan="8">Belum ada data. Klik "Tambah Material"</td></tr>';
+            }
+            
+            // Pagination buttons
+            let paginationHtml = '<div class="pagination">';
+            paginationHtml += `<button onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>« First</button>`;
+            paginationHtml += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>`;
+            
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                const pageNum = i;
+                paginationHtml += `<button onclick="changePage(${pageNum})" class="${currentPage === pageNum ? 'active' : ''}">${pageNum}</button>`;
+            }
+            
+            paginationHtml += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Next ›</button>`;
+            paginationHtml += `<button onclick="changePage(${totalPages})" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Last »</button>`;
+            paginationHtml += `</div>`;
+            
+            let totalStok = 0;
+            allItems.forEach(item => totalStok += item.stok);
+            
+            const html = `
                 <div class="card">
                     <div class="card-title">
                         <span>📦 STOK MATERIAL PENDUKUNG</span>
@@ -247,36 +302,22 @@
                                     <th>Kode</th><th>Nama Material</th><th>Size</th><th>Satuan</th><th>Stok</th><th>Lokasi Box</th><th>Aksi Stok</th><th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>`;
-            
-            for (const item of filtered) {
-                const stokRendah = item.stok <= 5 ? 'stok-rendah' : '';
-                html += `<tr>
-                    <td><b>${item.kode}</b></td>
-                    <td>${item.nama}</td>
-                    <td>${item.size || '-'}</td>
-                    <td>${item.satuan}</td>
-                    <td class="${stokRendah}"><b>${item.stok}</b> ${item.stok <= 5 ? '⚠️' : ''}</td>
-                    <td>${item.lokasi || '-'}</td>
-                    <td>
-                        <button class="btn-success" onclick="showTransaksi('masuk', ${item.id})" style="padding:4px 10px">+ Masuk</button>
-                        <button class="btn-warning" onclick="showTransaksi('keluar', ${item.id})" style="padding:4px 10px">- Keluar</button>
-                    </td>
-                    <td>
-                        <button class="btn-edit" onclick="editItem(${item.id})">✏️</button>
-                        <button class="btn-hapus" onclick="hapusItem(${item.id})">🗑️</button>
-                    </td>
-                </tr>`;
-            }
-            if (filtered.length === 0) html += '<tr><td colspan="8">Belum ada data. Klik "Tambah Material"</td></tr>';
-            html += `</tbody>}</div>`;
-            
-            let totalStok = 0;
-            allItems.forEach(item => totalStok += item.stok);
-            html += `<div class="info-text" style="margin-top:10px">📊 Total ${allItems.length} item | Total Stok: ${totalStok}</div>`;
-            html += `</div>`;
+                            <tbody>${tableHtml}</tbody>
+                        </table>
+                    </div>
+                    ${paginationHtml}
+                    <div class="info-text" style="margin-top:10px">📊 Total ${allItems.length} item | Total Stok: ${totalStok}</div>
+                </div>
+            `;
             
             document.getElementById('mainContent').innerHTML = html;
+        }
+        
+        function changePage(page) {
+            const totalPages = Math.ceil(currentFiltered.length / rowsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
         }
         
         function exportToExcel() {
@@ -300,8 +341,6 @@
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Pendukung');
-            
-            // Set lebar kolom
             ws['!cols'] = [{wch:12}, {wch:25}, {wch:15}, {wch:10}, {wch:10}, {wch:15}];
             
             const now = new Date();
@@ -311,11 +350,13 @@
         }
         
         function searchOnKeyup() {
+            currentPage = 1;
             renderTable();
         }
         
         function clearSearch() {
             document.getElementById('searchInput').value = '';
+            currentPage = 1;
             renderTable();
         }
         
@@ -514,6 +555,7 @@
         window.exportToExcel = exportToExcel;
         window.searchOnKeyup = searchOnKeyup;
         window.clearSearch = clearSearch;
+        window.changePage = changePage;
         
         init();
     </script>
