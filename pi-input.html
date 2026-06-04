@@ -330,47 +330,76 @@
         }
         
         // ==================== UPDATE PI (EDIT) ====================
-        async function updatePi() {
-            const no_pi = document.getElementById('edit_no_pi').value.trim();
-            const tanggal = document.getElementById('edit_tanggal_pi').value;
-            
-            if (!no_pi || !tanggal) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
-                return;
-            }
-            
-            const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-            if (validItems.length === 0) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
-                return;
-            }
-            
-            // Update header
-            const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
-            if (headerError) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
-                return;
-            }
-            
-            // Hapus detail lama
-            await sb.from('pi_detail').delete().eq('pi_id', editingPiId);
-            
-            // Insert detail baru
-            for (const item of validItems) {
-                await sb.from('pi_detail').insert({
-                    pi_id: editingPiId,
-                    brand: item.brand,
-                    jenis: item.jenis,
-                    paper: item.paper || null,
-                    size: item.size || null,
-                    qty_pi: parseInt(item.qty)
-                });
-            }
-            
-            await loadMasterData();
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate!</div>';
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+       async function updatePi() {
+    const no_pi = document.getElementById('edit_no_pi').value.trim();
+    const tanggal = document.getElementById('edit_tanggal_pi').value;
+    
+    if (!no_pi || !tanggal) {
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
+        return;
+    }
+    
+    const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+    if (validItems.length === 0) {
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
+        return;
+    }
+    
+    // Update header
+    const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
+    if (headerError) {
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
+        return;
+    }
+    
+    // Ambil detail yang sudah ada
+    const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
+    
+    // Update atau insert detail baru (tanpa hapus semua)
+    for (let i = 0; i < validItems.length; i++) {
+        const item = validItems[i];
+        if (existingDetails && existingDetails[i]) {
+            // Update yang sudah ada
+            await sb.from('pi_detail').update({
+                brand: item.brand,
+                jenis: item.jenis,
+                paper: item.paper || null,
+                size: item.size || null,
+                qty_pi: parseInt(item.qty)
+            }).eq('id', existingDetails[i].id);
+        } else {
+            // Insert baru jika ada item tambahan
+            await sb.from('pi_detail').insert({
+                pi_id: editingPiId,
+                brand: item.brand,
+                jenis: item.jenis,
+                paper: item.paper || null,
+                size: item.size || null,
+                qty_pi: parseInt(item.qty)
+            });
         }
+    }
+    
+    // Hapus item yang dihapus user (tidak ada di validItems)
+    if (existingDetails && existingDetails.length > validItems.length) {
+        for (let i = validItems.length; i < existingDetails.length; i++) {
+            // Cek apakah item ini sudah punya transaksi masuk/keluar
+            const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+            const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+            
+            if (masuk.length === 0 && keluar.length === 0) {
+                // Hanya hapus jika belum ada transaksi
+                await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
+            } else {
+                alert(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus karena sudah memiliki transaksi masuk/keluar.`);
+            }
+        }
+    }
+    
+    await loadMasterData();
+    document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate! Data transaksi tetap terjaga.</div>';
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+}
         
         // ==================== HAPUS PI ====================
         async function hapusPi() {
