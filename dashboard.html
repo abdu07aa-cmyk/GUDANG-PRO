@@ -86,92 +86,25 @@
 
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
-
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 950px; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
-
-        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
-        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
-        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
-
-        .filter-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .filter-bar input {
-            flex: 2;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 13px;
-        }
-        .filter-bar select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 13px;
-        }
-        .filter-bar button {
-            padding: 8px 15px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-export {
-            background: #10b981;
-            padding: 8px 15px;
-            border-radius: 8px;
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
-
-        .summary {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .summary-card {
-            flex: 1;
-            background: white;
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            min-width: 100px;
-        }
-        .summary-value {
-            font-size: 22px;
-            font-weight: bold;
-            color: #1e293b;
-        }
-        .summary-label {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 4px;
-        }
-
-        @media (max-width: 600px) {
-            th, td { font-size: 10px; padding: 6px 4px; }
-            .summary-value { font-size: 18px; }
-        }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+        .filter-bar button { padding: 8px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-export { background: #10b981; padding: 8px 15px; border-radius: 8px; border: none; color: white; cursor: pointer; }
+        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
+        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
+        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
+        @media (max-width: 600px) { th, td { font-size: 10px; padding: 6px 4px; } }
     </style>
 </head>
 <body>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3>📦 GUDANG PRO</h3>
-            <p>Manajemen Inventory</p>
-        </div>
+        <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
         <div class="sidebar-menu">
             <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
             <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
@@ -199,136 +132,89 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <div class="container" id="mainContent">
-        <div class="loading">⏳ Memuat data stok...</div>
-    </div>
+    <div class="container" id="mainContent">Memuat...</div>
 
     <script>
-        let allItems = [];
-        let currentFiltered = [];
+        let allData = [];
+        let filteredData = [];
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) window.location.href = 'login.html';
-            return session;
         }
 
         async function loadData() {
             const container = document.getElementById('mainContent');
-            container.innerHTML = '<div class="loading">📡 Mengambil data...</div>';
+            container.innerHTML = 'Loading...';
             
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             const { data: details } = await sb.from('pi_detail').select('*');
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            const items = [];
+            allData = [];
             for (const detail of details) {
                 const header = headers?.find(h => h.id === detail.pi_id);
-                let totalMasuk = 0;
-                let totalKeluar = 0;
+                let totalMasuk = 0, totalKeluar = 0;
                 if (masuk) masuk.forEach(m => { if (m.detail_id === detail.id) totalMasuk += m.qty; });
                 if (keluar) keluar.forEach(k => { if (k.detail_id === detail.id) totalKeluar += k.qty; });
                 
-                const sisaKeluar = detail.qty_pi - totalKeluar;
-                let status = '';
-                let statusClass = '';
-                
+                let status = '', statusClass = '';
                 if (totalKeluar >= detail.qty_pi) {
                     status = '✅ SELESAI';
                     statusClass = 'status-selesai';
                 } else if (totalKeluar > 0) {
-                    status = `🔄 PROSES (Kurang ${sisaKeluar})`;
+                    status = `🔄 PROSES (Kurang ${detail.qty_pi - totalKeluar})`;
                     statusClass = 'status-proses';
                 } else {
                     status = '❌ BELUM';
                     statusClass = 'status-belum';
                 }
                 
-                items.push({
-                    id: detail.id,
+                allData.push({
                     no_pi: header?.no_pi || '-',
                     brand: detail.brand,
                     jenis: detail.jenis,
                     paper: detail.paper || '-',
                     size: detail.size || '-',
                     qty_pi: detail.qty_pi,
-                    total_masuk: totalMasuk,
-                    total_keluar: totalKeluar,
-                    sisa_keluar: sisaKeluar,
+                    masuk: totalMasuk,
+                    keluar: totalKeluar,
                     stok: totalMasuk - totalKeluar,
                     status: status,
                     statusClass: statusClass
                 });
             }
-            allItems = items;
-            currentFiltered = [...allItems];
+            filteredData = [...allData];
             renderTable();
         }
         
         function renderTable() {
-            const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
-            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const filterStatus = document.getElementById('filterStatus')?.value || 'all';
             
-            let filtered = allItems.filter(item => 
-                item.no_pi.toLowerCase().includes(searchText) ||
-                item.brand.toLowerCase().includes(searchText) ||
-                item.jenis.toLowerCase().includes(searchText)
+            let data = allData.filter(item => 
+                item.no_pi.toLowerCase().includes(search) ||
+                item.brand.toLowerCase().includes(search) ||
+                item.jenis.toLowerCase().includes(search)
             );
             
-            if (statusFilter !== 'all') {
-                filtered = filtered.filter(item => {
-                    if (statusFilter === 'selesai') return item.total_keluar >= item.qty_pi;
-                    if (statusFilter === 'proses') return item.total_keluar > 0 && item.total_keluar < item.qty_pi;
-                    if (statusFilter === 'belum') return item.total_keluar === 0;
-                    return true;
-                });
+            if (filterStatus !== 'all') {
+                if (filterStatus === 'selesai') data = data.filter(item => item.keluar >= item.qty_pi);
+                if (filterStatus === 'proses') data = data.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
+                if (filterStatus === 'belum') data = data.filter(item => item.keluar === 0);
             }
-            currentFiltered = filtered;
+            filteredData = data;
             
-            let totalPi = [...new Set(currentFiltered.map(i => i.no_pi))].length;
-            let totalItem = currentFiltered.length;
-            let totalSelesai = currentFiltered.filter(i => i.total_keluar >= i.qty_pi).length;
-            let totalProses = currentFiltered.filter(i => i.total_keluar > 0 && i.total_keluar < i.qty_pi).length;
-            let totalBelum = currentFiltered.filter(i => i.total_keluar === 0).length;
-            
-            let tableHtml = '';
-            for (const item of currentFiltered) {
-                tableHtml += `<tr>
-                    <td><b>${item.no_pi}</b></td>
-                    <td>${item.brand}</td>
-                    <td>${item.jenis}</td>
-                    <td>${item.paper}</td>
-                    <td>${item.size}</td>
-                    <td style="text-align:center">${item.qty_pi}</td>
-                    <td style="text-align:center">${item.total_masuk}</td>
-                    <td style="text-align:center">${item.total_keluar}</td>
-                    <td style="text-align:center"><b>${item.stok}</b></td>
-                    <td style="text-align:center"><b class="${item.statusClass}">${item.status}</b></td>
-                </table>`;
-            }
-            
-            if (currentFiltered.length === 0) {
-                tableHtml = '<table><td colspan="10" style="text-align:center">Belum ada data</td></tr>';
-            }
-            
-            const html = `
-                <div class="summary">
-                    <div class="summary-card"><div class="summary-value">${totalPi}</div><div class="summary-label">Total PI</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalItem}</div><div class="summary-label">Total Item</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalSelesai}</div><div class="summary-label">✅ Selesai</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalProses}</div><div class="summary-label">🔄 Proses</div></div>
-                    <div class="summary-card"><div class="summary-value">${totalBelum}</div><div class="summary-label">❌ Belum</div></div>
-                </div>
-                
+            let html = `
                 <div class="card">
                     <div class="card-title">
-                        <span>📋 STOK GUDANG & STATUS PI (Berdasarkan Qty Keluar)</span>
-                        <button class="btn-export" onclick="exportToExcel()">📎 Export Excel</button>
+                        <span>📋 STOK GUDANG & STATUS PI</span>
+                        <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterTable()">
-                        <select id="statusFilter" onchange="filterTable()">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="renderTable()">
+                        <select id="filterStatus" onchange="renderTable()">
                             <option value="all">Semua Status</option>
                             <option value="selesai">✅ Selesai</option>
                             <option value="proses">🔄 Proses</option>
@@ -341,51 +227,47 @@
                             <thead>
                                 <tr>
                                     <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
-                                    <th>Qty PI</th><th>Qty Masuk</th><th>Qty Keluar</th><th>Stok</th><th>Status</th>
+                                    <th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok</th><th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody>${tableHtml}</tbody>
-                        <table>
-                    </div>
-                </div>
-            `;
+                            <tbody>`;
             
+            for (const item of data) {
+                html += `<tr>
+                    <td><b>${item.no_pi}</b></td>
+                    <td>${item.brand}</td>
+                    <td>${item.jenis}</td>
+                    <td>${item.paper}</td>
+                    <td>${item.size}</td>
+                    <td>${item.qty_pi}</td>
+                    <td>${item.masuk}</td>
+                    <td>${item.keluar}</td>
+                    <td><b>${item.stok}</b></td>
+                    <td><span class="${item.statusClass}">${item.status}</span></td>
+                </tr>`;
+            }
+            if (data.length === 0) html += '<tr><td colspan="10">Belum ada data</td></tr>';
+            html += `</tbody>}</div></div>`;
             document.getElementById('mainContent').innerHTML = html;
-        }
-        
-        function exportToExcel() {
-            if (currentFiltered.length === 0) {
-                alert('Tidak ada data untuk diexport!');
-                return;
-            }
-            
-            const excelData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Qty Masuk', 'Qty Keluar', 'Stok', 'Status']];
-            for (const item of currentFiltered) {
-                excelData.push([
-                    item.no_pi, item.brand, item.jenis, item.paper, item.size,
-                    item.qty_pi, item.total_masuk, item.total_keluar, item.stok, item.status
-                ]);
-            }
-            
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
-            ws['!cols'] = [{wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:20}];
-            
-            const now = new Date();
-            const fileName = `Stok_Gudang_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-            alert('✅ Export Excel berhasil!');
-        }
-        
-        function filterTable() {
-            renderTable();
         }
         
         function resetFilter() {
             document.getElementById('searchInput').value = '';
-            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('filterStatus').value = 'all';
             renderTable();
+        }
+        
+        function exportExcel() {
+            if (filteredData.length === 0) { alert('Tidak ada data'); return; }
+            const wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
+            for (const item of filteredData) {
+                wsData.push([item.no_pi, item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok, item.status]);
+            }
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
+            XLSX.writeFile(wb, `Stok_Gudang_${new Date().toISOString().slice(0,10)}.xlsx`);
+            alert('✅ Export berhasil!');
         }
         
         function goToMenu(menu) {
@@ -415,20 +297,8 @@
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
-            
-            document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    const menu = item.getAttribute('data-menu');
-                    goToMenu(menu);
-                });
-            });
-            
-            let touchStartX = 0;
-            document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
-            document.addEventListener('touchend', (e) => {
-                const diff = e.changedTouches[0].screenX - touchStartX;
-                if (diff > 50 && touchStartX < 30) openSidebar();
-                else if (diff < -50 && document.getElementById('sidebar').classList.contains('open')) closeSidebar();
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
         
@@ -438,9 +308,9 @@
             await loadData();
         }
         
-        window.filterTable = filterTable;
+        window.renderTable = renderTable;
         window.resetFilter = resetFilter;
-        window.exportToExcel = exportToExcel;
+        window.exportExcel = exportExcel;
         
         init();
     </script>
