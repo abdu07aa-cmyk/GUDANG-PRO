@@ -91,7 +91,7 @@
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
         .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
         .filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
         .filter-bar button { padding: 8px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
@@ -146,7 +146,7 @@
 
         async function loadData() {
             const container = document.getElementById('mainContent');
-            container.innerHTML = 'Loading...';
+            container.innerHTML = '<div style="text-align:center;padding:20px">Loading...</div>';
             
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             const { data: details } = await sb.from('pi_detail').select('*');
@@ -214,14 +214,13 @@
                         <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis...">
-                        <select id="filterStatus">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="renderTable()">
+                        <select id="filterStatus" onchange="renderTable()">
                             <option value="all">Semua Status</option>
                             <option value="selesai">✅ Selesai</option>
                             <option value="proses">🔄 Proses</option>
                             <option value="belum">❌ Belum</option>
                         </select>
-                        <button onclick="searchData()">🔍 Cari</button>
                         <button onclick="resetFilter()">Reset</button>
                     </div>
                     <div class="table-wrapper">
@@ -248,13 +247,9 @@
                     <td><span class="${item.statusClass}">${item.status}</span></td>
                 </tr>`;
             }
-            if (data.length === 0) html += '<tr><td colspan="10">Belum ada数据</td></tr>';
+            if (data.length === 0) html += '<tr><td colspan="10">Belum ada data</td></tr>';
             html += `</tbody>}</div></div>`;
             document.getElementById('mainContent').innerHTML = html;
-        }
-        
-        function searchData() {
-            renderTable();
         }
         
         function resetFilter() {
@@ -315,7 +310,6 @@
         }
         
         window.renderTable = renderTable;
-        window.searchData = searchData;
         window.resetFilter = resetFilter;
         window.exportExcel = exportExcel;
         
