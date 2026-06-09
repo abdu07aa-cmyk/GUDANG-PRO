@@ -137,7 +137,6 @@
 
     <script>
         let allData = [];
-        let filteredData = [];
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -186,7 +185,6 @@
                     statusClass: statusClass
                 });
             }
-            filteredData = [...allData];
             renderTable();
         }
         
@@ -194,18 +192,23 @@
             const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
             const filterStatus = document.getElementById('filterStatus')?.value || 'all';
             
-            let data = allData.filter(item => 
-                item.no_pi.toLowerCase().includes(search) ||
-                item.brand.toLowerCase().includes(search) ||
-                item.jenis.toLowerCase().includes(search)
-            );
+            let filtered = [...allData];
             
-            if (filterStatus !== 'all') {
-                if (filterStatus === 'selesai') data = data.filter(item => item.keluar >= item.qty_pi);
-                if (filterStatus === 'proses') data = data.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
-                if (filterStatus === 'belum') data = data.filter(item => item.keluar === 0);
+            // Filter pencarian
+            if (search) {
+                filtered = filtered.filter(item => 
+                    item.no_pi.toLowerCase().includes(search) ||
+                    item.brand.toLowerCase().includes(search) ||
+                    item.jenis.toLowerCase().includes(search)
+                );
             }
-            filteredData = data;
+            
+            // Filter status
+            if (filterStatus !== 'all') {
+                if (filterStatus === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
+                if (filterStatus === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
+                if (filterStatus === 'belum') filtered = filtered.filter(item => item.keluar === 0);
+            }
             
             let html = `
                 <div class="card">
@@ -214,7 +217,7 @@
                         <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="renderTable()">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." oninput="renderTable()">
                         <select id="filterStatus" onchange="renderTable()">
                             <option value="all">Semua Status</option>
                             <option value="selesai">✅ Selesai</option>
@@ -233,7 +236,7 @@
                             </thead>
                             <tbody>`;
             
-            for (const item of data) {
+            for (const item of filtered) {
                 html += `<tr>
                     <td><b>${item.no_pi}</b></td>
                     <td>${item.brand}</td>
@@ -247,7 +250,7 @@
                     <td><span class="${item.statusClass}">${item.status}</span></td>
                 </tr>`;
             }
-            if (data.length === 0) html += '<tr><td colspan="10">Belum ada data</td></tr>';
+            if (filtered.length === 0) html += '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
             html += `</tbody>}</div></div>`;
             document.getElementById('mainContent').innerHTML = html;
         }
@@ -259,9 +262,26 @@
         }
         
         function exportExcel() {
-            if (filteredData.length === 0) { alert('Tidak ada data'); return; }
+            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const filterStatus = document.getElementById('filterStatus')?.value || 'all';
+            
+            let filtered = [...allData];
+            if (search) {
+                filtered = filtered.filter(item => 
+                    item.no_pi.toLowerCase().includes(search) ||
+                    item.brand.toLowerCase().includes(search) ||
+                    item.jenis.toLowerCase().includes(search)
+                );
+            }
+            if (filterStatus !== 'all') {
+                if (filterStatus === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
+                if (filterStatus === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
+                if (filterStatus === 'belum') filtered = filtered.filter(item => item.keluar === 0);
+            }
+            
+            if (filtered.length === 0) { alert('Tidak ada data untuk diexport'); return; }
             const wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
-            for (const item of filteredData) {
+            for (const item of filtered) {
                 wsData.push([item.no_pi, item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok, item.status]);
             }
             const ws = XLSX.utils.aoa_to_sheet(wsData);
