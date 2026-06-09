@@ -93,6 +93,7 @@
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
         .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
         .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+        .filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
         .filter-bar button { padding: 8px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
         .btn-export { background: #10b981; padding: 8px 15px; border-radius: 8px; border: none; color: white; cursor: pointer; }
         .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
@@ -213,13 +214,14 @@
                         <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="renderTable()">
-                        <select id="filterStatus" onchange="renderTable()">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis...">
+                        <select id="filterStatus">
                             <option value="all">Semua Status</option>
                             <option value="selesai">✅ Selesai</option>
                             <option value="proses">🔄 Proses</option>
                             <option value="belum">❌ Belum</option>
                         </select>
+                        <button onclick="searchData()">🔍 Cari</button>
                         <button onclick="resetFilter()">Reset</button>
                     </div>
                     <div class="table-wrapper">
@@ -246,9 +248,13 @@
                     <td><span class="${item.statusClass}">${item.status}</span></td>
                 </tr>`;
             }
-            if (data.length === 0) html += '<tr><td colspan="10">Belum ada data</td></tr>';
+            if (data.length === 0) html += '<tr><td colspan="10">Belum ada数据</td></tr>';
             html += `</tbody>}</div></div>`;
             document.getElementById('mainContent').innerHTML = html;
+        }
+        
+        function searchData() {
+            renderTable();
         }
         
         function resetFilter() {
@@ -309,6 +315,7 @@
         }
         
         window.renderTable = renderTable;
+        window.searchData = searchData;
         window.resetFilter = resetFilter;
         window.exportExcel = exportExcel;
         
