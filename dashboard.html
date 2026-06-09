@@ -136,7 +136,7 @@
     <div class="container" id="mainContent">Memuat...</div>
 
     <script>
-        let allData = [];
+        let originalData = [];
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -152,7 +152,7 @@
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            allData = [];
+            originalData = [];
             for (const detail of details) {
                 const header = headers?.find(h => h.id === detail.pi_id);
                 let totalMasuk = 0, totalKeluar = 0;
@@ -171,7 +171,7 @@
                     statusClass = 'status-belum';
                 }
                 
-                allData.push({
+                originalData.push({
                     no_pi: header?.no_pi || '-',
                     brand: detail.brand,
                     jenis: detail.jenis,
@@ -186,7 +186,8 @@
                 });
             }
             
-            displayData(allData);
+            // Tampilkan semua data
+            displayData(originalData);
         }
         
         function displayData(data) {
@@ -211,37 +212,31 @@
                 rows = '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
             }
             
-            let html = `
-                <div class="card">
-                    <div class="card-title">
-                        <span>📋 STOK GUDANG & STATUS PI</span>
-                        <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
-                    </div>
-                    <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="liveSearch()">
-                        <select id="filterStatus" onchange="liveSearch()">
-                            <option value="all">Semua Status</option>
-                            <option value="selesai">✅ Selesai</option>
-                            <option value="proses">🔄 Proses</option>
-                            <option value="belum">❌ Belum</option>
-                        </select>
-                        <button onclick="resetFilter()">Reset</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
-                                    <th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok</th><th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ` + rows + `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+            let html = '<div class="card">' +
+                '<div class="card-title">' +
+                '<span>📋 STOK GUDANG & STATUS PI</span>' +
+                '<button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>' +
+                '</div>' +
+                '<div class="filter-bar">' +
+                '<input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="liveSearch()">' +
+                '<select id="filterStatus" onchange="liveSearch()">' +
+                '<option value="all">Semua Status</option>' +
+                '<option value="selesai">✅ Selesai</option>' +
+                '<option value="proses">🔄 Proses</option>' +
+                '<option value="belum">❌ Belum</option>' +
+                '</select>' +
+                '<button onclick="resetFilter()">Reset</button>' +
+                '</div>' +
+                '<div class="table-wrapper">' +
+                '<table style="width:100%">' +
+                '<thead>' +
+                '<tr><th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>' +
+                '<th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok</th><th>Status</th></tr>' +
+                '</thead>' +
+                '<tbody>' + rows + '</tbody>' +
+                '</table>' +
+                '</div>' +
+                '</div>';
             
             document.getElementById('mainContent').innerHTML = html;
         }
@@ -250,20 +245,26 @@
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
             
-            let filtered = [...allData];
+            let filtered = [...originalData];
             
+            // Filter pencarian
             if (searchText) {
-                filtered = filtered.filter(item => 
-                    item.no_pi.toLowerCase().includes(searchText) ||
-                    item.brand.toLowerCase().includes(searchText) ||
-                    item.jenis.toLowerCase().includes(searchText)
-                );
+                filtered = filtered.filter(function(item) {
+                    return item.no_pi.toLowerCase().indexOf(searchText) !== -1 ||
+                           item.brand.toLowerCase().indexOf(searchText) !== -1 ||
+                           item.jenis.toLowerCase().indexOf(searchText) !== -1;
+                });
             }
             
+            // Filter status
             if (statusFilter !== 'all') {
-                if (statusFilter === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
-                if (statusFilter === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
-                if (statusFilter === 'belum') filtered = filtered.filter(item => item.keluar === 0);
+                if (statusFilter === 'selesai') {
+                    filtered = filtered.filter(function(item) { return item.keluar >= item.qty_pi; });
+                } else if (statusFilter === 'proses') {
+                    filtered = filtered.filter(function(item) { return item.keluar > 0 && item.keluar < item.qty_pi; });
+                } else if (statusFilter === 'belum') {
+                    filtered = filtered.filter(function(item) { return item.keluar === 0; });
+                }
             }
             
             displayData(filtered);
@@ -272,41 +273,46 @@
         function resetFilter() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterStatus').value = 'all';
-            displayData(allData);
+            displayData(originalData);
         }
         
         function exportExcel() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
             
-            let filtered = [...allData];
+            let filtered = [...originalData];
             if (searchText) {
-                filtered = filtered.filter(item => 
-                    item.no_pi.toLowerCase().includes(searchText) ||
-                    item.brand.toLowerCase().includes(searchText) ||
-                    item.jenis.toLowerCase().includes(searchText)
-                );
+                filtered = filtered.filter(function(item) {
+                    return item.no_pi.toLowerCase().indexOf(searchText) !== -1 ||
+                           item.brand.toLowerCase().indexOf(searchText) !== -1 ||
+                           item.jenis.toLowerCase().indexOf(searchText) !== -1;
+                });
             }
             if (statusFilter !== 'all') {
-                if (statusFilter === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
-                if (statusFilter === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
-                if (statusFilter === 'belum') filtered = filtered.filter(item => item.keluar === 0);
+                if (statusFilter === 'selesai') {
+                    filtered = filtered.filter(function(item) { return item.keluar >= item.qty_pi; });
+                } else if (statusFilter === 'proses') {
+                    filtered = filtered.filter(function(item) { return item.keluar > 0 && item.keluar < item.qty_pi; });
+                } else if (statusFilter === 'belum') {
+                    filtered = filtered.filter(function(item) { return item.keluar === 0; });
+                }
             }
             
             if (filtered.length === 0) { alert('Tidak ada data'); return; }
-            const wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
-            for (const item of filtered) {
+            var wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
+            for (var i = 0; i < filtered.length; i++) {
+                var item = filtered[i];
                 wsData.push([item.no_pi, item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok, item.status]);
             }
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(wsData);
+            var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
             XLSX.writeFile(wb, 'Stok_Gudang_' + new Date().toISOString().slice(0,10) + '.xlsx');
             alert('✅ Export berhasil!');
         }
         
         function goToMenu(menu) {
-            const files = {
+            var files = {
                 dashboard: 'dashboard.html',
                 'pi-input': 'pi-input.html',
                 'stock-in': 'stock-in.html',
@@ -332,8 +338,8 @@
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            document.querySelectorAll('.menu-item[data-menu]').forEach(function(el) {
+                el.addEventListener('click', function() { goToMenu(el.getAttribute('data-menu')); });
             });
         }
         
