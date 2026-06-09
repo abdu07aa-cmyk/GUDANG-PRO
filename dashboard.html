@@ -6,6 +6,7 @@
     <title>Dashboard - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -83,22 +84,84 @@
             cursor: pointer;
         }
 
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1e293b; }
-        .stats { display: flex; gap: 12px; margin-bottom: 20px; }
-        .stat-card { flex: 1; background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .stat-value { font-size: 28px; font-weight: bold; color: #3b82f6; }
-        .stat-label { font-size: 12px; color: #64748b; margin-top: 5px; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-        th { color: #64748b; font-weight: 500; }
-        .loading { text-align: center; padding: 20px; color: #64748b; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
 
-        @media (max-width: 480px) {
-            .stat-value { font-size: 22px; }
-            .card-title { font-size: 14px; }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
+
+        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 11px; }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-bar input {
+            flex: 2;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .filter-bar select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .filter-bar button {
+            padding: 8px 15px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-export {
+            background: #10b981;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .summary-card {
+            flex: 1;
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 100px;
+        }
+        .summary-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .summary-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 600px) {
+            th, td { font-size: 10px; padding: 6px 4px; }
+            .summary-value { font-size: 18px; }
         }
     </style>
 </head>
@@ -136,57 +199,195 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <div class="container" id="mainContent"><div class="loading">Loading...</div></div>
+    <div class="container" id="mainContent">
+        <div class="loading">⏳ Memuat data stok...</div>
+    </div>
 
     <script>
-        async function isLoggedIn() {
+        let allItems = [];
+        let currentFiltered = [];
+
+        async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
-            return !!session;
+            if (!session) window.location.href = 'login.html';
+            return session;
         }
 
-        async function loadDashboard() {
+        async function loadData() {
             const container = document.getElementById('mainContent');
+            container.innerHTML = '<div class="loading">📡 Mengambil data...</div>';
+            
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             const { data: details } = await sb.from('pi_detail').select('*');
+            const { data: masuk } = await sb.from('barang_masuk').select('*');
+            const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            const totalPi = headers ? headers.length : 0;
-            const totalItem = details ? details.length : 0;
+            const items = [];
+            for (const detail of details) {
+                const header = headers?.find(h => h.id === detail.pi_id);
+                let totalMasuk = 0;
+                let totalKeluar = 0;
+                if (masuk) masuk.forEach(m => { if (m.detail_id === detail.id) totalMasuk += m.qty; });
+                if (keluar) keluar.forEach(k => { if (k.detail_id === detail.id) totalKeluar += k.qty; });
+                
+                const sisaKeluar = detail.qty_pi - totalKeluar;
+                let status = '';
+                let statusClass = '';
+                
+                if (totalKeluar >= detail.qty_pi) {
+                    status = '✅ SELESAI';
+                    statusClass = 'status-selesai';
+                } else if (totalKeluar > 0) {
+                    status = `🔄 PROSES (Kurang ${sisaKeluar})`;
+                    statusClass = 'status-proses';
+                } else {
+                    status = '❌ BELUM';
+                    statusClass = 'status-belum';
+                }
+                
+                items.push({
+                    id: detail.id,
+                    no_pi: header?.no_pi || '-',
+                    brand: detail.brand,
+                    jenis: detail.jenis,
+                    paper: detail.paper || '-',
+                    size: detail.size || '-',
+                    qty_pi: detail.qty_pi,
+                    total_masuk: totalMasuk,
+                    total_keluar: totalKeluar,
+                    sisa_keluar: sisaKeluar,
+                    stok: totalMasuk - totalKeluar,
+                    status: status,
+                    statusClass: statusClass
+                });
+            }
+            allItems = items;
+            currentFiltered = [...allItems];
+            renderTable();
+        }
+        
+        function renderTable() {
+            const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            
+            let filtered = allItems.filter(item => 
+                item.no_pi.toLowerCase().includes(searchText) ||
+                item.brand.toLowerCase().includes(searchText) ||
+                item.jenis.toLowerCase().includes(searchText)
+            );
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(item => {
+                    if (statusFilter === 'selesai') return item.total_keluar >= item.qty_pi;
+                    if (statusFilter === 'proses') return item.total_keluar > 0 && item.total_keluar < item.qty_pi;
+                    if (statusFilter === 'belum') return item.total_keluar === 0;
+                    return true;
+                });
+            }
+            currentFiltered = filtered;
+            
+            let totalPi = [...new Set(currentFiltered.map(i => i.no_pi))].length;
+            let totalItem = currentFiltered.length;
+            let totalSelesai = currentFiltered.filter(i => i.total_keluar >= i.qty_pi).length;
+            let totalProses = currentFiltered.filter(i => i.total_keluar > 0 && i.total_keluar < i.qty_pi).length;
+            let totalBelum = currentFiltered.filter(i => i.total_keluar === 0).length;
             
             let tableHtml = '';
-            if (headers && headers.length > 0) {
-                for (let i = 0; i < Math.min(5, headers.length); i++) {
-                    const h = headers[i];
-                    const items = details ? details.filter(d => d.pi_id === h.id) : [];
-                    const itemCount = items.length;
-                    const brands = [...new Set(items.map(i => i.brand))].join(', ');
-                    tableHtml += `<tr>
-                        <td><b>${h.no_pi}</b></td>
-                        <td>${h.tanggal}</td>
-                        <td>${itemCount} item</td>
-                        <td>${brands}</td>
-                    </tr>`;
-                }
-            } else {
-                tableHtml = '<tr><td colspan="4">Belum ada数据 PI</td><tr>';
+            for (const item of currentFiltered) {
+                tableHtml += `<tr>
+                    <td><b>${item.no_pi}</b></td>
+                    <td>${item.brand}</td>
+                    <td>${item.jenis}</td>
+                    <td>${item.paper}</td>
+                    <td>${item.size}</td>
+                    <td style="text-align:center">${item.qty_pi}</td>
+                    <td style="text-align:center">${item.total_masuk}</td>
+                    <td style="text-align:center">${item.total_keluar}</td>
+                    <td style="text-align:center"><b>${item.stok}</b></td>
+                    <td style="text-align:center"><b class="${item.statusClass}">${item.status}</b></td>
+                </table>`;
             }
             
-            container.innerHTML = `
-                <div class="stats">
-                    <div class="stat-card"><div class="stat-value">${totalPi}</div><div class="stat-label">Total PI</div></div>
-                    <div class="stat-card"><div class="stat-value">${totalItem}</div><div class="stat-label">Total Item</div></div>
+            if (currentFiltered.length === 0) {
+                tableHtml = '<table><td colspan="10" style="text-align:center">Belum ada data</td></tr>';
+            }
+            
+            const html = `
+                <div class="summary">
+                    <div class="summary-card"><div class="summary-value">${totalPi}</div><div class="summary-label">Total PI</div></div>
+                    <div class="summary-card"><div class="summary-value">${totalItem}</div><div class="summary-label">Total Item</div></div>
+                    <div class="summary-card"><div class="summary-value">${totalSelesai}</div><div class="summary-label">✅ Selesai</div></div>
+                    <div class="summary-card"><div class="summary-value">${totalProses}</div><div class="summary-label">🔄 Proses</div></div>
+                    <div class="summary-card"><div class="summary-value">${totalBelum}</div><div class="summary-label">❌ Belum</div></div>
                 </div>
+                
                 <div class="card">
-                    <div class="card-title">📋 5 PI Terbaru</div>
+                    <div class="card-title">
+                        <span>📋 STOK GUDANG & STATUS PI (Berdasarkan Qty Keluar)</span>
+                        <button class="btn-export" onclick="exportToExcel()">📎 Export Excel</button>
+                    </div>
+                    <div class="filter-bar">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterTable()">
+                        <select id="statusFilter" onchange="filterTable()">
+                            <option value="all">Semua Status</option>
+                            <option value="selesai">✅ Selesai</option>
+                            <option value="proses">🔄 Proses</option>
+                            <option value="belum">❌ Belum</option>
+                        </select>
+                        <button onclick="resetFilter()">Reset</button>
+                    </div>
                     <div class="table-wrapper">
                         <table style="width:100%">
-                            <thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Brand</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
+                                    <th>Qty PI</th><th>Qty Masuk</th><th>Qty Keluar</th><th>Stok</th><th>Status</th>
+                                </tr>
+                            </thead>
                             <tbody>${tableHtml}</tbody>
-                        </table>
+                        <table>
                     </div>
                 </div>
             `;
+            
+            document.getElementById('mainContent').innerHTML = html;
         }
-
+        
+        function exportToExcel() {
+            if (currentFiltered.length === 0) {
+                alert('Tidak ada data untuk diexport!');
+                return;
+            }
+            
+            const excelData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Qty Masuk', 'Qty Keluar', 'Stok', 'Status']];
+            for (const item of currentFiltered) {
+                excelData.push([
+                    item.no_pi, item.brand, item.jenis, item.paper, item.size,
+                    item.qty_pi, item.total_masuk, item.total_keluar, item.stok, item.status
+                ]);
+            }
+            
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
+            ws['!cols'] = [{wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:20}];
+            
+            const now = new Date();
+            const fileName = `Stok_Gudang_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            alert('✅ Export Excel berhasil!');
+        }
+        
+        function filterTable() {
+            renderTable();
+        }
+        
+        function resetFilter() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = 'all';
+            renderTable();
+        }
+        
         function goToMenu(menu) {
             const files = {
                 dashboard: 'dashboard.html',
@@ -202,16 +403,13 @@
             };
             window.location.href = files[menu] || 'dashboard.html';
         }
-
-        async function logout() {
-            await sb.auth.signOut();
-            window.location.href = 'login.html';
-        }
-
+        
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-
+        
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        
         function setupEventListeners() {
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
@@ -233,22 +431,16 @@
                 else if (diff < -50 && document.getElementById('sidebar').classList.contains('open')) closeSidebar();
             });
         }
-
+        
         async function init() {
-            const loggedIn = await isLoggedIn();
-            if (!loggedIn) {
-                document.getElementById('mainContent').innerHTML = `
-                    <div class="card" style="text-align:center; padding:30px">
-                        <h3>⚠️ Belum Login</h3>
-                        <button onclick="window.location.href='login.html'" style="margin-top:15px; padding:10px 20px; background:#3b82f6; color:white; border:none; border-radius:8px">Ke Halaman Login</button>
-                    </div>
-                `;
-                return;
-            }
-            
+            await cekSession();
             setupEventListeners();
-            await loadDashboard();
+            await loadData();
         }
+        
+        window.filterTable = filterTable;
+        window.resetFilter = resetFilter;
+        window.exportToExcel = exportToExcel;
         
         init();
     </script>
