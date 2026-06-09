@@ -6,7 +6,6 @@
     <title>Dashboard - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -95,7 +94,6 @@
         .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
         .filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
         .filter-bar button { padding: 8px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-export { background: #10b981; padding: 8px 15px; border-radius: 8px; border: none; color: white; cursor: pointer; }
         .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
         .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
         .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
@@ -136,7 +134,7 @@
     <div class="container" id="mainContent">Memuat...</div>
 
     <script>
-        let allData = [];
+        let originalData = [];
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -152,7 +150,7 @@
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            allData = [];
+            originalData = [];
             for (const detail of details) {
                 const header = headers?.find(h => h.id === detail.pi_id);
                 let totalMasuk = 0, totalKeluar = 0;
@@ -171,7 +169,7 @@
                     statusClass = 'status-belum';
                 }
                 
-                allData.push({
+                originalData.push({
                     no_pi: header?.no_pi || '-',
                     brand: detail.brand,
                     jenis: detail.jenis,
@@ -185,31 +183,12 @@
                     statusClass: statusClass
                 });
             }
-            renderTable();
+            
+            // Tampilkan data
+            displayData(originalData);
         }
         
-        function renderTable() {
-            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
-            const filterStatus = document.getElementById('filterStatus')?.value || 'all';
-            
-            let filtered = [...allData];
-            
-            // Filter pencarian
-            if (search) {
-                filtered = filtered.filter(item => 
-                    item.no_pi.toLowerCase().includes(search) ||
-                    item.brand.toLowerCase().includes(search) ||
-                    item.jenis.toLowerCase().includes(search)
-                );
-            }
-            
-            // Filter status
-            if (filterStatus !== 'all') {
-                if (filterStatus === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
-                if (filterStatus === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
-                if (filterStatus === 'belum') filtered = filtered.filter(item => item.keluar === 0);
-            }
-            
+        function displayData(data) {
             let html = `
                 <div class="card">
                     <div class="card-title">
@@ -217,8 +196,8 @@
                         <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." oninput="renderTable()">
-                        <select id="filterStatus" onchange="renderTable()">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterData()">
+                        <select id="filterStatus" onchange="filterData()">
                             <option value="all">Semua Status</option>
                             <option value="selesai">✅ Selesai</option>
                             <option value="proses">🔄 Proses</option>
@@ -236,7 +215,7 @@
                             </thead>
                             <tbody>`;
             
-            for (const item of filtered) {
+            for (const item of data) {
                 html += `<tr>
                     <td><b>${item.no_pi}</b></td>
                     <td>${item.brand}</td>
@@ -250,22 +229,47 @@
                     <td><span class="${item.statusClass}">${item.status}</span></td>
                 </tr>`;
             }
-            if (filtered.length === 0) html += '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
+            if (data.length === 0) html += '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
             html += `</tbody>}</div></div>`;
             document.getElementById('mainContent').innerHTML = html;
+        }
+        
+        function filterData() {
+            const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const filterStatus = document.getElementById('filterStatus')?.value || 'all';
+            
+            let filtered = [...originalData];
+            
+            // Filter pencarian
+            if (search) {
+                filtered = filtered.filter(item => 
+                    item.no_pi.toLowerCase().includes(search) ||
+                    item.brand.toLowerCase().includes(search) ||
+                    item.jenis.toLowerCase().includes(search)
+                );
+            }
+            
+            // Filter status
+            if (filterStatus !== 'all') {
+                if (filterStatus === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
+                if (filterStatus === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
+                if (filterStatus === 'belum') filtered = filtered.filter(item => item.keluar === 0);
+            }
+            
+            displayData(filtered);
         }
         
         function resetFilter() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterStatus').value = 'all';
-            renderTable();
+            displayData(originalData);
         }
         
         function exportExcel() {
             const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
             const filterStatus = document.getElementById('filterStatus')?.value || 'all';
             
-            let filtered = [...allData];
+            let filtered = [...originalData];
             if (search) {
                 filtered = filtered.filter(item => 
                     item.no_pi.toLowerCase().includes(search) ||
@@ -279,7 +283,7 @@
                 if (filterStatus === 'belum') filtered = filtered.filter(item => item.keluar === 0);
             }
             
-            if (filtered.length === 0) { alert('Tidak ada data untuk diexport'); return; }
+            if (filtered.length === 0) { alert('Tidak ada data'); return; }
             const wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
             for (const item of filtered) {
                 wsData.push([item.no_pi, item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok, item.status]);
@@ -329,7 +333,7 @@
             await loadData();
         }
         
-        window.renderTable = renderTable;
+        window.filterData = filterData;
         window.resetFilter = resetFilter;
         window.exportExcel = exportExcel;
         
