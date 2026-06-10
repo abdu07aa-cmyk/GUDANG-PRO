@@ -228,53 +228,98 @@
         }
         
         async function hapusHistory(id) {
-            if (confirm('Hapus histori ini?')) {
-                const { error } = await sb.from('barang_keluar').delete().eq('id', id);
-                if (error) {
-                    alert('Gagal: ' + error.message);
-                } else {
-                    alert('✅ Histori berhasil dihapus');
-                    location.reload();
+    if (confirm('Hapus histori ini?')) {
+        const { error } = await sb.from('barang_keluar').delete().eq('id', id);
+        if (error) {
+            alert('Gagal: ' + error.message);
+        } else {
+            alert('✅ Histori berhasil dihapus');
+            
+            // Simpan PI dan item yang sedang dipilih
+            const currentPiId = document.getElementById('pi_select').value;
+            const currentItemId = document.getElementById('item_select').value;
+            
+            // Refresh stok dan histori tanpa reload halaman
+            if (currentPiId) {
+                await onPiChange();  // Refresh daftar item (update stok)
+                
+                // Set ulang pilihan PI
+                const piSelect = document.getElementById('pi_select');
+                for (let i = 0; i < piSelect.options.length; i++) {
+                    if (piSelect.options[i].value == currentPiId) {
+                        piSelect.selectedIndex = i;
+                        break;
+                    }
                 }
+                
+                // Set ulang pilihan item
+                if (currentItemId) {
+                    const itemSelect = document.getElementById('item_select');
+                    for (let i = 0; i < itemSelect.options.length; i++) {
+                        if (itemSelect.options[i].value == currentItemId) {
+                            itemSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                await onItemChange();  // Refresh histori
             }
         }
+    }
+}
         
-        async function simpanKeluar() {
-            const piId = document.getElementById('pi_select').value;
-            const itemId = document.getElementById('item_select').value;
-            const qty = document.getElementById('qty_keluar').value;
-            const tanggal = document.getElementById('tanggal_keluar').value;
-            const keterangan = document.getElementById('keterangan').value;
-            
-            if (!itemId || !qty || !tanggal) {
-                alert('Pilih item, isi qty dan tanggal!');
-                return;
-            }
-            if (parseInt(qty) <= 0) {
-                alert('Qty harus lebih dari 0!');
-                return;
-            }
-            if (parseInt(qty) > currentStok) {
-                alert(`Stok tidak cukup! Stok tersedia: ${currentStok}`);
-                return;
-            }
-            
-            const { data: { user } } = await sb.auth.getUser();
-            const { error } = await sb.from('barang_keluar').insert([{
-                detail_id: parseInt(itemId),
-                tanggal: tanggal,
-                qty: parseInt(qty),
-                keterangan: keterangan || '-',
-                created_by: user.email
-            }]);
-            
-            if (error) {
-                alert('Gagal: ' + error.message);
-            } else {
-                alert('✅ Barang keluar dicatat!');
-                location.reload();
+      async function simpanKeluar() {
+    const piId = document.getElementById('pi_select').value;
+    const itemId = document.getElementById('item_select').value;
+    const qty = document.getElementById('qty_keluar').value;
+    const tanggal = document.getElementById('tanggal_keluar').value;
+    const keterangan = document.getElementById('keterangan').value;
+    
+    if (!itemId || !qty || !tanggal) {
+        alert('Pilih item, isi qty dan tanggal!');
+        return;
+    }
+    if (parseInt(qty) <= 0) {
+        alert('Qty harus lebih dari 0!');
+        return;
+    }
+    if (parseInt(qty) > currentStok) {
+        alert(`Stok tidak cukup! Stok tersedia: ${currentStok}`);
+        return;
+    }
+    
+    const { data: { user } } = await sb.auth.getUser();
+    const { error } = await sb.from('barang_keluar').insert([{
+        detail_id: parseInt(itemId),
+        tanggal: tanggal,
+        qty: parseInt(qty),
+        keterangan: keterangan || '-',
+        created_by: user.email
+    }]);
+    
+    if (error) {
+        alert('Gagal: ' + error.message);
+    } else {
+        alert('✅ Barang keluar dicatat!');
+        
+        // RESET hanya qty dan keterangan
+        document.getElementById('qty_keluar').value = '';
+        document.getElementById('keterangan').value = '';
+        
+        // Refresh stok dan histori tanpa mereset PI
+        await onPiChange();  // Refresh daftar item (update stok)
+        
+        // Set ulang pilihan item ke yang sama
+        const itemSelect = document.getElementById('item_select');
+        for (let i = 0; i < itemSelect.options.length; i++) {
+            if (itemSelect.options[i].value == itemId) {
+                itemSelect.selectedIndex = i;
+                break;
             }
         }
+        await onItemChange();  // Refresh histori
+    }
+}
         
         function goToMenu(menu) {
             const files = {
