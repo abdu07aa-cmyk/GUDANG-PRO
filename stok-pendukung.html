@@ -88,7 +88,7 @@
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
         .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
@@ -101,6 +101,7 @@
         .btn-success { background: #10b981; padding: 4px 10px; border: none; border-radius: 6px; color: white; cursor: pointer; }
         .btn-warning { background: #f59e0b; padding: 4px 10px; border: none; border-radius: 6px; color: white; cursor: pointer; }
         .stok-rendah { background: #fef3c7; color: #92400e; font-weight: bold; }
+        .stok-minimum-badge { background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 12px; font-size: 10px; margin-left: 5px; }
         .modal {
             display: none;
             position: fixed;
@@ -123,6 +124,10 @@
         }
         .modal-content h3 { margin-bottom: 15px; }
         .modal-content input, .modal-content select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .pagination button { padding: 6px 12px; background: #e2e8f0; color: #1e293b; border: none; border-radius: 6px; cursor: pointer; }
+        .pagination button.active { background: #3b82f6; color: white; }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 600px) { th, td { font-size: 10px; padding: 6px 4px; } }
     </style>
 </head>
@@ -172,6 +177,8 @@
             <input type="text" id="size" placeholder="Contoh: 10x10 cm / 1 roll">
             <label>Stok Awal</label>
             <input type="number" id="stok_awal" value="0" min="0">
+            <label>Stok Minimum (Peringatan)</label>
+            <input type="number" id="stok_minimum" value="0" min="0">
             <label>Lokasi Box</label>
             <input type="text" id="lokasi" placeholder="Contoh: Box 1, Box 2, Rak A1">
             <button onclick="simpanItem()" style="margin-top:15px">💾 Simpan</button>
@@ -199,6 +206,8 @@
         let currentFilteredData = [];
         let searchInput = null;
         let tbodyElement = null;
+        let currentPage = 1;
+        let rowsPerPage = 25;
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -234,22 +243,27 @@
                         <table style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Kode</th><th>Nama Material</th><th>Size</th><th>Stok</th><th>Lokasi Box</th><th>Aksi Stok</th><th>Aksi</th>
+                                    <th>Kode</th><th>Nama Material</th><th>Size</th><th>Stok</th><th>Stok Minimum</th><th>Lokasi Box</th><th>Aksi Stok</th><th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody"></tbody>
                         </table>
                     </div>
+                    <div id="pagination" class="pagination"></div>
                 </div>
             `;
             
             searchInput = document.getElementById('searchInput');
             tbodyElement = document.getElementById('tableBody');
             
-            // LIVE SEARCH: setiap input berubah, langsung filter
-            searchInput.oninput = function() { filterData(); };
+            // LIVE SEARCH
+            searchInput.oninput = function() { 
+                currentPage = 1;
+                filterData(); 
+            };
             document.getElementById('resetBtn').onclick = function() { 
                 searchInput.value = '';
+                currentPage = 1;
                 filterData();
             };
             
@@ -272,18 +286,25 @@
             
             currentFilteredData = filtered;
             updateTableDisplay();
+            updatePagination();
         }
         
         function updateTableDisplay() {
+            const start = (currentPage - 1) * rowsPerPage;
+            const pageData = currentFilteredData.slice(start, start + rowsPerPage);
+            
             let rows = '';
-            for (let i = 0; i < currentFilteredData.length; i++) {
-                const item = currentFilteredData[i];
-                const stokRendah = item.stok <= 5 ? 'stok-rendah' : '';
+            for (let i = 0; i < pageData.length; i++) {
+                const item = pageData[i];
+                const stokRendah = item.stok <= item.stok_minimum && item.stok_minimum > 0 ? 'stok-rendah' : '';
+                const minWarning = (item.stok <= item.stok_minimum && item.stok_minimum > 0) ? '<span class="stok-minimum-badge">⚠️ Menipis</span>' : '';
+                
                 rows += '<tr>' +
                     '<td><b>' + (item.kode || '-') + '</b></td>' +
-                    '<td>' + (item.nama || '-') + '</td>' +
+                    '<td>' + (item.nama || '-') + ' ' + minWarning + '</td>' +
                     '<td>' + (item.size || '-') + '</td>' +
-                    '<td class="' + stokRendah + '"><b>' + item.stok + '</b> ' + (item.stok <= 5 ? '⚠️' : '') + '</td>' +
+                    '<td class="' + stokRendah + '"><b>' + item.stok + '</b> ' + (item.stok <= item.stok_minimum && item.stok_minimum > 0 ? '⚠️' : '') + '</td>' +
+                    '<td>' + (item.stok_minimum || 0) + '</td>' +
                     '<td>' + (item.lokasi || '-') + '</td>' +
                     '<td>' +
                         '<button class="btn-success" onclick="showTransaksi(\'masuk\', ' + item.id + ')">+ Masuk</button>' +
@@ -296,24 +317,49 @@
                     '</tr>';
             }
             
-            if (currentFilteredData.length === 0) {
-                rows = '<tr><td colspan="7">Belum ada data. Klik "Tambah Material"</td></tr>';
+            if (pageData.length === 0) {
+                rows = '<tr><td colspan="8">Belum ada data. Klik "Tambah Material"</td></tr>';
             }
             
             tbodyElement.innerHTML = rows;
         }
         
+        function updatePagination() {
+            const totalPages = Math.ceil(currentFilteredData.length / rowsPerPage);
+            let paginationHtml = '<div class="pagination">';
+            paginationHtml += '<button onclick="changePage(1)" ' + (currentPage === 1 ? 'disabled' : '') + '>« First</button>';
+            paginationHtml += '<button onclick="changePage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + '>‹ Prev</button>';
+            
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                paginationHtml += '<button onclick="changePage(' + i + ')" class="' + (currentPage === i ? 'active' : '') + '">' + i + '</button>';
+            }
+            
+            paginationHtml += '<button onclick="changePage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages || totalPages === 0 ? 'disabled' : '') + '>Next ›</button>';
+            paginationHtml += '<button onclick="changePage(' + totalPages + ')" ' + (currentPage === totalPages || totalPages === 0 ? 'disabled' : '') + '>Last »</button>';
+            paginationHtml += '</div>';
+            
+            document.getElementById('pagination').innerHTML = paginationHtml;
+        }
+        
+        function changePage(page) {
+            const totalPages = Math.ceil(currentFilteredData.length / rowsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            updateTableDisplay();
+            updatePagination();
+        }
+        
         function exportExcel() {
             if (currentFilteredData.length === 0) { alert('Tidak ada data'); return; }
-            var wsData = [['Kode', 'Nama Material', 'Size', 'Stok', 'Lokasi Box']];
+            var wsData = [['Kode', 'Nama Material', 'Size', 'Stok', 'Stok Minimum', 'Lokasi Box']];
             for (var i = 0; i < currentFilteredData.length; i++) {
                 var item = currentFilteredData[i];
-                wsData.push([item.kode || '-', item.nama || '-', item.size || '-', item.stok, item.lokasi || '-']);
+                wsData.push([item.kode || '-', item.nama || '-', item.size || '-', item.stok, item.stok_minimum || 0, item.lokasi || '-']);
             }
             var ws = XLSX.utils.aoa_to_sheet(wsData);
             var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Pendukung');
-            ws['!cols'] = [{wch:15}, {wch:25}, {wch:15}, {wch:10}, {wch:15}];
+            ws['!cols'] = [{wch:15}, {wch:25}, {wch:15}, {wch:10}, {wch:15}, {wch:15}];
             XLSX.writeFile(wb, 'Stok_Pendukung_' + new Date().toISOString().slice(0,10) + '.xlsx');
             alert('✅ Export berhasil!');
         }
@@ -325,6 +371,7 @@
             document.getElementById('nama').value = '';
             document.getElementById('size').value = '';
             document.getElementById('stok_awal').value = '0';
+            document.getElementById('stok_minimum').value = '0';
             document.getElementById('lokasi').value = '';
             document.getElementById('itemModal').style.display = 'flex';
         }
@@ -338,6 +385,7 @@
             document.getElementById('nama').value = item.nama || '';
             document.getElementById('size').value = item.size || '';
             document.getElementById('stok_awal').value = item.stok;
+            document.getElementById('stok_minimum').value = item.stok_minimum || 0;
             document.getElementById('lokasi').value = item.lokasi || '';
             document.getElementById('itemModal').style.display = 'flex';
         }
@@ -349,6 +397,7 @@
                 nama: document.getElementById('nama').value,
                 size: document.getElementById('size').value,
                 stok: parseInt(document.getElementById('stok_awal').value) || 0,
+                stok_minimum: parseInt(document.getElementById('stok_minimum').value) || 0,
                 lokasi: document.getElementById('lokasi').value
             };
             
@@ -478,6 +527,7 @@
         window.showTransaksi = showTransaksi;
         window.prosesTransaksi = prosesTransaksi;
         window.exportExcel = exportExcel;
+        window.changePage = changePage;
         window.closeModal = closeModal;
         window.closeTransaksiModal = closeTransaksiModal;
         
