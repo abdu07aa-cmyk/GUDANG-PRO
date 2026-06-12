@@ -95,7 +95,7 @@
             padding: 10px;
             background: white;
             border-radius: 10px;
-            width: 200px;
+            width: 210px;
             vertical-align: top;
             break-inside: avoid;
             page-break-inside: avoid;
@@ -105,7 +105,6 @@
         .qrcode-item .qty-info { font-size: 12px; font-weight: bold; margin-top: 5px; color: #10b981; }
         .qrcode-item .batch-name { font-size: 11px; font-weight: bold; background: #e0f2fe; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
         .print-area { text-align: center; }
-        .print-btn { background: #10b981; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; margin: 10px; }
         
         .form-box {
             background: #f8fafc;
@@ -138,7 +137,7 @@
             border-radius: 8px;
         }
         .batch-item span { flex: 2; font-size: 12px; }
-        .batch-item input { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; }
+        .batch-item input { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; width: 100px; }
         .batch-item button { width: auto; padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; }
         .btn-update { background: #3b82f6 !important; margin-left: 5px; }
         .btn-add { background: #10b981; margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; }
@@ -152,7 +151,7 @@
         
         .qr-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
             gap: 10px;
             padding: 10px;
         }
@@ -298,7 +297,6 @@
             const generateBtn = document.getElementById('generateBtn');
             const qrContainer = document.getElementById('qrContainer');
             
-            // Sembunyikan QR container saat edit batch
             qrContainer.style.display = 'none';
             qrContainer.innerHTML = '';
             
@@ -314,7 +312,7 @@
                 html += `
                     <div class="batch-item">
                         <span><strong>${batch.batchName}</strong><br>${noPi} - ${batch.item.brand} - ${batch.item.jenis}</span>
-                        <input type="number" id="qty_${batch.id}" value="${batch.qty}" placeholder="Qty" min="1" style="width:120px">
+                        <input type="number" id="qty_${batch.id}" value="${batch.qty}" placeholder="Qty" min="1" style="width:100px">
                         <button onclick="updateBatchItem(${batch.id}, parseInt(document.getElementById('qty_${batch.id}').value))" class="btn-update">✏️ Update</button>
                         <button onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
                     </div>
@@ -339,7 +337,7 @@
             
             for (const batch of batchList) {
                 const noPi = batch.item.pi_header?.no_pi || '-';
-                const qrText = `PI:${noPi}|BRAND:${batch.item.brand}|JENIS:${batch.item.jenis}|PAPER:${batch.item.paper || '-'}|SIZE:${batch.item.size || '-'}|QTY:${batch.qty}|BATCH:${batch.batchName}`;
+                const qrText = `PI: ${noPi}, BRAND: ${batch.item.brand}, JENIS: ${batch.item.jenis}, PAPER: ${batch.item.paper || '-'}, SIZE: ${batch.item.size || '-'}, QTY: ${batch.qty}, BATCH: ${batch.batchName}`;
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
@@ -349,10 +347,10 @@
                     <div class="batch-name">🏷️ ${batch.batchName}</div>
                     <div class="qty-info">📦 ${batch.qty.toLocaleString()} pcs</div>
                     <div class="info">
-                        <div>📄 ${noPi}</div>
-                        <div>🏭 ${batch.item.brand}</div>
-                        <div>📌 ${batch.item.jenis}</div>
-                        <div>📏 ${batch.item.size || '-'}</div>
+                        <div>No PI: ${noPi}</div>
+                        <div>Brand: ${batch.item.brand}</div>
+                        <div>Jenis: ${batch.item.jenis}</div>
+                        <div>Size: ${batch.item.size || '-'}</div>
                     </div>
                 `;
                 grid.appendChild(div);
@@ -366,7 +364,6 @@
                     });
                     generatedCount++;
                     if (generatedCount === batchList.length) {
-                        // Semua QR sudah digenerate
                         container.style.display = 'block';
                         container.scrollIntoView({ behavior: 'smooth' });
                         alert(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nSilakan tekan Ctrl+P untuk mencetak.`);
