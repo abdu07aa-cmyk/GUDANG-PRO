@@ -10,6 +10,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -40,6 +41,7 @@
         .menu-item .icon { width: 30px; font-size: 20px; }
         .menu-item .text { font-size: 14px; }
         .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
         .overlay {
             position: fixed;
             top: 0;
@@ -51,6 +53,7 @@
             display: none;
         }
         .overlay.show { display: block; }
+
         .header {
             background: white;
             padding: 15px;
@@ -80,6 +83,7 @@
             font-size: 12px;
             cursor: pointer;
         }
+
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
@@ -95,6 +99,9 @@
         .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
         .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
         .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
+        .warning-card { background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px; margin-bottom: 15px; border-radius: 8px; }
+        .warning-item { padding: 8px; border-bottom: 1px solid #fecaca; }
+        .warning-item:last-child { border-bottom: none; }
         @media (max-width: 600px) { th, td { font-size: 10px; padding: 6px 4px; } }
     </style>
 </head>
@@ -133,10 +140,7 @@
 
     <script>
         let allData = [];
-        let currentFilteredData = [];
-        let searchInput = null;
-        let statusSelect = null;
-        let tbodyElement = null;
+        let stokPendukung = [];
 
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -147,10 +151,15 @@
             const container = document.getElementById('mainContent');
             container.innerHTML = '<div style="text-align:center;padding:20px">Loading...</div>';
             
+            // Ambil data PI
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             const { data: details } = await sb.from('pi_detail').select('*');
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
+            
+            // Ambil data stok pendukung
+            const { data: stok } = await sb.from('stok_pendukung').select('*');
+            stokPendukung = stok || [];
             
             allData = [];
             for (const detail of details) {
@@ -186,23 +195,43 @@
                 });
             }
             
-            // Buat HTML statis dulu
-            container.innerHTML = `
+            renderDashboard();
+        }
+        
+        function renderDashboard() {
+            // Hitung notifikasi stok menipis dari stok pendukung
+            const stokMenipis = stokPendukung.filter(item => {
+                const min = item.stok_minimum || 0;
+                return min > 0 && item.stok <= min;
+            });
+            
+            let warningHtml = '';
+            if (stokMenipis.length > 0) {
+                warningHtml = '<div class="warning-card"><strong>⚠️ PERINGATAN STOK MENIPIS</strong><div style="margin-top:8px">';
+                for (const item of stokMenipis) {
+                    warningHtml += '<div class="warning-item">📦 <b>' + (item.nama || '-') + '</b> (Kode: ' + (item.kode || '-') + ')<br>' +
+                        'Stok: <b>' + item.stok + '</b> | Minimum: ' + (item.stok_minimum || 0) + '</div>';
+                }
+                warningHtml += '</div></div>';
+            }
+            
+            let html = warningHtml;
+            
+            html += `
                 <div class="card">
                     <div class="card-title">
                         <span>📋 STOK GUDANG & STATUS PI</span>
                         <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis...">
-                        <select id="filterStatus">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterData()">
+                        <select id="filterStatus" onchange="filterData()">
                             <option value="all">Semua Status</option>
                             <option value="selesai">✅ Selesai</option>
                             <option value="proses">🔄 Proses</option>
                             <option value="belum">❌ Belum</option>
                         </select>
-                        <button id="searchBtn">🔍 Cari</button>
-                        <button id="resetBtn">Reset</button>
+                        <button onclick="resetFilter()">Reset</button>
                     </div>
                     <div class="table-wrapper">
                         <table style="width:100%">
@@ -218,59 +247,36 @@
                 </div>
             `;
             
-            // Ambil element
-            searchInput = document.getElementById('searchInput');
-            statusSelect = document.getElementById('filterStatus');
-            tbodyElement = document.getElementById('tableBody');
+            document.getElementById('mainContent').innerHTML = html;
             
-            // Pasang event listener (tidak re-render halaman)
-            document.getElementById('searchBtn').onclick = function() { filterData(); };
-            document.getElementById('resetBtn').onclick = function() { 
-                searchInput.value = '';
-                statusSelect.value = 'all';
-                filterData();
-            };
+            document.getElementById('searchInput').onkeyup = filterData;
+            document.getElementById('filterStatus').onchange = filterData;
             
-            // LIVE SEARCH: setiap input berubah, langsung filter (tanpa hilang)
-            searchInput.oninput = function() { filterData(); };
-            statusSelect.onchange = function() { filterData(); };
-            
-            // Tampilkan data
             filterData();
         }
         
         function filterData() {
-            const searchText = searchInput.value.toLowerCase();
-            const statusFilter = statusSelect.value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('filterStatus').value;
             
             let filtered = [...allData];
             
-            if (searchText) {
-                filtered = filtered.filter(function(item) {
-                    return item.no_pi.toLowerCase().indexOf(searchText) !== -1 ||
-                           item.brand.toLowerCase().indexOf(searchText) !== -1 ||
-                           item.jenis.toLowerCase().indexOf(searchText) !== -1;
-                });
+            if (search) {
+                filtered = filtered.filter(item => 
+                    item.no_pi.toLowerCase().includes(search) ||
+                    item.brand.toLowerCase().includes(search) ||
+                    item.jenis.toLowerCase().includes(search)
+                );
             }
             
             if (statusFilter !== 'all') {
-                if (statusFilter === 'selesai') {
-                    filtered = filtered.filter(function(item) { return item.keluar >= item.qty_pi; });
-                } else if (statusFilter === 'proses') {
-                    filtered = filtered.filter(function(item) { return item.keluar > 0 && item.keluar < item.qty_pi; });
-                } else if (statusFilter === 'belum') {
-                    filtered = filtered.filter(function(item) { return item.keluar === 0; });
-                }
+                if (statusFilter === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
+                if (statusFilter === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
+                if (statusFilter === 'belum') filtered = filtered.filter(item => item.keluar === 0);
             }
             
-            currentFilteredData = filtered;
-            updateTableDisplay();
-        }
-        
-        function updateTableDisplay() {
             let rows = '';
-            for (let i = 0; i < currentFilteredData.length; i++) {
-                const item = currentFilteredData[i];
+            for (const item of filtered) {
                 rows += '<tr>' +
                     '<td><b>' + item.no_pi + '</b></td>' +
                     '<td>' + item.brand + '</td>' +
@@ -285,29 +291,51 @@
                     '</tr>';
             }
             
-            if (currentFilteredData.length === 0) {
+            if (filtered.length === 0) {
                 rows = '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
             }
             
-            tbodyElement.innerHTML = rows;
+            document.getElementById('tableBody').innerHTML = rows;
+        }
+        
+        function resetFilter() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterStatus').value = 'all';
+            filterData();
         }
         
         function exportExcel() {
-            if (currentFilteredData.length === 0) { alert('Tidak ada data'); return; }
-            var wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
-            for (var i = 0; i < currentFilteredData.length; i++) {
-                var item = currentFilteredData[i];
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('filterStatus').value;
+            
+            let filtered = [...allData];
+            if (search) {
+                filtered = filtered.filter(item => 
+                    item.no_pi.toLowerCase().includes(search) ||
+                    item.brand.toLowerCase().includes(search) ||
+                    item.jenis.toLowerCase().includes(search)
+                );
+            }
+            if (statusFilter !== 'all') {
+                if (statusFilter === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
+                if (statusFilter === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
+                if (statusFilter === 'belum') filtered = filtered.filter(item => item.keluar === 0);
+            }
+            
+            if (filtered.length === 0) { alert('Tidak ada data'); return; }
+            const wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
+            for (const item of filtered) {
                 wsData.push([item.no_pi, item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok, item.status]);
             }
-            var ws = XLSX.utils.aoa_to_sheet(wsData);
-            var wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
             XLSX.writeFile(wb, 'Stok_Gudang_' + new Date().toISOString().slice(0,10) + '.xlsx');
             alert('✅ Export berhasil!');
         }
         
         function goToMenu(menu) {
-            var files = {
+            const files = {
                 dashboard: 'dashboard.html',
                 'pi-input': 'pi-input.html',
                 'stock-in': 'stock-in.html',
@@ -333,8 +361,8 @@
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(function(el) {
-                el.addEventListener('click', function() { goToMenu(el.getAttribute('data-menu')); });
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
         
@@ -344,6 +372,8 @@
             await loadData();
         }
         
+        window.filterData = filterData;
+        window.resetFilter = resetFilter;
         window.exportExcel = exportExcel;
         
         init();
