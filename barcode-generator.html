@@ -91,18 +91,19 @@
         .qrcode-item {
             display: inline-block;
             text-align: center;
-            margin: 10px;
-            padding: 12px;
+            margin: 8px;
+            padding: 10px;
             background: white;
-            border-radius: 12px;
-            width: 220px;
+            border-radius: 10px;
+            width: 200px;
             vertical-align: top;
             break-inside: avoid;
             page-break-inside: avoid;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .qrcode-item .info { font-size: 10px; margin-top: 8px; text-align: left; }
-        .qrcode-item .qty-info { font-size: 13px; font-weight: bold; margin-top: 5px; color: #10b981; }
+        .qrcode-item .info { font-size: 9px; margin-top: 6px; text-align: left; }
+        .qrcode-item .qty-info { font-size: 12px; font-weight: bold; margin-top: 5px; color: #10b981; }
+        .qrcode-item .batch-name { font-size: 11px; font-weight: bold; background: #e0f2fe; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
         .print-area { text-align: center; }
         .print-btn { background: #10b981; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; margin: 10px; }
         
@@ -128,24 +129,32 @@
         }
         .batch-item {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
             align-items: center;
             flex-wrap: wrap;
             background: #f1f5f9;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
         }
-        .batch-item span { flex: 2; font-size: 13px; }
-        .batch-item input { flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 6px; }
-        .batch-item button { width: auto; padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .btn-update { background: #3b82f6; margin-left: 5px; }
+        .batch-item span { flex: 2; font-size: 12px; }
+        .batch-item input { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; }
+        .batch-item button { width: auto; padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; }
+        .btn-update { background: #3b82f6 !important; margin-left: 5px; }
         .btn-add { background: #10b981; margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; }
         .btn-generate { background: #8b5cf6; margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; }
         
         @media print {
             .no-print { display: none; }
             .print-area { display: block; }
+            .qrcode-item { break-inside: avoid; page-break-inside: avoid; }
+        }
+        
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            padding: 10px;
         }
     </style>
 </head>
@@ -209,28 +218,28 @@
             
             const html = `
                 <div class="card">
-                    <div class="card-title">🏷️ GENERATE QR CODE</div>
+                    <div class="card-title">🏷️ GENERATE QR CODE (BATCH)</div>
                     
                     <div class="form-box no-print">
                         <label>📋 Pilih PI & Item</label>
                         <select id="item_select">${itemOptions}</select>
                         
-                        <label>📦 Qty untuk QR Code ini (pcs)</label>
+                        <label>📦 Qty untuk Batch ini (pcs)</label>
                         <input type="number" id="qty_input" placeholder="Contoh: 20000" min="1">
                         
                         <label>📝 Nama Batch (opsional)</label>
-                        <input type="text" id="batch_name" placeholder="Contoh: Booklet Batch 1">
+                        <input type="text" id="batch_name" placeholder="Contoh: Booklet Batch A">
                         
-                        <button id="addBatchBtn" class="btn-add">+ Tambahkan ke Daftar</button>
+                        <button id="addBatchBtn" class="btn-add">+ Tambahkan ke Daftar Batch</button>
                     </div>
                     
                     <div class="batch-list no-print" id="batchListContainer">
-                        <strong>📋 Daftar Batch yang akan dicetak:</strong>
+                        <strong>📋 Daftar Batch yang akan dicetak (${batchList.length} batch):</strong>
                         <div id="batchItems"></div>
-                        <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate & Cetak QR Code</button>
+                        <button id="generateBtn" class="btn-generate" style="${batchList.length === 0 ? 'display:none' : 'display:block'}">🖨️ Generate & Cetak SEMUA Batch (${batchList.length} QR)</button>
                     </div>
                     
-                    <div id="qrContainer" class="print-area" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
+                    <div id="qrContainer" class="print-area" style="display:none"></div>
                 </div>
             `;
             
@@ -271,22 +280,27 @@
             updateBatchDisplay();
         }
         
-        function updateBatch(itemId, newQty) {
-            const batch = batchList.find(b => b.id == itemId);
+        function updateBatchItem(id, newQty) {
+            const batch = batchList.find(b => b.id == id);
             if (batch) {
                 batch.qty = newQty;
                 updateBatchDisplay();
             }
         }
         
-        function deleteBatch(itemId) {
-            batchList = batchList.filter(b => b.id != itemId);
+        function deleteBatch(id) {
+            batchList = batchList.filter(b => b.id != id);
             updateBatchDisplay();
         }
         
         function updateBatchDisplay() {
             const container = document.getElementById('batchItems');
             const generateBtn = document.getElementById('generateBtn');
+            const qrContainer = document.getElementById('qrContainer');
+            
+            // Sembunyikan QR container saat edit batch
+            qrContainer.style.display = 'none';
+            qrContainer.innerHTML = '';
             
             if (batchList.length === 0) {
                 container.innerHTML = '<div style="padding:10px; color:#666">Belum ada batch. Tambahkan batch di atas.</div>';
@@ -300,14 +314,15 @@
                 html += `
                     <div class="batch-item">
                         <span><strong>${batch.batchName}</strong><br>${noPi} - ${batch.item.brand} - ${batch.item.jenis}</span>
-                        <input type="number" id="qty_${batch.id}" value="${batch.qty}" placeholder="Qty" min="1">
-                        <button onclick="updateBatch(${batch.id}, document.getElementById('qty_${batch.id}').value)">✏️ Update</button>
+                        <input type="number" id="qty_${batch.id}" value="${batch.qty}" placeholder="Qty" min="1" style="width:120px">
+                        <button onclick="updateBatchItem(${batch.id}, parseInt(document.getElementById('qty_${batch.id}').value))" class="btn-update">✏️ Update</button>
                         <button onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
                     </div>
                 `;
             }
             container.innerHTML = html;
             generateBtn.style.display = 'block';
+            generateBtn.innerHTML = `🖨️ Generate & Cetak SEMUA Batch (${batchList.length} QR)`;
         }
         
         function generateAndPrint() {
@@ -317,7 +332,10 @@
             }
             
             const container = document.getElementById('qrContainer');
-            container.innerHTML = '';
+            container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
+            const grid = document.getElementById('qrGrid');
+            
+            let generatedCount = 0;
             
             for (const batch of batchList) {
                 const noPi = batch.item.pi_header?.no_pi || '-';
@@ -325,33 +343,36 @@
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
+                div.id = `qr-item-${batch.id}`;
                 div.innerHTML = `
                     <div id="qr-${batch.id}" style="display:flex; justify-content:center"></div>
+                    <div class="batch-name">🏷️ ${batch.batchName}</div>
                     <div class="qty-info">📦 ${batch.qty.toLocaleString()} pcs</div>
                     <div class="info">
-                        <div><strong>Batch:</strong> ${batch.batchName}</div>
-                        <div><strong>PI:</strong> ${noPi}</div>
-                        <div><strong>Brand:</strong> ${batch.item.brand}</div>
-                        <div><strong>Jenis:</strong> ${batch.item.jenis}</div>
-                        <div><strong>Paper:</strong> ${batch.item.paper || '-'}</div>
-                        <div><strong>Size:</strong> ${batch.item.size || '-'}</div>
+                        <div>📄 ${noPi}</div>
+                        <div>🏭 ${batch.item.brand}</div>
+                        <div>📌 ${batch.item.jenis}</div>
+                        <div>📏 ${batch.item.size || '-'}</div>
                     </div>
                 `;
-                container.appendChild(div);
+                grid.appendChild(div);
                 
                 setTimeout(() => {
                     new QRCode(document.getElementById(`qr-${batch.id}`), {
                         text: qrText,
-                        width: 150,
-                        height: 150,
+                        width: 130,
+                        height: 130,
                         correctLevel: QRCode.CorrectLevel.M
                     });
-                }, 10);
+                    generatedCount++;
+                    if (generatedCount === batchList.length) {
+                        // Semua QR sudah digenerate
+                        container.style.display = 'block';
+                        container.scrollIntoView({ behavior: 'smooth' });
+                        alert(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nSilakan tekan Ctrl+P untuk mencetak.`);
+                    }
+                }, 50);
             }
-            
-            // Scroll ke hasil QR
-            container.scrollIntoView({ behavior: 'smooth' });
-            alert(`✅ ${batchList.length} QR Code berhasil digenerate! Silakan print halaman ini.`);
         }
         
         function goToMenu(menu) {
@@ -394,7 +415,7 @@
             await loadItems();
         }
         
-        window.updateBatch = updateBatch;
+        window.updateBatchItem = updateBatchItem;
         window.deleteBatch = deleteBatch;
         
         init();
