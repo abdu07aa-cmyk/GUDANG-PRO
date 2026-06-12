@@ -149,137 +149,15 @@
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
-       <div class="sidebar-menu">
-    <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-    <div class="menu-item active" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-    <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-    <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-    <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-    <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
-    <div class="menu-divider"></div>
-           <!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Dashboard - Gudang Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: #1e293b;
-            color: white;
-            transition: 0.3s;
-            z-index: 1000;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-        }
-        .sidebar.open { left: 0; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
-        .sidebar-header h3 { font-size: 18px; }
-        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
-        .sidebar-menu { padding: 10px 0; }
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
-            cursor: pointer;
-        }
-        .menu-item:hover { background: #334155; color: white; }
-        .menu-item.active { background: #3b82f6; color: white; }
-        .menu-item .icon { width: 30px; font-size: 20px; }
-        .menu-item .text { font-size: 14px; }
-        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
-        .overlay.show { display: block; }
-
-        .header {
-            background: white;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-        }
-        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: 500; }
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
-        .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
-        .filter-bar button { padding: 8px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-export { background: #10b981; padding: 8px 15px; border-radius: 8px; border: none; color: white; cursor: pointer; }
-        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
-        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
-        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
-        .warning-card { background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px; margin-bottom: 15px; border-radius: 8px; }
-        .warning-item { padding: 8px; border-bottom: 1px solid #fecaca; }
-        .warning-item:last-child { border-bottom: none; }
-        @media (max-width: 600px) { th, td { font-size: 10px; padding: 6px 4px; } }
-    </style>
-</head>
-<body>
-
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
         <div class="sidebar-menu">
-            <div class="menu-item active" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item active" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
             <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
             <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
             <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="scan-barcode">
-    <span class="icon">📷</span>
-    <span class="text">Scan Barcode</span>
-</div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan Barcode</span></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
@@ -299,277 +177,12 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <div class="container" id="mainContent">Memuat...</div>
-
-    <script>
-        let allData = [];
-        let stokPendukung = [];
-
-        async function cekSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-        }
-
-        async function loadData() {
-            const container = document.getElementById('mainContent');
-            container.innerHTML = '<div style="text-align:center;padding:20px">Loading...</div>';
-            
-            // Ambil data PI
-            const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
-            const { data: details } = await sb.from('pi_detail').select('*');
-            const { data: masuk } = await sb.from('barang_masuk').select('*');
-            const { data: keluar } = await sb.from('barang_keluar').select('*');
-            
-            // Ambil data stok pendukung
-            const { data: stok } = await sb.from('stok_pendukung').select('*');
-            stokPendukung = stok || [];
-            
-            allData = [];
-            for (const detail of details) {
-                const header = headers?.find(h => h.id === detail.pi_id);
-                let totalMasuk = 0, totalKeluar = 0;
-                if (masuk) masuk.forEach(m => { if (m.detail_id === detail.id) totalMasuk += m.qty; });
-                if (keluar) keluar.forEach(k => { if (k.detail_id === detail.id) totalKeluar += k.qty; });
-                
-                let status = '', statusClass = '';
-                if (totalKeluar >= detail.qty_pi) {
-                    status = '✅ SELESAI';
-                    statusClass = 'status-selesai';
-                } else if (totalKeluar > 0) {
-                    status = '🔄 PROSES (Kurang ' + (detail.qty_pi - totalKeluar) + ')';
-                    statusClass = 'status-proses';
-                } else {
-                    status = '❌ BELUM';
-                    statusClass = 'status-belum';
-                }
-                
-                allData.push({
-                    no_pi: header?.no_pi || '-',
-                    brand: detail.brand,
-                    jenis: detail.jenis,
-                    paper: detail.paper || '-',
-                    size: detail.size || '-',
-                    qty_pi: detail.qty_pi,
-                    masuk: totalMasuk,
-                    keluar: totalKeluar,
-                    stok: totalMasuk - totalKeluar,
-                    status: status,
-                    statusClass: statusClass
-                });
-            }
-            
-            renderDashboard();
-        }
-        
-        function renderDashboard() {
-            // Hitung notifikasi stok menipis dari stok pendukung
-            const stokMenipis = stokPendukung.filter(item => {
-                const min = item.stok_minimum || 0;
-                return min > 0 && item.stok <= min;
-            });
-            
-            let warningHtml = '';
-            if (stokMenipis.length > 0) {
-                warningHtml = '<div class="warning-card"><strong>⚠️ PERINGATAN STOK MENIPIS</strong><div style="margin-top:8px">';
-                for (const item of stokMenipis) {
-                    warningHtml += '<div class="warning-item">📦 <b>' + (item.nama || '-') + '</b> (Kode: ' + (item.kode || '-') + ')<br>' +
-                        'Stok: <b>' + item.stok + '</b> | Minimum: ' + (item.stok_minimum || 0) + '</div>';
-                }
-                warningHtml += '</div></div>';
-            }
-            
-            let html = warningHtml;
-            
-            html += `
-                <div class="card">
-                    <div class="card-title">
-                        <span>📋 STOK GUDANG & STATUS PI</span>
-                        <button class="btn-export" onclick="exportExcel()">📎 Export Excel</button>
-                    </div>
-                    <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, Brand, Jenis..." onkeyup="filterData()">
-                        <select id="filterStatus" onchange="filterData()">
-                            <option value="all">Semua Status</option>
-                            <option value="selesai">✅ Selesai</option>
-                            <option value="proses">🔄 Proses</option>
-                            <option value="belum">❌ Belum</option>
-                        </select>
-                        <button onclick="resetFilter()">Reset</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
-                                    <th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok</th><th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('mainContent').innerHTML = html;
-            
-            document.getElementById('searchInput').onkeyup = filterData;
-            document.getElementById('filterStatus').onchange = filterData;
-            
-            filterData();
-        }
-        
-        function filterData() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('filterStatus').value;
-            
-            let filtered = [...allData];
-            
-            if (search) {
-                filtered = filtered.filter(item => 
-                    item.no_pi.toLowerCase().includes(search) ||
-                    item.brand.toLowerCase().includes(search) ||
-                    item.jenis.toLowerCase().includes(search)
-                );
-            }
-            
-            if (statusFilter !== 'all') {
-                if (statusFilter === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
-                if (statusFilter === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
-                if (statusFilter === 'belum') filtered = filtered.filter(item => item.keluar === 0);
-            }
-            
-            let rows = '';
-            for (const item of filtered) {
-                rows += '<tr>' +
-                    '<td><b>' + item.no_pi + '</b></td>' +
-                    '<td>' + item.brand + '</td>' +
-                    '<td>' + item.jenis + '</td>' +
-                    '<td>' + item.paper + '</td>' +
-                    '<td>' + item.size + '</td>' +
-                    '<td>' + item.qty_pi + '</td>' +
-                    '<td>' + item.masuk + '</td>' +
-                    '<td>' + item.keluar + '</td>' +
-                    '<td><b>' + item.stok + '</b></td>' +
-                    '<td><span class="' + item.statusClass + '">' + item.status + '</span></td>' +
-                    '</tr>';
-            }
-            
-            if (filtered.length === 0) {
-                rows = '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
-            }
-            
-            document.getElementById('tableBody').innerHTML = rows;
-        }
-        
-        function resetFilter() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('filterStatus').value = 'all';
-            filterData();
-        }
-        
-        function exportExcel() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('filterStatus').value;
-            
-            let filtered = [...allData];
-            if (search) {
-                filtered = filtered.filter(item => 
-                    item.no_pi.toLowerCase().includes(search) ||
-                    item.brand.toLowerCase().includes(search) ||
-                    item.jenis.toLowerCase().includes(search)
-                );
-            }
-            if (statusFilter !== 'all') {
-                if (statusFilter === 'selesai') filtered = filtered.filter(item => item.keluar >= item.qty_pi);
-                if (statusFilter === 'proses') filtered = filtered.filter(item => item.keluar > 0 && item.keluar < item.qty_pi);
-                if (statusFilter === 'belum') filtered = filtered.filter(item => item.keluar === 0);
-            }
-            
-            if (filtered.length === 0) { alert('Tidak ada data'); return; }
-            const wsData = [['No PI', 'Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok', 'Status']];
-            for (const item of filtered) {
-                wsData.push([item.no_pi, item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok, item.status]);
-            }
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
-            XLSX.writeFile(wb, 'Stok_Gudang_' + new Date().toISOString().slice(0,10) + '.xlsx');
-            alert('✅ Export berhasil!');
-        }
-        
-        function goToMenu(menu) {
-            const files = {
-                dashboard: 'dashboard.html',
-                'pi-input': 'pi-input.html',
-                'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html',
-                'stock-report': 'stock-report.html',
-                'stok-pendukung': 'stok-pendukung.html',
-                'scan-barcode': 'scan-barcode.html',
-                executive: 'executive-report.html',
-                'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html',
-                export: 'export-final3.html'
-            };
-            window.location.href = files[menu] || 'dashboard.html';
-        }
-        
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-        
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-        
-        function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
-            });
-        }
-        
-        async function init() {
-            await cekSession();
-            setupEventListeners();
-            await loadData();
-        }
-        
-        window.filterData = filterData;
-        window.resetFilter = resetFilter;
-        window.exportExcel = exportExcel;
-        
-        init();
-    </script>
-</body>
-</html>
-
-    <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
-    <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
-    </div>
-        </div>
-
-    <div class="overlay" id="overlay"></div>
-
-    <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 GUDANG PRO</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-    </div>
-
     <div class="container" id="mainContent"></div>
 
     <script>
         let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
         let brandList = [], jenisList = [], paperList = [], sizeList = [];
-        let mode = 'new'; // 'new' or 'edit'
+        let mode = 'new';
         let editingPiId = null;
         
         async function loadMasterData() {
@@ -590,16 +203,11 @@
             for (let i = 0; i < itemList.length; i++) {
                 html += `
                     <div class="item-row">
-                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" 
-                            onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
-                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" 
-                            onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
-                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" 
-                            onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
-                        <input type="text" placeholder="Size" value="${itemList[i].size}" 
-                            onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" 
-                            onchange="updateItem(${i}, 'qty', this.value)">
+                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
+                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
+                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
+                        <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
+                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
                         <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
                     </div>
                 `;
@@ -633,7 +241,6 @@
             itemList[index][field] = value;
         }
         
-        // ==================== DAFTAR PI UNTUK EDIT ====================
         async function loadPiList() {
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
@@ -648,163 +255,99 @@
         async function onSelectPiForEdit() {
             const piId = document.getElementById('edit_pi_select').value;
             if (!piId) return;
-            
             editingPiId = piId;
-            
-            // Ambil header PI
             const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
             document.getElementById('edit_no_pi').value = header.no_pi;
             document.getElementById('edit_tanggal_pi').value = header.tanggal;
-            
-            // Ambil detail items
             const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
-            itemList = details.map(d => ({
-                brand: d.brand,
-                jenis: d.jenis,
-                paper: d.paper || '',
-                size: d.size || '',
-                qty: d.qty_pi
-            }));
+            itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
             renderItemForm();
-            
             document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
         }
         
-        // ==================== SIMPAN PI BARU ====================
         async function simpanPiBaru() {
             const no_pi = document.getElementById('no_pi').value.trim();
             const tanggal = document.getElementById('tanggal_pi').value;
-            
             if (!no_pi || !tanggal) {
                 document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
                 return;
             }
-            
             const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
             if (validItems.length === 0) {
                 document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
                 return;
             }
-            
             const { data: existing } = await sb.from('pi_header').select('no_pi').eq('no_pi', no_pi).single();
             if (existing) {
                 document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI sudah ada!</div>';
                 return;
             }
-            
             const { data: header, error: headerError } = await sb.from('pi_header').insert([{ no_pi, tanggal }]).select();
             if (headerError) {
                 document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
                 return;
             }
-            
             const piId = header[0].id;
-            
             for (const item of validItems) {
-                await sb.from('pi_detail').insert({
-                    pi_id: piId,
-                    brand: item.brand,
-                    jenis: item.jenis,
-                    paper: item.paper || null,
-                    size: item.size || null,
-                    qty_pi: parseInt(item.qty)
-                });
+                await sb.from('pi_detail').insert({ pi_id: piId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
             }
-            
             await loadMasterData();
             document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
             resetForm();
             setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
         }
         
-        // ==================== UPDATE PI (EDIT) ====================
-       async function updatePi() {
-    const no_pi = document.getElementById('edit_no_pi').value.trim();
-    const tanggal = document.getElementById('edit_tanggal_pi').value;
-    
-    if (!no_pi || !tanggal) {
-        document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
-        return;
-    }
-    
-    const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-    if (validItems.length === 0) {
-        document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
-        return;
-    }
-    
-    // Update header
-    const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
-    if (headerError) {
-        document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
-        return;
-    }
-    
-    // Ambil detail yang sudah ada
-    const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
-    
-    // Update atau insert detail baru (tanpa hapus semua)
-    for (let i = 0; i < validItems.length; i++) {
-        const item = validItems[i];
-        if (existingDetails && existingDetails[i]) {
-            // Update yang sudah ada
-            await sb.from('pi_detail').update({
-                brand: item.brand,
-                jenis: item.jenis,
-                paper: item.paper || null,
-                size: item.size || null,
-                qty_pi: parseInt(item.qty)
-            }).eq('id', existingDetails[i].id);
-        } else {
-            // Insert baru jika ada item tambahan
-            await sb.from('pi_detail').insert({
-                pi_id: editingPiId,
-                brand: item.brand,
-                jenis: item.jenis,
-                paper: item.paper || null,
-                size: item.size || null,
-                qty_pi: parseInt(item.qty)
-            });
-        }
-    }
-    
-    // Hapus item yang dihapus user (tidak ada di validItems)
-    if (existingDetails && existingDetails.length > validItems.length) {
-        for (let i = validItems.length; i < existingDetails.length; i++) {
-            // Cek apakah item ini sudah punya transaksi masuk/keluar
-            const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-            const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-            
-            if (masuk.length === 0 && keluar.length === 0) {
-                // Hanya hapus jika belum ada transaksi
-                await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
-            } else {
-                alert(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus karena sudah memiliki transaksi masuk/keluar.`);
-            }
-        }
-    }
-    
-    await loadMasterData();
-    document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate! Data transaksi tetap terjaga.</div>';
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-}
-        
-        // ==================== HAPUS PI ====================
-        async function hapusPi() {
-            const piId = document.getElementById('edit_pi_select').value;
-            if (!piId) {
-                alert('Pilih PI yang akan dihapus!');
+        async function updatePi() {
+            const no_pi = document.getElementById('edit_no_pi').value.trim();
+            const tanggal = document.getElementById('edit_tanggal_pi').value;
+            if (!no_pi || !tanggal) {
+                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
                 return;
             }
-            
+            const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+            if (validItems.length === 0) {
+                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
+                return;
+            }
+            const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
+            if (headerError) {
+                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
+                return;
+            }
+            const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
+            for (let i = 0; i < validItems.length; i++) {
+                const item = validItems[i];
+                if (existingDetails && existingDetails[i]) {
+                    await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
+                } else {
+                    await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+                }
+            }
+            if (existingDetails && existingDetails.length > validItems.length) {
+                for (let i = validItems.length; i < existingDetails.length; i++) {
+                    const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                    const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                    if (masuk.length === 0 && keluar.length === 0) {
+                        await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
+                    } else {
+                        alert(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus karena sudah memiliki transaksi.`);
+                    }
+                }
+            }
+            await loadMasterData();
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate! Data transaksi tetap terjaga.</div>';
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+        }
+        
+        async function hapusPi() {
+            const piId = document.getElementById('edit_pi_select').value;
+            if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
             const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
-            
             if (confirm(`Hapus PI "${header.no_pi}" dan semua item di dalamnya? Data masuk/keluar juga akan ikut terhapus.`)) {
                 await sb.from('barang_masuk').delete().eq('pi_id', piId);
                 await sb.from('barang_keluar').delete().eq('pi_id', piId);
                 await sb.from('pi_detail').delete().eq('pi_id', piId);
                 await sb.from('pi_header').delete().eq('id', piId);
-                
                 alert('PI berhasil dihapus!');
                 window.location.href = 'dashboard.html';
             }
@@ -820,7 +363,6 @@
             mode = m;
             document.getElementById('modeNew').classList.toggle('active', m === 'new');
             document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
-            
             if (m === 'new') {
                 document.getElementById('formNew').style.display = 'block';
                 document.getElementById('formEdit').style.display = 'none';
@@ -837,7 +379,6 @@
         async function loadHalaman() {
             const today = new Date().toISOString().split('T')[0];
             await loadMasterData();
-            
             document.getElementById('mainContent').innerHTML = `
                 <div class="card">
                     <div class="card-title">📝 Manajemen PI</div>
@@ -845,7 +386,6 @@
                         <div id="modeNew" class="mode-btn active" onclick="switchMode('new')">➕ PI Baru</div>
                         <div id="modeEdit" class="mode-btn" onclick="switchMode('edit')">✏️ Edit/Hapus PI</div>
                     </div>
-                    
                     <div id="formNew">
                         <div id="msgInput"></div>
                         <input type="text" id="no_pi" placeholder="No PI *">
@@ -853,12 +393,9 @@
                         <div id="itemContainer"></div>
                         <button onclick="simpanPiBaru()">💾 Simpan PI Baru</button>
                     </div>
-                    
                     <div id="formEdit" style="display:none">
                         <div id="msgInputEdit"></div>
-                        <select id="edit_pi_select" onchange="onSelectPiForEdit()">
-                            <option value="">-- Pilih PI --</option>
-                        </select>
+                        <select id="edit_pi_select" onchange="onSelectPiForEdit()"><option value="">-- Pilih PI --</option></select>
                         <input type="text" id="edit_no_pi" placeholder="No PI *">
                         <input type="date" id="edit_tanggal_pi">
                         <div id="itemContainerEdit"></div>
@@ -867,74 +404,50 @@
                     </div>
                 </div>
             `;
-            
-            // Setup container untuk kedua form
             const containerNew = document.getElementById('itemContainer');
             const containerEdit = document.getElementById('itemContainerEdit');
-            
-            // Function override untuk render
             window.renderItemForm = () => {
                 if (mode === 'new' && containerNew) {
                     let html = '';
                     for (let i = 0; i < itemList.length; i++) {
-                        html += `
-                            <div class="item-row">
-                                <input type="text" placeholder="Brand *" value="${itemList[i].brand}" 
-                                    onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
-                                <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" 
-                                    onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
-                                <input type="text" placeholder="Paper" value="${itemList[i].paper}" 
-                                    onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
-                                <input type="text" placeholder="Size" value="${itemList[i].size}" 
-                                    onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                                <input type="number" placeholder="Qty *" value="${itemList[i].qty}" 
-                                    onchange="updateItem(${i}, 'qty', this.value)">
-                                <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                            </div>
-                        `;
+                        html += `<div class="item-row">
+                            <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
+                            <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
+                            <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
+                            <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
+                            <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                            <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                        </div>`;
                     }
-                    html += `
-                        <datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+                    html += `<datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
                         <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
                         <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
                         <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                        <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
-                    `;
+                        <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
                     containerNew.innerHTML = html;
                 } else if (mode === 'edit' && containerEdit) {
                     let html = '';
                     for (let i = 0; i < itemList.length; i++) {
-                        html += `
-                            <div class="item-row">
-                                <input type="text" placeholder="Brand *" value="${itemList[i].brand}" 
-                                    onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest2">
-                                <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" 
-                                    onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
-                                <input type="text" placeholder="Paper" value="${itemList[i].paper}" 
-                                    onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
-                                <input type="text" placeholder="Size" value="${itemList[i].size}" 
-                                    onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
-                                <input type="number" placeholder="Qty *" value="${itemList[i].qty}" 
-                                    onchange="updateItem(${i}, 'qty', this.value)">
-                                <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                            </div>
-                        `;
+                        html += `<div class="item-row">
+                            <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest2">
+                            <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
+                            <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
+                            <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
+                            <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                            <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                        </div>`;
                     }
-                    html += `
-                        <datalist id="brandSuggest2">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+                    html += `<datalist id="brandSuggest2">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
                         <datalist id="jenisSuggest2">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
                         <datalist id="paperSuggest2">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
                         <datalist id="sizeSuggest2">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                        <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
-                    `;
+                        <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
                     containerEdit.innerHTML = html;
                 }
             };
-            
             renderItemForm();
         }
         
-        // ==================== SIDEBAR & NAVIGASI ====================
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
@@ -942,69 +455,57 @@
         async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
         
         function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'scan-barcode': 'scan-barcode.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
         
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) window.location.href = 'login.html';
         }
         
-   function setupEventListeners() {
-    document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
-    document.getElementById('overlay')?.addEventListener('click', closeSidebar);
-    document.getElementById('logoutBtn')?.addEventListener('click', logout);
-    document.getElementById('logoutMenu')?.addEventListener('click', logout);
-    
-    document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const menu = item.getAttribute('data-menu');
-            goToMenu(menu);
-        });
-    });
-    
-    let touchStartX = 0;
-    document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
-    document.addEventListener('touchend', (e) => {
-        const diff = e.changedTouches[0].screenX - touchStartX;
-        if (diff > 50 && touchStartX < 30) openSidebar();
-        else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
-    });
-}
-  async function init() {
-    // Cek role admin
-    const { data: { user } } = await sb.auth.getUser();
-    if (user) {
-        const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
-        if (profile?.role !== 'admin') {
-            document.getElementById('mainContent').innerHTML = `
-                <div class="card" style="text-align:center; padding:30px">
-                    <h3>⛔ Akses Ditolak</h3>
-                    <p>Halaman Input PI hanya untuk ADMIN.</p>
-                    <button onclick="window.location.href='dashboard.html'">Ke Dashboard</button>
-                </div>
-            `;
-            return;
+        function setupEventListeners() {
+            document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
+            document.getElementById('overlay')?.addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn')?.addEventListener('click', logout);
+            document.getElementById('logoutMenu')?.addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+                item.addEventListener('click', (e) => { goToMenu(item.getAttribute('data-menu')); });
+            });
+            let touchStartX = 0;
+            document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+            document.addEventListener('touchend', (e) => {
+                const diff = e.changedTouches[0].screenX - touchStartX;
+                if (diff > 50 && touchStartX < 30) openSidebar();
+                else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
+            });
         }
-    }
-    
-    await checkSession();
-    await loadHalaman();
-    setupEventListeners();
-}
+        
+        async function init() {
+            const { data: { user } } = await sb.auth.getUser();
+            if (user) {
+                const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+                if (profile?.role !== 'admin') {
+                    document.getElementById('mainContent').innerHTML = `<div class="card" style="text-align:center;padding:30px"><h3>⛔ Akses Ditolak</h3><p>Halaman Input PI hanya untuk ADMIN.</p><button onclick="window.location.href='dashboard.html'">Ke Dashboard</button></div>`;
+                    return;
+                }
+            }
+            await checkSession();
+            await loadHalaman();
+            setupEventListeners();
+        }
         
         window.tambahItem = tambahItem;
         window.hapusItem = hapusItem;
