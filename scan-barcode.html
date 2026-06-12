@@ -115,7 +115,32 @@
             background: #ef4444;
         }
         
+        .btn-cari {
+            background: #10b981;
+            margin-top: 10px;
+        }
+        
+        .manual-input {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .manual-input input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
         .info-text { color: #64748b; font-size: 13px; margin-top: 10px; text-align: center; }
+        .daftar-pi { max-height: 250px; overflow-y: auto; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .daftar-pi-item { padding: 5px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+        .daftar-pi-item:hover { background: #e2e8f0; }
         
         @media (max-width: 600px) {
             .btn-scan { font-size: 14px; }
@@ -133,6 +158,7 @@
             <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">Barcode</span></div>
             <div class="menu-item active" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan Barcode</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
@@ -167,20 +193,44 @@
         }
         
         async function loadPage() {
+            // Ambil daftar PI untuk ditampilkan
+            const { data: headers } = await sb.from('pi_header').select('no_pi').order('no_pi', { ascending: true });
+            
+            let daftarHtml = '<div class="daftar-pi">';
+            if (headers && headers.length > 0) {
+                for (const pi of headers) {
+                    daftarHtml += `<div class="daftar-pi-item" onclick="pilihPi('${pi.no_pi}')">📄 ${pi.no_pi}</div>`;
+                }
+            } else {
+                daftarHtml += '<div style="padding:10px; text-align:center">Belum ada PI</div>';
+            }
+            daftarHtml += '</div>';
+            
             document.getElementById('mainContent').innerHTML = `
                 <div class="card">
-                    <div class="card-title">📷 SCAN BARCODE</div>
-                    <button id="startScanBtn" class="btn-scan">🔍 Mulai Scan Barcode</button>
+                    <div class="card-title">🔍 SCAN / CARI PI</div>
+                    
+                    <div class="manual-input">
+                        <div class="card-title" style="margin-bottom:10px">📝 Cari Manual</div>
+                        <input type="text" id="manualNoPi" placeholder="Masukkan No PI (contoh: 164.05.26.PRP)">
+                        <button class="btn-cari" onclick="cariManual()">🔍 Cari PI</button>
+                    </div>
+                    
+                    <div style="text-align:center; margin:10px 0">— ATAU —</div>
+                    
+                    <button id="startScanBtn" class="btn-scan">📷 Scan Barcode</button>
                     <button id="stopScanBtn" class="btn-scan btn-stop" style="display:none">⏹️ Hentikan Scan</button>
                     <div id="reader" style="display:none"></div>
                     <div id="result"></div>
+                    
                     <div class="info-text">
+                        <strong>📋 DAFTAR PI YANG TERSEDIA:</strong>
+                        ${daftarHtml}
+                        <br>
                         <strong>📌 Cara Penggunaan:</strong><br>
-                        1. Klik "Mulai Scan Barcode"<br>
-                        2. Izinkan akses kamera<br>
-                        3. Arahkan kamera ke barcode pada kemasan barang<br>
-                        4. Sistem akan mencari PI yang sesuai<br>
-                        5. Setelah ditemukan, akan diarahkan ke halaman Barang Masuk/Keluar
+                        1. <strong>Manual:</strong> Ketik No PI di kolom, klik "Cari PI"<br>
+                        2. <strong>Scan Barcode:</strong> Klik "Mulai Scan", arahkan ke barcode yang sudah ditempel<br>
+                        3. <strong>Klik Daftar PI:</strong> Langsung pilih dari daftar
                     </div>
                 </div>
             `;
@@ -188,6 +238,37 @@
             document.getElementById('startScanBtn').onclick = startScan;
             document.getElementById('stopScanBtn').onclick = stopScan;
         }
+        
+        window.pilihPi = (noPi) => {
+            document.getElementById('manualNoPi').value = noPi;
+            cariManual();
+        };
+        
+        window.cariManual = async () => {
+            const noPi = document.getElementById('manualNoPi').value.trim();
+            if (!noPi) {
+                alert('Masukkan No PI!');
+                return;
+            }
+            
+            document.getElementById('result').innerHTML = `<div class="scan-result">⏳ Mencari PI "${noPi}"...</div>`;
+            
+            const { data: headers } = await sb.from('pi_header').select('id, no_pi').eq('no_pi', noPi);
+            
+            if (headers && headers.length > 0) {
+                const pi = headers[0];
+                document.getElementById('result').innerHTML = `<div class="scan-result">✅ Ditemukan PI: <strong>${pi.no_pi}</strong><br>
+                    📌 Pilih tindakan:<br>
+                    <button onclick="goToStockIn('${pi.id}')" style="margin-top:10px; margin-right:10px">📥 Barang Masuk</button>
+                    <button onclick="goToStockOut('${pi.id}')" style="margin-top:10px">📤 Barang Keluar</button>
+                </div>`;
+            } else {
+                document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ PI "${noPi}" tidak ditemukan.<br>
+                    Pastikan No PI sudah benar.<br>
+                    <button onclick="window.location.href='pi-input.html'" style="margin-top:10px">➕ Buat PI Baru</button>
+                </div>`;
+            }
+        };
         
         async function startScan() {
             if (isScanning) return;
@@ -199,19 +280,10 @@
             
             html5QrCode = new Html5Qrcode("reader");
             
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
             
             try {
-                await html5QrCode.start(
-                    { facingMode: "environment" }, // pakai kamera belakang
-                    config,
-                    onScanSuccess,
-                    onScanError
-                );
+                await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError);
                 isScanning = true;
             } catch (err) {
                 document.getElementById('result').innerHTML = `<div class="alert alert-error">❌ Gagal mengakses kamera: ${err.message}</div>`;
@@ -219,13 +291,10 @@
             }
         }
         
-        async function onScanSuccess(decodedText, decodedResult) {
-            // Berhenti scan dulu
+        async function onScanSuccess(decodedText) {
             stopScan();
+            document.getElementById('result').innerHTML = `<div class="scan-result">✅ Barcode terbaca: <strong>${decodedText}</strong><br>⏳ Mencari PI...</div>`;
             
-            document.getElementById('result').innerHTML = `<div class="scan-result">✅ Barcode terbaca: <strong>${decodedText}</strong><br>⏳ Mencari PI yang sesuai...</div>`;
-            
-            // Cari PI berdasarkan barcode (asumsikan barcode = No PI)
             const { data: headers } = await sb.from('pi_header').select('id, no_pi').eq('no_pi', decodedText);
             
             if (headers && headers.length > 0) {
@@ -237,30 +306,17 @@
                     <button onclick="startScan()" style="margin-top:10px; background:#64748b">🔍 Scan Lagi</button>
                 </div>`;
             } else {
-                // Coba cari berdasarkan barcode yang tersimpan di database (jika ada kolom barcode)
-                document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ Barcode <strong>${decodedText}</strong> tidak ditemukan.<br>
-                    Pastikan barcode sesuai dengan No PI.<br>
+                document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ Barcode "${decodedText}" tidak ditemukan.<br>
                     <button onclick="startScan()" style="margin-top:10px">🔍 Scan Lagi</button>
                 </div>`;
             }
         }
         
-        function onScanError(errorMessage) {
-            // abaikan error scanning (biasanya frame tidak terbaca)
-            console.log(errorMessage);
-        }
+        function onScanError(errorMessage) { console.log(errorMessage); }
         
         function stopScan() {
             if (html5QrCode && isScanning) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    isScanning = false;
-                    document.getElementById('reader').style.display = 'none';
-                    document.getElementById('startScanBtn').style.display = 'block';
-                    document.getElementById('stopScanBtn').style.display = 'none';
-                }).catch(err => {
-                    console.log(err);
-                });
+                html5QrCode.stop().then(() => { html5QrCode.clear(); isScanning = false; document.getElementById('reader').style.display = 'none'; document.getElementById('startScanBtn').style.display = 'block'; document.getElementById('stopScanBtn').style.display = 'none'; }).catch(err => console.log(err));
             } else {
                 document.getElementById('reader').style.display = 'none';
                 document.getElementById('startScanBtn').style.display = 'block';
@@ -268,13 +324,8 @@
             }
         }
         
-        function goToStockIn(piId) {
-            window.location.href = `stock-in.html?pi_id=${piId}`;
-        }
-        
-        function goToStockOut(piId) {
-            window.location.href = `stock-out.html?pi_id=${piId}`;
-        }
+        function goToStockIn(piId) { window.location.href = `stock-in.html?pi_id=${piId}`; }
+        function goToStockOut(piId) { window.location.href = `stock-out.html?pi_id=${piId}`; }
         
         function goToMenu(menu) {
             const files = {
@@ -284,6 +335,7 @@
                 'stock-out': 'stock-out.html',
                 'stock-report': 'stock-report.html',
                 'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
                 'scan-barcode': 'scan-barcode.html',
                 executive: 'executive-report.html',
                 'manage-users': 'manage-users.html',
@@ -304,9 +356,7 @@
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
-            });
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => { el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu'))); });
         }
         
         async function init() {
@@ -315,6 +365,8 @@
             await loadPage();
         }
         
+        window.cariManual = cariManual;
+        window.pilihPi = pilihPi;
         window.startScan = startScan;
         window.stopScan = stopScan;
         window.goToStockIn = goToStockIn;
