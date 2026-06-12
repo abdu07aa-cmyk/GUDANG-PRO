@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Scan Barcode - Gudang Pro</title>
+    <title>Scan QR - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -115,30 +115,63 @@
             background: #ef4444;
         }
         
-        .btn-cari {
-            background: #10b981;
+        .btn-submit {
+            background: #f59e0b;
             margin-top: 10px;
         }
         
-        .manual-input {
+        .info-text { color: #64748b; font-size: 13px; margin-top: 10px; text-align: center; }
+        
+        .form-input {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .form-input input, .form-input select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .stok-info {
+            background: #fef3c7;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .alert-warning {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 8px;
             margin-bottom: 15px;
         }
         
-        .manual-input input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 10px;
             border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         
-        .info-text { color: #64748b; font-size: 13px; margin-top: 10px; text-align: center; }
-        .daftar-pi { max-height: 250px; overflow-y: auto; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        select, input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        
+        .daftar-pi { max-height: 200px; overflow-y: auto; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; }
         .daftar-pi-item { padding: 5px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
         .daftar-pi-item:hover { background: #e2e8f0; }
         
@@ -158,13 +191,9 @@
             <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
-            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">Barcode</span></div>
-            <div class="menu-item active" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan Barcode</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item active" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
             <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="scan-qr">
-    <span class="icon">📷</span>
-    <span class="text">Scan QR</span>
-</div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
@@ -189,6 +218,8 @@
     <script>
         let html5QrCode = null;
         let isScanning = false;
+        let scannedData = null;
+        let piList = [];
         
         async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
@@ -196,45 +227,48 @@
             return session;
         }
         
-        async function loadPage() {
-            // Ambil daftar PI untuk ditampilkan
+        async function loadDaftarPi() {
             const { data: headers } = await sb.from('pi_header').select('no_pi').order('no_pi', { ascending: true });
-            
-            let daftarHtml = '<div class="daftar-pi">';
-            if (headers && headers.length > 0) {
-                for (const pi of headers) {
-                    daftarHtml += `<div class="daftar-pi-item" onclick="pilihPi('${pi.no_pi}')">📄 ${pi.no_pi}</div>`;
-                }
-            } else {
-                daftarHtml += '<div style="padding:10px; text-align:center">Belum ada PI</div>';
+            piList = headers || [];
+            let html = '<div class="daftar-pi">';
+            for (const pi of piList) {
+                html += `<div class="daftar-pi-item" onclick="pilihPiManual('${pi.no_pi}')">📄 ${pi.no_pi}</div>`;
             }
-            daftarHtml += '</div>';
+            html += '</div>';
+            return html;
+        }
+        
+        async function loadPage() {
+            const daftarPiHtml = await loadDaftarPi();
             
             document.getElementById('mainContent').innerHTML = `
                 <div class="card">
-                    <div class="card-title">🔍 SCAN / CARI PI</div>
+                    <div class="card-title">🔍 SCAN QR CODE</div>
+                    
+                    <div class="info-text" style="margin-bottom:15px">
+                        📌 <strong>Aturan Penggunaan:</strong><br>
+                        • Scan pertama → WAJIB <strong>BARANG MASUK</strong><br>
+                        • Scan berikutnya → <strong>BARANG KELUAR</strong><br>
+                        • 1 QR Code hanya bisa scan MASUK 1x dan KELUAR 1x<br>
+                        • Tidak bisa KELUAR jika belum pernah MASUK
+                    </div>
                     
                     <div class="manual-input">
-                        <div class="card-title" style="margin-bottom:10px">📝 Cari Manual</div>
-                        <input type="text" id="manualNoPi" placeholder="Masukkan No PI (contoh: 164.05.26.PRP)">
-                        <button class="btn-cari" onclick="cariManual()">🔍 Cari PI</button>
+                        <div class="card-title" style="margin-bottom:10px">📝 Atau Ketik No PI Manual</div>
+                        <input type="text" id="manualNoPi" placeholder="Masukkan No PI...">
+                        <button class="btn-cari" onclick="cariManual()" style="background:#10b981">🔍 Cari PI</button>
                     </div>
                     
                     <div style="text-align:center; margin:10px 0">— ATAU —</div>
                     
-                    <button id="startScanBtn" class="btn-scan">📷 Scan Barcode</button>
+                    <button id="startScanBtn" class="btn-scan">📷 Scan QR Code</button>
                     <button id="stopScanBtn" class="btn-scan btn-stop" style="display:none">⏹️ Hentikan Scan</button>
                     <div id="reader" style="display:none"></div>
                     <div id="result"></div>
                     
                     <div class="info-text">
                         <strong>📋 DAFTAR PI YANG TERSEDIA:</strong>
-                        ${daftarHtml}
-                        <br>
-                        <strong>📌 Cara Penggunaan:</strong><br>
-                        1. <strong>Manual:</strong> Ketik No PI di kolom, klik "Cari PI"<br>
-                        2. <strong>Scan Barcode:</strong> Klik "Mulai Scan", arahkan ke barcode yang sudah ditempel<br>
-                        3. <strong>Klik Daftar PI:</strong> Langsung pilih dari daftar
+                        ${daftarPiHtml}
                     </div>
                 </div>
             `;
@@ -243,7 +277,7 @@
             document.getElementById('stopScanBtn').onclick = stopScan;
         }
         
-        window.pilihPi = (noPi) => {
+        window.pilihPiManual = (noPi) => {
             document.getElementById('manualNoPi').value = noPi;
             cariManual();
         };
@@ -268,7 +302,6 @@
                 </div>`;
             } else {
                 document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ PI "${noPi}" tidak ditemukan.<br>
-                    Pastikan No PI sudah benar.<br>
                     <button onclick="window.location.href='pi-input.html'" style="margin-top:10px">➕ Buat PI Baru</button>
                 </div>`;
             }
@@ -280,7 +313,7 @@
             document.getElementById('startScanBtn').style.display = 'none';
             document.getElementById('stopScanBtn').style.display = 'block';
             document.getElementById('reader').style.display = 'block';
-            document.getElementById('result').innerHTML = '<div class="info-text">⏳ Menunggu scan barcode...</div>';
+            document.getElementById('result').innerHTML = '<div class="info-text">⏳ Menunggu scan QR Code...</div>';
             
             html5QrCode = new Html5Qrcode("reader");
             
@@ -290,37 +323,199 @@
                 await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError);
                 isScanning = true;
             } catch (err) {
-                document.getElementById('result').innerHTML = `<div class="alert alert-error">❌ Gagal mengakses kamera: ${err.message}</div>`;
+                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ Gagal mengakses kamera: ${err.message}</div>`;
                 stopScan();
             }
         }
         
+        async function parseQRText(qrText) {
+            const data = {};
+            const parts = qrText.split(',');
+            for (const part of parts) {
+                const [key, ...valueParts] = part.trim().split(':');
+                if (key && valueParts.length) {
+                    data[key.trim()] = valueParts.join(':').trim();
+                }
+            }
+            return data;
+        }
+        
         async function onScanSuccess(decodedText) {
             stopScan();
-            document.getElementById('result').innerHTML = `<div class="scan-result">✅ Barcode terbaca: <strong>${decodedText}</strong><br>⏳ Mencari PI...</div>`;
             
-            const { data: headers } = await sb.from('pi_header').select('id, no_pi').eq('no_pi', decodedText);
+            document.getElementById('result').innerHTML = '<div class="info-text">⏳ Memproses QR Code...</div>';
             
-            if (headers && headers.length > 0) {
-                const pi = headers[0];
-                document.getElementById('result').innerHTML = `<div class="scan-result">✅ Ditemukan PI: <strong>${pi.no_pi}</strong><br>
-                    📌 Pilih tindakan:<br>
-                    <button onclick="goToStockIn('${pi.id}')" style="margin-top:10px; margin-right:10px">📥 Barang Masuk</button>
-                    <button onclick="goToStockOut('${pi.id}')" style="margin-top:10px">📤 Barang Keluar</button>
-                    <button onclick="startScan()" style="margin-top:10px; background:#64748b">🔍 Scan Lagi</button>
-                </div>`;
-            } else {
-                document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ Barcode "${decodedText}" tidak ditemukan.<br>
-                    <button onclick="startScan()" style="margin-top:10px">🔍 Scan Lagi</button>
-                </div>`;
+            const qrData = await parseQRText(decodedText);
+            const noPi = qrData['PI'] || '';
+            const brand = qrData['BRAND'] || '';
+            const jenis = qrData['JENIS'] || '';
+            const qtyBatch = parseInt(qrData['QTY']) || 0;
+            const batchName = qrData['BATCH'] || '';
+            
+            if (!noPi || !brand || !jenis) {
+                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ QR Code tidak valid! Format tidak sesuai.</div>`;
+                return;
             }
+            
+            // Cek apakah QR sudah pernah scan KELUAR (expired)
+            const { data: scanKeluar } = await sb.from('scan_log').select('*').eq('qr_text', decodedText).eq('transaksi_jenis', 'KELUAR').single();
+            if (scanKeluar) {
+                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ QR Code ini sudah pernah digunakan untuk BARANG KELUAR. Tidak bisa dipakai lagi!</div>`;
+                return;
+            }
+            
+            // Cek apakah QR sudah pernah scan MASUK
+            const { data: scanMasuk } = await sb.from('scan_log').select('*').eq('qr_text', decodedText).eq('transaksi_jenis', 'MASUK').single();
+            const sudahMasuk = !!scanMasuk;
+            
+            // Cari PI di database
+            const { data: piHeader } = await sb.from('pi_header').select('id').eq('no_pi', noPi).single();
+            if (!piHeader) {
+                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ PI "${noPi}" tidak ditemukan!</div>`;
+                return;
+            }
+            
+            // Cari detail item
+            const { data: detailItem } = await sb.from('pi_detail')
+                .select('id')
+                .eq('pi_id', piHeader.id)
+                .eq('brand', brand)
+                .eq('jenis', jenis)
+                .single();
+            
+            if (!detailItem) {
+                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ Item "${brand} - ${jenis}" tidak ditemukan!</div>`;
+                return;
+            }
+            
+            // Hitung stok
+            const { data: masuk } = await sb.from('barang_masuk').select('qty').eq('detail_id', detailItem.id);
+            const { data: keluar } = await sb.from('barang_keluar').select('qty').eq('detail_id', detailItem.id);
+            let totalMasuk = 0, totalKeluar = 0;
+            if (masuk) masuk.forEach(m => totalMasuk += m.qty);
+            if (keluar) keluar.forEach(k => totalKeluar += k.qty);
+            const stokSaatIni = totalMasuk - totalKeluar;
+            
+            let html = `
+                <div class="scan-result">
+                    <strong>✅ QR Code terbaca:</strong><br>
+                    <code style="font-size:11px; word-break:break-all">${decodedText}</code>
+                    <div style="margin-top:10px">
+                        <div><strong>No PI:</strong> ${noPi}</div>
+                        <div><strong>Brand:</strong> ${brand}</div>
+                        <div><strong>Jenis:</strong> ${jenis}</div>
+                        <div><strong>Qty per QR:</strong> ${qtyBatch.toLocaleString()} pcs</div>
+                        <div><strong>Batch:</strong> ${batchName}</div>
+                    </div>
+            `;
+            
+            if (!sudahMasuk) {
+                html += `
+                    <div class="alert-info" style="margin-top:10px">⚠️ QR Code ini belum pernah di-scan MASUK. Scan pertama WAJIB untuk BARANG MASUK.</div>
+                    <div class="form-input">
+                        <label>📅 Tanggal Masuk</label>
+                        <input type="date" id="tanggal_transaksi" value="${new Date().toISOString().split('T')[0]}">
+                        <label>📦 Jumlah (Qty)</label>
+                        <input type="number" id="qty_transaksi" value="${qtyBatch}" min="1">
+                        <label>📋 Keterangan (opsional)</label>
+                        <input type="text" id="keterangan" placeholder="Keterangan">
+                        <button class="btn-submit" onclick="simpanTransaksi('MASUK', '${decodedText}', ${detailItem.id})">✅ Simpan Barang Masuk</button>
+                    </div>
+                `;
+            } else {
+                if (stokSaatIni <= 0) {
+                    html += `<div class="alert-warning" style="margin-top:10px">⚠️ Stok habis! Tidak bisa melakukan barang keluar. Stok saat ini: 0</div>`;
+                } else {
+                    html += `
+                        <div class="stok-info" style="margin-top:10px">📊 Stok saat ini: <strong>${stokSaatIni}</strong> pcs (bisa keluar)</div>
+                        <div class="form-input">
+                            <label>📅 Tanggal Keluar</label>
+                            <input type="date" id="tanggal_transaksi" value="${new Date().toISOString().split('T')[0]}">
+                            <label>📦 Jumlah (Qty)</label>
+                            <input type="number" id="qty_transaksi" value="${Math.min(qtyBatch, stokSaatIni)}" min="1" max="${stokSaatIni}">
+                            <label>📋 Keterangan (opsional)</label>
+                            <input type="text" id="keterangan" placeholder="Keterangan">
+                            <button class="btn-submit" onclick="simpanTransaksi('KELUAR', '${decodedText}', ${detailItem.id})">✅ Simpan Barang Keluar</button>
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `<button onclick="startScan()" style="margin-top:10px; background:#64748b">🔍 Scan Lagi</button>`;
+            html += `</div>`;
+            
+            document.getElementById('result').innerHTML = html;
+            scannedData = { qrText: decodedText, qtyBatch, noPi, brand, jenis };
+        }
+        
+        async function simpanTransaksi(jenis, qrText, detailId) {
+            const tanggal = document.getElementById('tanggal_transaksi').value;
+            const qty = parseInt(document.getElementById('qty_transaksi').value);
+            const keterangan = document.getElementById('keterangan').value;
+            
+            if (!qty || qty <= 0) {
+                alert('Masukkan jumlah yang valid!');
+                return;
+            }
+            
+            const userEmail = (await sb.auth.getUser()).data.user?.email;
+            
+            let error = null;
+            let transaksiId = null;
+            
+            if (jenis === 'MASUK') {
+                const result = await sb.from('barang_masuk').insert([{
+                    detail_id: detailId,
+                    tanggal: tanggal,
+                    qty: qty,
+                    keterangan: keterangan || 'QR SCAN MASUK',
+                    created_by: userEmail
+                }]).select();
+                if (result.error) error = result.error;
+                else transaksiId = result.data[0].id;
+            } else {
+                const result = await sb.from('barang_keluar').insert([{
+                    detail_id: detailId,
+                    tanggal: tanggal,
+                    qty: qty,
+                    keterangan: keterangan || 'QR SCAN KELUAR',
+                    created_by: userEmail
+                }]).select();
+                if (result.error) error = result.error;
+                else transaksiId = result.data[0].id;
+            }
+            
+            if (error) {
+                alert('Gagal: ' + error.message);
+                return;
+            }
+            
+            // Catat ke scan_log
+            await sb.from('scan_log').insert([{
+                qr_text: qrText,
+                detail_id: detailId,
+                transaksi_jenis: jenis,
+                transaksi_id: transaksiId,
+                scanned_by: userEmail
+            }]);
+            
+            alert(`✅ ${jenis === 'MASUK' ? 'Barang Masuk' : 'Barang Keluar'} berhasil dicatat!`);
+            
+            // Reset form
+            document.getElementById('result').innerHTML = '<div class="alert-success">✅ Transaksi berhasil! Silakan scan lagi.</div>';
         }
         
         function onScanError(errorMessage) { console.log(errorMessage); }
         
         function stopScan() {
             if (html5QrCode && isScanning) {
-                html5QrCode.stop().then(() => { html5QrCode.clear(); isScanning = false; document.getElementById('reader').style.display = 'none'; document.getElementById('startScanBtn').style.display = 'block'; document.getElementById('stopScanBtn').style.display = 'none'; }).catch(err => console.log(err));
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    isScanning = false;
+                    document.getElementById('reader').style.display = 'none';
+                    document.getElementById('startScanBtn').style.display = 'block';
+                    document.getElementById('stopScanBtn').style.display = 'none';
+                }).catch(err => console.log(err));
             } else {
                 document.getElementById('reader').style.display = 'none';
                 document.getElementById('startScanBtn').style.display = 'block';
@@ -341,7 +536,6 @@
                 'stok-pendukung': 'stok-pendukung.html',
                 'barcode-generator': 'barcode-generator.html',
                 'scan-barcode': 'scan-barcode.html',
-                'scan-qr': 'scan-qr.html',
                 executive: 'executive-report.html',
                 'manage-users': 'manage-users.html',
                 'log-aktivitas': 'log-aktivitas.html',
@@ -361,7 +555,9 @@
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => { el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu'))); });
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
         }
         
         async function init() {
@@ -371,11 +567,10 @@
         }
         
         window.cariManual = cariManual;
-        window.pilihPi = pilihPi;
+        window.pilihPiManual = pilihPiManual;
         window.startScan = startScan;
         window.stopScan = stopScan;
-        window.goToStockIn = goToStockIn;
-        window.goToStockOut = goToStockOut;
+        window.simpanTransaksi = simpanTransaksi;
         
         init();
     </script>
