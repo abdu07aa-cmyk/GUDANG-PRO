@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Scan Barcode - Gudang Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; }
+        
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; }
+        #reader video { width: 100%; border-radius: 12px; }
+        
+        .scan-result {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .btn-scan {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .btn-stop {
+            background: #ef4444;
+        }
+        
+        .info-text { color: #64748b; font-size: 13px; margin-top: 10px; text-align: center; }
+        
+        @media (max-width: 600px) {
+            .btn-scan { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item active" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan Barcode</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 GUDANG PRO</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="container" id="mainContent"></div>
+
+    <script>
+        let html5QrCode = null;
+        let isScanning = false;
+        
+        async function cekSession() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            return session;
+        }
+        
+        async function loadPage() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card">
+                    <div class="card-title">📷 SCAN BARCODE</div>
+                    <button id="startScanBtn" class="btn-scan">🔍 Mulai Scan Barcode</button>
+                    <button id="stopScanBtn" class="btn-scan btn-stop" style="display:none">⏹️ Hentikan Scan</button>
+                    <div id="reader" style="display:none"></div>
+                    <div id="result"></div>
+                    <div class="info-text">
+                        <strong>📌 Cara Penggunaan:</strong><br>
+                        1. Klik "Mulai Scan Barcode"<br>
+                        2. Izinkan akses kamera<br>
+                        3. Arahkan kamera ke barcode pada kemasan barang<br>
+                        4. Sistem akan mencari PI yang sesuai<br>
+                        5. Setelah ditemukan, akan diarahkan ke halaman Barang Masuk/Keluar
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('startScanBtn').onclick = startScan;
+            document.getElementById('stopScanBtn').onclick = stopScan;
+        }
+        
+        async function startScan() {
+            if (isScanning) return;
+            
+            document.getElementById('startScanBtn').style.display = 'none';
+            document.getElementById('stopScanBtn').style.display = 'block';
+            document.getElementById('reader').style.display = 'block';
+            document.getElementById('result').innerHTML = '<div class="info-text">⏳ Menunggu scan barcode...</div>';
+            
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" }, // pakai kamera belakang
+                    config,
+                    onScanSuccess,
+                    onScanError
+                );
+                isScanning = true;
+            } catch (err) {
+                document.getElementById('result').innerHTML = `<div class="alert alert-error">❌ Gagal mengakses kamera: ${err.message}</div>`;
+                stopScan();
+            }
+        }
+        
+        async function onScanSuccess(decodedText, decodedResult) {
+            // Berhenti scan dulu
+            stopScan();
+            
+            document.getElementById('result').innerHTML = `<div class="scan-result">✅ Barcode terbaca: <strong>${decodedText}</strong><br>⏳ Mencari PI yang sesuai...</div>`;
+            
+            // Cari PI berdasarkan barcode (asumsikan barcode = No PI)
+            const { data: headers } = await sb.from('pi_header').select('id, no_pi').eq('no_pi', decodedText);
+            
+            if (headers && headers.length > 0) {
+                const pi = headers[0];
+                document.getElementById('result').innerHTML = `<div class="scan-result">✅ Ditemukan PI: <strong>${pi.no_pi}</strong><br>
+                    📌 Pilih tindakan:<br>
+                    <button onclick="goToStockIn('${pi.id}')" style="margin-top:10px; margin-right:10px">📥 Barang Masuk</button>
+                    <button onclick="goToStockOut('${pi.id}')" style="margin-top:10px">📤 Barang Keluar</button>
+                    <button onclick="startScan()" style="margin-top:10px; background:#64748b">🔍 Scan Lagi</button>
+                </div>`;
+            } else {
+                // Coba cari berdasarkan barcode yang tersimpan di database (jika ada kolom barcode)
+                document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ Barcode <strong>${decodedText}</strong> tidak ditemukan.<br>
+                    Pastikan barcode sesuai dengan No PI.<br>
+                    <button onclick="startScan()" style="margin-top:10px">🔍 Scan Lagi</button>
+                </div>`;
+            }
+        }
+        
+        function onScanError(errorMessage) {
+            // abaikan error scanning (biasanya frame tidak terbaca)
+            console.log(errorMessage);
+        }
+        
+        function stopScan() {
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    isScanning = false;
+                    document.getElementById('reader').style.display = 'none';
+                    document.getElementById('startScanBtn').style.display = 'block';
+                    document.getElementById('stopScanBtn').style.display = 'none';
+                }).catch(err => {
+                    console.log(err);
+                });
+            } else {
+                document.getElementById('reader').style.display = 'none';
+                document.getElementById('startScanBtn').style.display = 'block';
+                document.getElementById('stopScanBtn').style.display = 'none';
+            }
+        }
+        
+        function goToStockIn(piId) {
+            window.location.href = `stock-in.html?pi_id=${piId}`;
+        }
+        
+        function goToStockOut(piId) {
+            window.location.href = `stock-out.html?pi_id=${piId}`;
+        }
+        
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+        
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+        
+        async function init() {
+            await cekSession();
+            setupEventListeners();
+            await loadPage();
+        }
+        
+        window.startScan = startScan;
+        window.stopScan = stopScan;
+        window.goToStockIn = goToStockIn;
+        window.goToStockOut = goToStockOut;
+        
+        init();
+    </script>
+</body>
+</html>
