@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Barang Masuk - Gudang Pro</title>
+    <title>Barang Keluar - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
@@ -85,34 +85,35 @@
 
         .container { padding: 15px; max-width: 800px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
         
         input, button, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        button { background: #3b82f6; color: white; border: none; cursor: pointer; }
+        button { background: #f59e0b; color: white; border: none; cursor: pointer; }
         button:active { transform: scale(0.98); }
         .btn-hapus { background: #ef4444; width: auto; padding: 5px 10px; margin: 0; font-size: 12px; }
-        .btn-export { background: #10b981; }
         
         .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
         .alert-success { background: #d1fae5; color: #065f46; }
         .alert-error { background: #fee2e2; color: #991b1b; }
+        .alert-warning { background: #fed7aa; color: #9a3412; }
         
         .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
-        .stok-info { background: #e0f2fe; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 13px; }
         
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
-        
-        .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
-        .filter-row input { width: auto; flex: 1; }
-        .filter-row button { width: auto; padding: 8px 16px; }
+
+        .stok-info {
+            padding: 10px;
+            background: #fef3c7;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
         
         @media (max-width: 600px) {
             th, td { font-size: 10px; padding: 6px 4px; }
-            .filter-row input { width: 100%; }
-            .filter-row button { width: 100%; }
         }
     </style>
 </head>
@@ -126,19 +127,13 @@
         <div class="sidebar-menu">
             <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
             <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-            <div class="menu-item active" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item active" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
             <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="scan-barcode">
-    <span class="icon">📷</span>
-    <span class="text">Scan Barcode</span>
-</div>
-            <div class="menu-item" data-menu="scan-qr">
-    <span class="icon">📷</span>
-    <span class="text">Scan QR</span>
-</div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
@@ -161,6 +156,8 @@
     <div class="container" id="mainContent"></div>
 
     <script>
+        let currentStok = 0;
+        
         async function loadPiList() {
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             let options = '<option value="">-- Pilih No PI --</option>';
@@ -179,7 +176,7 @@
             if (!piId) {
                 itemSelect.innerHTML = '<option value="">-- Pilih PI dulu --</option>';
                 document.getElementById('historyList').innerHTML = '<div class="info-text">Pilih PI dan item untuk melihat histori</div>';
-                document.getElementById('stokPendukungInfo').innerHTML = '';
+                document.getElementById('stokInfo').innerHTML = '';
                 return;
             }
             
@@ -187,148 +184,83 @@
             
             let options = '<option value="">-- Pilih Item --</option>';
             for (const item of details) {
-                options += `<option value="${item.id}">
-                    ${item.brand} | ${item.jenis} | Paper:${item.paper || '-'} | Size:${item.size || '-'} | Qty PI: ${item.qty_pi}
+                const { data: masuk } = await sb.from('barang_masuk').select('qty').eq('detail_id', item.id);
+                const { data: keluar } = await sb.from('barang_keluar').select('qty').eq('detail_id', item.id);
+                let totalMasuk = 0, totalKeluar = 0;
+                if (masuk) masuk.forEach(m => totalMasuk += m.qty);
+                if (keluar) keluar.forEach(k => totalKeluar += k.qty);
+                const stok = totalMasuk - totalKeluar;
+                
+                options += `<option value="${item.id}" data-stok="${stok}">
+                    ${item.brand} | ${item.jenis} | Paper:${item.paper || '-'} | Size:${item.size || '-'} | Qty PI: ${item.qty_pi} | Stok: ${stok}
                 </option>`;
             }
             itemSelect.innerHTML = options;
         }
         
         async function onItemChange() {
-            const itemId = document.getElementById('item_select').value;
-            if (!itemId) {
-                document.getElementById('historyList').innerHTML = '<div class="info-text">Pilih item untuk melihat histori</div>';
-                document.getElementById('stokPendukungInfo').innerHTML = '';
-                return;
-            }
+            const select = document.getElementById('item_select');
+            const selected = select.options[select.selectedIndex];
+            const stok = parseInt(selected?.getAttribute('data-stok') || 0);
+            currentStok = stok;
+            document.getElementById('stokInfo').innerHTML = `<div class="stok-info">📊 Stok tersedia: ${stok}</div>`;
             
-            const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
-            
-            // Cek stok pendukung
-            const { data: stokPendukung } = await sb.from('stok_pendukung').select('*').ilike('nama', `%${item.jenis}%`);
-            
-            let stokHtml = '';
-            if (stokPendukung && stokPendukung.length > 0) {
-                for (const sp of stokPendukung) {
-                    const kebutuhan = item.qty_pi;
-                    const stokTersedia = sp.stok;
-                    let warning = '';
-                    if (stokTersedia < kebutuhan) {
-                        warning = ' <span style="color:#ef4444; font-weight:bold">⚠️ STOK KURANG!</span>';
-                    } else {
-                        warning = ' <span style="color:#10b981">✅ Stok mencukupi</span>';
-                    }
-                    stokHtml += `
-                        <div class="stok-info">
-                            <strong>📦 INFO STOK PENDUKUNG:</strong><br>
-                            Nama: ${sp.nama}<br>
-                            Stok Tersedia: <b>${stokTersedia}</b><br>
-                            Kebutuhan PI (${item.pi_header.no_pi}): <b>${kebutuhan}</b><br>
-                            ${warning}
-                        </div>
-                    `;
-                }
-            } else {
-                stokHtml = '<div class="info-text">ℹ️ Tidak ada stok pendukung yang cocok</div>';
-            }
-            document.getElementById('stokPendukungInfo').innerHTML = stokHtml;
-            
-            // Refresh histori dengan filter tanggal
-            filterHistory(itemId);
-        }
-        
-        let currentItemId = null;
-        
-        async function filterHistory(itemId) {
+            const itemId = select.value;
             if (!itemId) return;
-            currentItemId = itemId;
             
-            const tglAwal = document.getElementById('filter_tgl_awal').value;
-            const tglAkhir = document.getElementById('filter_tgl_akhir').value;
-            
-            let query = sb.from('barang_masuk').select('*').eq('detail_id', parseInt(itemId)).order('tanggal', { ascending: false });
-            
-            if (tglAwal) query = query.gte('tanggal', tglAwal);
-            if (tglAkhir) query = query.lte('tanggal', tglAkhir);
-            
-            const { data: history } = await query;
-            
-            const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
-            
+            const { data: history } = await sb.from('barang_keluar').select('*').eq('detail_id', parseInt(itemId)).order('tanggal', { ascending: false });
             if (!history || history.length === 0) {
-                document.getElementById('historyList').innerHTML = '<div class="info-text">Belum ada histori barang masuk untuk periode ini</div>';
+                document.getElementById('historyList').innerHTML = '<div class="info-text">Belum ada histori barang keluar</div>';
                 return;
             }
             
-            let totalMasuk = 0;
-            history.forEach(h => totalMasuk += h.qty);
-            
-            let html = `
-                <div class="info-text" style="margin-bottom:15px;padding:10px;background:#e0f2fe;border-radius:8px">
-                    <strong>📄 Informasi Item:</strong><br>
-                    No PI: ${item.pi_header.no_pi}<br>
-                    Brand: ${item.brand}<br>
-                    Jenis: ${item.jenis}<br>
-                    Paper: ${item.paper || '-'}<br>
-                    Size: ${item.size || '-'}<br>
-                    Qty PI: ${item.qty_pi}<br>
-                    📊 Total Masuk (periode): <strong style="color:#10b981">${totalMasuk}</strong> | Jumlah Transaksi: ${history.length}
-                </div>
-                <div class="table-wrapper">
-                    <table style="width:100%">
-                        <thead>
-                            <tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr>
-                        </thead>
-                        <tbody>`;
-            
+            let html = '<div class="table-wrapper"><table style="width:100%"><thead><tr><th>Tanggal</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody>';
             for (const h of history) {
                 html += `<tr>
                     <td>${h.tanggal}</td>
-                    <td><span style="font-weight:bold;color:#10b981">+${h.qty}</span></td>
+                    <td><b>-${h.qty}</b></td>
                     <td>${h.keterangan || '-'}</td>
-                    <td><button class="btn-hapus" onclick="hapusHistory(${h.id}, ${itemId})">Hapus</button></td>
+                    <td><button class="btn-hapus" onclick="hapusHistory(${h.id})">Hapus</button></td>
                 </tr>`;
             }
-            
-            html += `</tbody></table></div>`;
+            html += '</tbody></table></div>';
             document.getElementById('historyList').innerHTML = html;
         }
         
-        async function hapusHistory(id, itemId) {
-            if (confirm('Yakin ingin menghapus histori ini? Stok akan berkurang kembali.')) {
-                const { error } = await sb.from('barang_masuk').delete().eq('id', id);
+        async function hapusHistory(id) {
+            if (confirm('Hapus histori ini?')) {
+                const { error } = await sb.from('barang_keluar').delete().eq('id', id);
                 if (error) {
-                    alert('Gagal menghapus: ' + error.message);
+                    alert('Gagal: ' + error.message);
                 } else {
-                    await addLog('HAPUS HISTORI', `Menghapus histori barang masuk ID ${id}`);
-                    alert('Histori berhasil dihapus');
-                    await onItemChange();
+                    alert('✅ Histori berhasil dihapus');
+                    location.reload();
                 }
             }
         }
         
-        async function simpanMasuk() {
+        async function simpanKeluar() {
             const piId = document.getElementById('pi_select').value;
             const itemId = document.getElementById('item_select').value;
-            const qty = document.getElementById('qty_masuk').value;
-            const tanggal = document.getElementById('tanggal_masuk').value;
+            const qty = document.getElementById('qty_keluar').value;
+            const tanggal = document.getElementById('tanggal_keluar').value;
             const keterangan = document.getElementById('keterangan').value;
             
-            if (!piId || !itemId || !qty || !tanggal) {
-                document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">Pilih PI, Item, isi Qty dan Tanggal!</div>';
+            if (!itemId || !qty || !tanggal) {
+                alert('Pilih item, isi qty dan tanggal!');
                 return;
             }
-            
             if (parseInt(qty) <= 0) {
-                document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">Qty harus lebih dari 0!</div>';
+                alert('Qty harus lebih dari 0!');
+                return;
+            }
+            if (parseInt(qty) > currentStok) {
+                alert(`Stok tidak cukup! Stok tersedia: ${currentStok}`);
                 return;
             }
             
             const { data: { user } } = await sb.auth.getUser();
-            const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
-            const itemInfo = `${item?.pi_header?.no_pi} - ${item?.brand} - ${item?.jenis}`;
-            
-            const { error } = await sb.from('barang_masuk').insert([{
+            const { error } = await sb.from('barang_keluar').insert([{
                 detail_id: parseInt(itemId),
                 tanggal: tanggal,
                 qty: parseInt(qty),
@@ -337,102 +269,11 @@
             }]);
             
             if (error) {
-                document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
+                alert('Gagal: ' + error.message);
             } else {
-                await addLog('BARANG MASUK', `${user.email} mencatat barang masuk ${qty} untuk ${itemInfo}`);
-                document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-success">✅ Barang Masuk dicatat!</div>';
-                document.getElementById('qty_masuk').value = '';
-                document.getElementById('keterangan').value = '';
-                await onItemChange();
+                alert('✅ Barang keluar dicatat!');
+                location.reload();
             }
-        }
-        
-        async function exportHistory() {
-            if (!currentItemId) {
-                alert('Pilih item terlebih dahulu!');
-                return;
-            }
-            
-            const tglAwal = document.getElementById('filter_tgl_awal').value;
-            const tglAkhir = document.getElementById('filter_tgl_akhir').value;
-            
-            let query = sb.from('barang_masuk').select('*, pi_detail(brand, jenis, pi_header(no_pi))').eq('detail_id', currentItemId).order('tanggal', { ascending: false });
-            if (tglAwal) query = query.gte('tanggal', tglAwal);
-            if (tglAkhir) query = query.lte('tanggal', tglAkhir);
-            
-            const { data: history } = await query;
-            
-            if (!history || history.length === 0) {
-                alert('Tidak ada data untuk periode ini');
-                return;
-            }
-            
-            const wsData = [['Tanggal', 'Qty', 'Keterangan', 'User']];
-            for (const h of history) {
-                wsData.push([h.tanggal, h.qty, h.keterangan || '-', h.created_by || '-']);
-            }
-            
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Riwayat Barang Masuk');
-            XLSX.writeFile(wb, `Riwayat_Barang_Masuk_${new Date().toISOString().slice(0,10)}.xlsx`);
-            alert('✅ Export berhasil!');
-        }
-        
-        async function loadHalaman() {
-            const today = new Date().toISOString().split('T')[0];
-            const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-            
-            document.getElementById('mainContent').innerHTML = `
-                <div class="card">
-                    <div class="card-title">📥 Barang Masuk</div>
-                    <div id="msgTransaksi"></div>
-                    
-                    <label>Pilih No PI</label>
-                    <select id="pi_select" onchange="onPiChange()">
-                        <option value="">Loading...</option>
-                    </select>
-                    
-                    <label>Pilih Item Barang</label>
-                    <select id="item_select" onchange="onItemChange()">
-                        <option value="">-- Pilih PI dulu --</option>
-                    </select>
-                    
-                    <div id="stokPendukungInfo"></div>
-                    
-                    <label>Tanggal Masuk</label>
-                    <input type="date" id="tanggal_masuk" value="${today}">
-                    
-                    <label>Jumlah Masuk</label>
-                    <input type="number" id="qty_masuk" placeholder="Qty">
-                    
-                    <label>Keterangan (opsional)</label>
-                    <input type="text" id="keterangan" placeholder="Keterangan">
-                    
-                    <button onclick="simpanMasuk()">📥 Simpan Barang Masuk</button>
-                </div>
-                
-                <div class="card">
-                    <div class="card-title">📋 Histori Barang Masuk</div>
-                    <div class="filter-row">
-                        <input type="date" id="filter_tgl_awal" value="${firstDay}" placeholder="Dari tanggal">
-                        <input type="date" id="filter_tgl_akhir" value="${today}" placeholder="Sampai tanggal">
-                        <button class="btn-export" onclick="exportHistory()" style="background:#10b981">📎 Export</button>
-                    </div>
-                    <div id="historyList">
-                        <div class="info-text">Pilih PI dan item untuk melihat histori</div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('filter_tgl_awal').addEventListener('change', () => {
-                if (currentItemId) filterHistory(currentItemId);
-            });
-            document.getElementById('filter_tgl_akhir').addEventListener('change', () => {
-                if (currentItemId) filterHistory(currentItemId);
-            });
-            
-            await loadPiList();
         }
         
         function goToMenu(menu) {
@@ -443,8 +284,8 @@
                 'stock-out': 'stock-out.html',
                 'stock-report': 'stock-report.html',
                 'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
                 'scan-barcode': 'scan-barcode.html',
-                'scan-qr': 'scan-qr.html',
                 executive: 'executive-report.html',
                 'manage-users': 'manage-users.html',
                 'log-aktivitas': 'log-aktivitas.html',
@@ -493,15 +334,49 @@
                 return;
             }
             
+            // Cek role admin
+            const { data: { user } } = await sb.auth.getUser();
+            if (user) {
+                const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+                if (profile?.role !== 'admin') {
+                    document.getElementById('mainContent').innerHTML = `
+                        <div class="card" style="text-align:center; padding:30px">
+                            <h3>⛔ Akses Ditolak</h3>
+                            <p>Halaman Barang Keluar hanya untuk ADMIN.</p>
+                            <button onclick="window.location.href='dashboard.html'">Ke Dashboard</button>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+            
             setupEventListeners();
-            await loadHalaman();
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card">
+                    <div class="card-title">📤 Barang Keluar</div>
+                    <div id="msg"></div>
+                    <select id="pi_select" onchange="onPiChange()"><option>Loading...</option></select>
+                    <select id="item_select" onchange="onItemChange()"><option>-- Pilih PI dulu --</option></select>
+                    <div id="stokInfo"></div>
+                    <input type="date" id="tanggal_keluar" value="${today}">
+                    <input type="number" id="qty_keluar" placeholder="Jumlah Keluar">
+                    <input type="text" id="keterangan" placeholder="Keterangan (opsional)">
+                    <button onclick="simpanKeluar()">📤 Simpan Barang Keluar</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">📋 Histori Barang Keluar</div>
+                    <div id="historyList">Pilih item terlebih dahulu</div>
+                </div>
+            `;
+            await loadPiList();
         }
         
         window.onPiChange = onPiChange;
         window.onItemChange = onItemChange;
-        window.simpanMasuk = simpanMasuk;
+        window.simpanKeluar = simpanKeluar;
         window.hapusHistory = hapusHistory;
-        window.exportHistory = exportHistory;
         
         init();
     </script>
