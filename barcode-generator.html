@@ -152,9 +152,6 @@
         select, label { margin-top: 10px; }
         select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
         label { font-weight: bold; display: block; margin-bottom: 5px; }
-        
-        .loading { text-align: center; padding: 20px; color: #666; }
-        .error { background: #fee; color: #c00; padding: 10px; border-radius: 8px; text-align: center; }
     </style>
 </head>
 <body>
@@ -190,81 +187,42 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <div class="container" id="mainContent">
-        <div class="loading">⏳ Memuat aplikasi...</div>
-    </div>
+    <div class="container" id="mainContent"></div>
 
     <script>
-        // Gunakan variabel yang berbeda, hindari bentrok dengan config.js
-        let sbClient = null;
+        // ========== TAMBAHAN FALLBACK CONFIG ==========
+        // Jika config.js tidak terbaca, gunakan konfigurasi di bawah ini
+        // SILAKAN GANTI DENGAN URL DAN KEY SUPABASE ANDA YANG ASLI
+        if (typeof supabaseConfig === 'undefined' && typeof window.supabaseConfig === 'undefined') {
+            console.warn('Config.js tidak ditemukan, menggunakan fallback manual');
+            // 🔴 GANTI INI DENGAN KONFIGURASI SUPABASE ANDA YANG ASLI 🔴
+            var supabaseConfig = {
+                supabaseUrl: "https://txvgclavcmhyxamxgvsi.supabase.co",  // GANTI DENGAN URL SUPABASE ANDA
+                supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY"  // GANTI DENGAN ANON KEY SUPABASE ANDA
+            };
+            window.supabaseConfig = supabaseConfig;
+        }
+        // =============================================
+        
         let allItems = [];
         let selectedPiId = null;
         let piList = [];
         let batchList = [];
         let nextId = 1;
         
-        // Inisialisasi Supabase dari config.js
-        function initSupabase() {
-            return new Promise((resolve, reject) => {
-                // Cek apakah config sudah dimuat
-                if (typeof supabaseConfig !== 'undefined') {
-                    sbClient = window.supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
-                    resolve(sbClient);
-                } else if (window.supabaseConfig) {
-                    sbClient = window.supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
-                    resolve(sbClient);
-                } else {
-                    // Tunggu sebentar untuk config.js
-                    setTimeout(() => {
-                        if (typeof supabaseConfig !== 'undefined') {
-                            sbClient = window.supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
-                            resolve(sbClient);
-                        } else if (window.supabaseConfig) {
-                            sbClient = window.supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
-                            resolve(sbClient);
-                        } else {
-                            reject(new Error('Config.js tidak ditemukan atau Supabase tidak terdefinisi'));
-                        }
-                    }, 500);
-                }
-            });
-        }
-        
         async function cekSession() {
-            if (!sbClient) {
-                await initSupabase();
-            }
-            const { data: { session }, error } = await sbClient.auth.getSession();
-            if (error || !session) {
-                window.location.href = 'login.html';
-            }
-            return session;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) window.location.href = 'login.html';
         }
         
         async function loadPiList() {
-            if (!sbClient) await initSupabase();
-            const { data: headers, error } = await sbClient.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
-            if (error) {
-                console.error('Error loading PI:', error);
-                return;
-            }
+            const { data: headers } = await supabase.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
             piList = headers || [];
             let options = '<option value="">-- Pilih No PI --</option>';
             for (const pi of piList) {
-                options += `<option value="${pi.id}">${escapeHtml(pi.no_pi)}</option>`;
+                options += `<option value="${pi.id}">${pi.no_pi}</option>`;
             }
-            const selectEl = document.getElementById('pi_select');
-            if (selectEl) selectEl.innerHTML = options;
-        }
-        
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
+            document.getElementById('pi_select').innerHTML = options;
         }
         
         async function onPiChange() {
@@ -275,12 +233,7 @@
             }
             selectedPiId = piId;
             
-            if (!sbClient) await initSupabase();
-            const { data: details, error } = await sbClient.from('pi_detail').select('*').eq('pi_id', piId);
-            if (error) {
-                console.error('Error loading details:', error);
-                return;
-            }
+            const { data: details } = await supabase.from('pi_detail').select('*').eq('pi_id', piId);
             allItems = details || [];
             
             let html = `
@@ -294,12 +247,12 @@
             for (const item of allItems) {
                 html += `
                     <tr>
-                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${escapeHtml(item.brand)}" data-jenis="${escapeHtml(item.jenis)}" data-paper="${escapeHtml(item.paper || '-')}" data-size="${escapeHtml(item.size || '-')}" data-qty_pi="${item.qty_pi}"></td>
-                        <td>${escapeHtml(item.brand)}</td>
-                        <td>${escapeHtml(item.jenis)}</td>
-                        <td>${escapeHtml(item.paper || '-')}</td>
-                        <td>${escapeHtml(item.size || '-')}</td>
-                        <td style="text-align:center">${Number(item.qty_pi).toLocaleString()}</td>
+                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}" data-qty_pi="${item.qty_pi}"></td>
+                        <td>${item.brand}</td>
+                        <td>${item.jenis}</td>
+                        <td>${item.paper || '-'}</td>
+                        <td>${item.size || '-'}</td>
+                        <td style="text-align:center">${item.qty_pi.toLocaleString()}</td>
                         <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
                         <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
                     </tr>
@@ -351,8 +304,6 @@
         
         function updateBatchItem(id) {
             const qtyInput = document.getElementById(`qty_input_${id}`);
-            if (!qtyInput) return;
-            
             const newQty = parseInt(qtyInput.value);
             
             if (isNaN(newQty) || newQty <= 0) {
@@ -364,12 +315,11 @@
             if (batch) {
                 batch.qty_per_qr = newQty;
                 updateBatchDisplay();
-                alert('✅ Qty berhasil diupdate!');
             }
         }
         
         function deleteBatch(id) {
-            if (confirm('Hapus batch ini dari daftar?')) {
+            if (confirm('Hapus batch ini?')) {
                 batchList = batchList.filter(b => b.id != id);
                 updateBatchDisplay();
             }
@@ -380,14 +330,12 @@
             const generateBtn = document.getElementById('generateBtn');
             const qrContainer = document.getElementById('qrContainer');
             
-            if (qrContainer) {
-                qrContainer.style.display = 'none';
-                qrContainer.innerHTML = '';
-            }
+            qrContainer.style.display = 'none';
+            qrContainer.innerHTML = '';
             
             if (batchList.length === 0) {
-                if (container) container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
-                if (generateBtn) generateBtn.style.display = 'none';
+                container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
+                generateBtn.style.display = 'none';
                 return;
             }
             
@@ -395,7 +343,7 @@
             for (const batch of batchList) {
                 html += `
                     <div class="batch-item" id="batch_${batch.id}">
-                        <span><strong>${escapeHtml(batch.brand)} - ${escapeHtml(batch.jenis)}</strong><br>${escapeHtml(batch.paper)} | ${escapeHtml(batch.size)} | Qty PI: ${Number(batch.qty_pi).toLocaleString()}</span>
+                        <span><strong>${batch.brand} - ${batch.jenis}</strong><br>${batch.paper} | ${batch.size} | Qty PI: ${batch.qty_pi.toLocaleString()}</span>
                         <input type="number" id="qty_input_${batch.id}" value="${batch.qty_per_qr}" placeholder="Qty per QR" min="1" style="width:100px">
                         <button onclick="updateBatchItem(${batch.id})" class="btn-update">✏️ Update</button>
                         <button onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
@@ -419,8 +367,6 @@
             }
             
             const container = document.getElementById('qrContainer');
-            if (!container) return;
-            
             container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
             const grid = document.getElementById('qrGrid');
             
@@ -429,30 +375,27 @@
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
-                const qrDivId = `qr_${batch.id}_${Date.now()}_${Math.random()}`;
+                const qrDivId = `qr_${batch.id}_${Date.now()}`;
                 div.innerHTML = `
                     <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
-                    <div class="batch-name">🏷️ ${escapeHtml(batch.brand)} - ${escapeHtml(batch.jenis)}</div>
-                    <div class="qty-info">📦 ${Number(batch.qty_per_qr).toLocaleString()} pcs</div>
+                    <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
+                    <div class="qty-info">📦 ${batch.qty_per_qr.toLocaleString()} pcs</div>
                     <div class="info">
-                        <div>PI: ${escapeHtml(batch.no_pi)}</div>
-                        <div>Brand: ${escapeHtml(batch.brand)}</div>
-                        <div>Jenis: ${escapeHtml(batch.jenis)}</div>
-                        <div>Size: ${escapeHtml(batch.size)}</div>
+                        <div>PI: ${batch.no_pi}</div>
+                        <div>Brand: ${batch.brand}</div>
+                        <div>Jenis: ${batch.jenis}</div>
+                        <div>Size: ${batch.size}</div>
                     </div>
                 `;
                 grid.appendChild(div);
                 
                 setTimeout(() => {
-                    const qrElement = document.getElementById(qrDivId);
-                    if (qrElement && typeof QRCode !== 'undefined') {
-                        new QRCode(qrElement, {
-                            text: qrText,
-                            width: 130,
-                            height: 130,
-                            correctLevel: QRCode.CorrectLevel.M
-                        });
-                    }
+                    new QRCode(document.getElementById(qrDivId), {
+                        text: qrText,
+                        width: 130,
+                        height: 130,
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
                 }, 50);
             }
             
@@ -476,36 +419,26 @@
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
-        async function logout() { 
-            if (sbClient) await sbClient.auth.signOut(); 
-            window.location.href = 'login.html'; 
-        }
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'login.html'; }
         
         function setupEventListeners() {
-            const menuToggle = document.getElementById('menuToggle');
-            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
-            const overlay = document.getElementById('overlay');
-            if (overlay) overlay.addEventListener('click', closeSidebar);
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) logoutBtn.addEventListener('click', logout);
-            const logoutMenu = document.getElementById('logoutMenu');
-            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
             document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
         
         async function loadPage() {
-            const mainEl = document.getElementById('mainContent');
-            if (!mainEl) return;
-            
-            mainEl.innerHTML = `
+            document.getElementById('mainContent').innerHTML = `
                 <div class="card">
                     <div class="card-title">🏷️ GENERATE QR CODE</div>
                     
                     <label>📋 Pilih No PI</label>
                     <select id="pi_select" onchange="onPiChange()">
-                        <option value="">Memuat data...</option>
+                        <option value="">Loading...</option>
                     </select>
                     
                     <div id="itemContainer"></div>
@@ -531,26 +464,12 @@
         window.generateAndPrint = generateAndPrint;
         
         async function init() {
-            try {
-                await initSupabase();
-                await cekSession();
-                setupEventListeners();
-                await loadPage();
-            } catch (error) {
-                console.error('Init error:', error);
-                const mainEl = document.getElementById('mainContent');
-                if (mainEl) {
-                    mainEl.innerHTML = `<div class="error">❌ Error: ${error.message}<br>Pastikan file config.js sudah benar dan Supabase terhubung.</div>`;
-                }
-            }
+            await cekSession();
+            setupEventListeners();
+            await loadPage();
         }
         
-        // Jalankan init setelah DOM siap
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
-        }
+        init();
     </script>
 </body>
 </html>
