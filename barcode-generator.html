@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Generate QR Code - Gudang Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -190,56 +188,36 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        let allItems = [];
-        let selectedPiId = null;
-        let piList = [];
+        // DATA CONTOH (tanpa Supabase)
+        let allItems = [
+            { id: 1, brand: "Nike", jenis: "Sepatu", paper: "Kardus", size: "42", qty_pi: 100 },
+            { id: 2, brand: "Adidas", jenis: "Baju", paper: "Plastik", size: "L", qty_pi: 200 }
+        ];
+        let selectedPiId = 1;
+        let piList = [{ id: 1, no_pi: "PI-001" }];
         let batchList = [];
         let nextId = 1;
         
-        // LANGSUNG LOAD DATA, TANPA CEK SESSION
-        async function loadPiList() {
-            if (!window.supabase) {
-                setTimeout(loadPiList, 300);
-                return;
-            }
-            const { data: headers } = await window.supabase.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
-            piList = headers || [];
-            let options = '<option value="">-- Pilih No PI --</option>';
-            for (const pi of piList) {
-                options += `<option value="${pi.id}">${pi.no_pi}</option>`;
-            }
+        function loadPiList() {
+            let options = '<option value="1">PI-001</option>';
             document.getElementById('pi_select').innerHTML = options;
         }
         
-        async function onPiChange() {
-            if (!window.supabase) return;
-            const piId = document.getElementById('pi_select').value;
-            if (!piId) {
-                document.getElementById('itemContainer').innerHTML = '';
-                return;
-            }
-            selectedPiId = piId;
-            
-            const { data: details } = await window.supabase.from('pi_detail').select('*').eq('pi_id', piId);
-            allItems = details || [];
-            
+        function onPiChange() {
             let html = `
                 <table class="item-table">
-                    <thead>
-                        <tr><th style="width:40px">Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr>
-                    </thead>
+                    <thead><tr><th>Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr></thead>
                     <tbody>
             `;
-            
             for (const item of allItems) {
                 html += `
                     <tr>
-                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}" data-qty_pi="${item.qty_pi}"></td>
+                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper}" data-size="${item.size}" data-qty_pi="${item.qty_pi}"></td>
                         <td>${item.brand}</td>
                         <td>${item.jenis}</td>
-                        <td>${item.paper || '-'}</td>
-                        <td>${item.size || '-'}</td>
-                        <td style="text-align:center">${item.qty_pi.toLocaleString()}</td>
+                        <td>${item.paper}</td>
+                        <td>${item.size}</td>
+                        <td>${item.qty_pi.toLocaleString()}</td>
                         <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
                         <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
                     </tr>
@@ -264,22 +242,15 @@
                 return;
             }
             
-            const brand = checkbox.dataset.brand;
-            const jenis = checkbox.dataset.jenis;
-            const paper = checkbox.dataset.paper;
-            const size = checkbox.dataset.size;
-            const qtyPi = parseInt(checkbox.dataset.qty_pi);
-            const noPi = piList.find(p => p.id == selectedPiId)?.no_pi || '-';
-            
             batchList.push({
                 id: nextId++,
                 itemId: itemId,
-                no_pi: noPi,
-                brand: brand,
-                jenis: jenis,
-                paper: paper,
-                size: size,
-                qty_pi: qtyPi,
+                no_pi: "PI-001",
+                brand: checkbox.dataset.brand,
+                jenis: checkbox.dataset.jenis,
+                paper: checkbox.dataset.paper,
+                size: checkbox.dataset.size,
+                qty_pi: parseInt(checkbox.dataset.qty_pi),
                 qty_per_qr: qty
             });
             
@@ -351,7 +322,7 @@
             const grid = document.getElementById('qrGrid');
             
             for (const batch of batchList) {
-                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}`;
+                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, QTY: ${batch.qty_per_qr}`;
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
                 const qrDivId = `qr_${batch.id}_${Date.now()}`;
@@ -371,17 +342,12 @@
         }
         
         function goToMenu(menu) {
-            const files = {
-                dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
-                'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
-                executive: 'executive-report.html', 'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
-            };
-            window.location.href = files[menu] || 'dashboard.html';
+            alert('Menu: ' + menu);
         }
         
-        function logout() { window.location.href = 'login.html'; }
+        function logout() { 
+            alert('Logout');
+        }
         
         document.getElementById('menuToggle').onclick = () => {
             document.getElementById('sidebar').classList.toggle('open');
@@ -415,6 +381,7 @@
         window.generateAndPrint = generateAndPrint;
         
         loadPiList();
+        onPiChange();
     </script>
 </body>
 </html>
