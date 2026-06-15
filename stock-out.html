@@ -157,6 +157,8 @@
 
     <script>
         let currentStok = 0;
+        let currentPiId = null;
+        let currentItemId = null;
         
         async function loadPiList() {
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
@@ -167,10 +169,21 @@
                 }
             }
             document.getElementById('pi_select').innerHTML = options;
+            
+            // Jika ada currentPiId dari parameter URL, set pilihan
+            if (currentPiId) {
+                document.getElementById('pi_select').value = currentPiId;
+                await onPiChange();
+                if (currentItemId) {
+                    document.getElementById('item_select').value = currentItemId;
+                    await onItemChange();
+                }
+            }
         }
         
         async function onPiChange() {
             const piId = document.getElementById('pi_select').value;
+            currentPiId = piId;
             const itemSelect = document.getElementById('item_select');
             
             if (!piId) {
@@ -203,6 +216,7 @@
             const selected = select.options[select.selectedIndex];
             const stok = parseInt(selected?.getAttribute('data-stok') || 0);
             currentStok = stok;
+            currentItemId = select.value;
             document.getElementById('stokInfo').innerHTML = `<div class="stok-info">📊 Stok tersedia: ${stok}</div>`;
             
             const itemId = select.value;
@@ -223,7 +237,7 @@
                     <td><button class="btn-hapus" onclick="hapusHistory(${h.id})">Hapus</button></td>
                 </tr>`;
             }
-            html += '</tbody></table></div>';
+            html += '</tbody></tr></div>';
             document.getElementById('historyList').innerHTML = html;
         }
         
@@ -234,7 +248,12 @@
                     alert('Gagal: ' + error.message);
                 } else {
                     alert('✅ Histori berhasil dihapus');
-                    location.reload();
+                    // Refresh stok dan histori tanpa reload halaman
+                    await onPiChange();
+                    if (currentItemId) {
+                        document.getElementById('item_select').value = currentItemId;
+                        await onItemChange();
+                    }
                 }
             }
         }
@@ -272,7 +291,23 @@
                 alert('Gagal: ' + error.message);
             } else {
                 alert('✅ Barang keluar dicatat!');
-                location.reload();
+                
+                // RESET hanya qty dan keterangan, PI dan item tetap
+                document.getElementById('qty_keluar').value = '';
+                document.getElementById('keterangan').value = '';
+                
+                // Refresh stok dan histori tanpa mereset PI
+                await onPiChange();
+                
+                // Set ulang pilihan item ke yang sama
+                const itemSelect = document.getElementById('item_select');
+                for (let i = 0; i < itemSelect.options.length; i++) {
+                    if (itemSelect.options[i].value == itemId) {
+                        itemSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+                await onItemChange();
             }
         }
         
@@ -370,6 +405,14 @@
                     <div id="historyList">Pilih item terlebih dahulu</div>
                 </div>
             `;
+            
+            // Cek parameter URL untuk pre-fill PI
+            const urlParams = new URLSearchParams(window.location.search);
+            const piIdParam = urlParams.get('pi_id');
+            if (piIdParam) {
+                currentPiId = piIdParam;
+            }
+            
             await loadPiList();
         }
         
