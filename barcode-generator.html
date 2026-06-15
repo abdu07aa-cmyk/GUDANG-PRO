@@ -190,19 +190,26 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        // ========== TAMBAHAN FALLBACK CONFIG ==========
-        // Jika config.js tidak terbaca, gunakan konfigurasi di bawah ini
-        // SILAKAN GANTI DENGAN URL DAN KEY SUPABASE ANDA YANG ASLI
-        if (typeof supabaseConfig === 'undefined' && typeof window.supabaseConfig === 'undefined') {
+        // ========== INISIALISASI SUPABASE ==========
+        let supabaseClient = null;
+        
+        // Cek dan inisialisasi Supabase
+        if (typeof supabaseConfig !== 'undefined') {
+            supabaseClient = supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
+        } else if (typeof window.supabaseConfig !== 'undefined') {
+            supabaseClient = supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
+        } else {
+            // Fallback config manual
             console.warn('Config.js tidak ditemukan, menggunakan fallback manual');
-            // 🔴 GANTI INI DENGAN KONFIGURASI SUPABASE ANDA YANG ASLI 🔴
-            var supabaseConfig = {
-                supabaseUrl: "https://txvgclavcmhyxamxgvsi.supabase.co",  // GANTI DENGAN URL SUPABASE ANDA
-                supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY"  // GANTI DENGAN ANON KEY SUPABASE ANDA
+            const fallbackConfig = {
+                supabaseUrl: "https://txvgclavcmhyxamxgvsi.supabase.co",
+                supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY"
             };
-            window.supabaseConfig = supabaseConfig;
+            supabaseClient = supabase.createClient(fallbackConfig.supabaseUrl, fallbackConfig.supabaseKey);
         }
-        // =============================================
+        
+        // Alias untuk kemudahan (tetap pakai 'supabase' seperti kode asli)
+        const supabase = supabaseClient;
         
         let allItems = [];
         let selectedPiId = null;
@@ -315,11 +322,12 @@
             if (batch) {
                 batch.qty_per_qr = newQty;
                 updateBatchDisplay();
+                alert('✅ Qty berhasil diupdate!');
             }
         }
         
         function deleteBatch(id) {
-            if (confirm('Hapus batch ini?')) {
+            if (confirm('Hapus batch ini dari daftar?')) {
                 batchList = batchList.filter(b => b.id != id);
                 updateBatchDisplay();
             }
@@ -330,12 +338,14 @@
             const generateBtn = document.getElementById('generateBtn');
             const qrContainer = document.getElementById('qrContainer');
             
-            qrContainer.style.display = 'none';
-            qrContainer.innerHTML = '';
+            if (qrContainer) {
+                qrContainer.style.display = 'none';
+                qrContainer.innerHTML = '';
+            }
             
             if (batchList.length === 0) {
-                container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
-                generateBtn.style.display = 'none';
+                if (container) container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
+                if (generateBtn) generateBtn.style.display = 'none';
                 return;
             }
             
@@ -375,7 +385,7 @@
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
-                const qrDivId = `qr_${batch.id}_${Date.now()}`;
+                const qrDivId = `qr_${batch.id}_${Date.now()}_${Math.random()}`;
                 div.innerHTML = `
                     <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
                     <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
