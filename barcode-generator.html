@@ -208,14 +208,28 @@
         let piList = [];
         let batchList = [];
         let nextId = 1;
+        let sb = null; // Declare sb variable
         
         // Initialize Supabase from config.js
-        const supabaseUrl = window.supabaseUrl;
-        const supabaseKey = window.supabaseKey;
-        const sb = supabase.createClient(supabaseUrl, supabaseKey);
+        function initSupabase() {
+            if (typeof supabaseUrl !== 'undefined' && typeof supabaseKey !== 'undefined') {
+                sb = supabase.createClient(supabaseUrl, supabaseKey);
+                return true;
+            } else {
+                console.error('Supabase credentials not found in config.js');
+                return false;
+            }
+        }
         
         // Session check
         async function cekSession() {
+            if (!sb) {
+                if (!initSupabase()) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+            
             try {
                 const { data: { session } } = await sb.auth.getSession();
                 if (!session) {
@@ -230,13 +244,15 @@
         
         // Load PI list
         async function loadPiList() {
+            if (!sb) initSupabase();
+            
             try {
                 const { data: headers, error } = await sb.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
                 if (error) throw error;
                 piList = headers || [];
                 let options = '<option value="">-- Pilih No PI --</option>';
                 for (const pi of piList) {
-                    options += `<option value="${pi.id}">${pi.no_pi}</option>`;
+                    options += `<option value="${pi.id}">${escapeHtml(pi.no_pi)}</option>`;
                 }
                 const selectEl = document.getElementById('pi_select');
                 if (selectEl) selectEl.innerHTML = options;
@@ -256,10 +272,17 @@
             }
             selectedPiId = piId;
             
+            if (!sb) initSupabase();
+            
             try {
                 const { data: details, error } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
                 if (error) throw error;
                 allItems = details || [];
+                
+                if (allItems.length === 0) {
+                    document.getElementById('itemContainer').innerHTML = '<p style="padding:10px; color:#666">Tidak ada item untuk PI ini</p>';
+                    return;
+                }
                 
                 let html = `
                     <table class="item-table">
@@ -279,11 +302,11 @@
                             <td>${escapeHtml(item.size || '-')}</td>
                             <td style="text-align:center">${Number(item.qty_pi).toLocaleString()}</td>
                             <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
-                            <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
+                            <td><button type="button" class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
                         </tr>
                     `;
                 }
-                html += `</tbody>　</table>`;
+                html += `</tbody>　　 </table>`;
                 document.getElementById('itemContainer').innerHTML = html;
             } catch (error) {
                 console.error('Load PI details error:', error);
@@ -294,7 +317,7 @@
         // Escape HTML to prevent XSS
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
+            return String(str).replace(/[&<>]/g, function(m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -306,6 +329,11 @@
         function addToBatch(itemId) {
             const checkbox = document.querySelector(`.item-checkbox[data-id="${itemId}"]`);
             const qtyInput = document.querySelector(`.qty-input[data-id="${itemId}"]`);
+            
+            if (!checkbox) {
+                alert('Item tidak ditemukan!');
+                return;
+            }
             
             if (!checkbox.checked) {
                 alert('Centang item terlebih dahulu!');
@@ -387,8 +415,8 @@
                     <div class="batch-item">
                         <span><strong>${escapeHtml(batch.brand)} - ${escapeHtml(batch.jenis)}</strong><br>${escapeHtml(batch.paper)} | ${escapeHtml(batch.size)} | Qty PI: ${Number(batch.qty_pi).toLocaleString()}</span>
                         <input type="number" id="qty_${batch.id}" value="${batch.qty_per_qr}" placeholder="Qty per QR" min="1" style="width:100px">
-                        <button onclick="updateBatchItem(${batch.id}, parseInt(document.getElementById('qty_${batch.id}').value))" class="btn-update">✏️ Update</button>
-                        <button onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
+                        <button type="button" onclick="updateBatchItem(${batch.id}, parseInt(document.getElementById('qty_${batch.id}').value))" class="btn-update">✏️ Update</button>
+                        <button type="button" onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
                     </div>
                 `;
             }
@@ -520,23 +548,30 @@
         
         // Sidebar functions
         function openSidebar() { 
-            document.getElementById('sidebar').classList.add('open'); 
-            document.getElementById('overlay').classList.add('show'); 
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.add('open'); 
+            if (overlay) overlay.classList.add('show'); 
         }
         
         function closeSidebar() { 
-            document.getElementById('sidebar').classList.remove('open'); 
-            document.getElementById('overlay').classList.remove('show'); 
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.remove('open'); 
+            if (overlay) overlay.classList.remove('show'); 
         }
         
         function toggleSidebar() { 
-            if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); 
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('open')) closeSidebar(); 
             else openSidebar(); 
         }
         
         // Logout
         async function logout() { 
-            await sb.auth.signOut(); 
+            if (sb) {
+                await sb.auth.signOut(); 
+            }
             window.location.href = 'login.html'; 
         }
         
@@ -559,13 +594,19 @@
             // Setup generate button listener after page load
             const generateBtn = document.getElementById('generateBtn');
             if (generateBtn) {
-                generateBtn.addEventListener('click', generateAndPrint);
+                // Remove existing listeners to avoid duplicates
+                const newBtn = generateBtn.cloneNode(true);
+                generateBtn.parentNode.replaceChild(newBtn, generateBtn);
+                newBtn.addEventListener('click', generateAndPrint);
             }
         }
         
         // Load main page
         async function loadPage() {
-            document.getElementById('mainContent').innerHTML = `
+            const mainContent = document.getElementById('mainContent');
+            if (!mainContent) return;
+            
+            mainContent.innerHTML = `
                 <div class="card">
                     <div class="card-title">🏷️ GENERATE QR CODE</div>
                     
@@ -579,7 +620,7 @@
                     <div class="batch-list" id="batchListContainer">
                         <strong>📋 Daftar Batch yang akan dicetak:</strong>
                         <div id="batchItems"></div>
-                        <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
+                        <button type="button" id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
                     </div>
                     
                     <div id="qrContainer" class="print-area" style="display:none"></div>
@@ -599,12 +640,17 @@
         
         // Initialize
         async function init() {
+            initSupabase();
             await cekSession();
             await loadPage();
         }
         
-        // Start the app
-        init();
+        // Start the app when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>
