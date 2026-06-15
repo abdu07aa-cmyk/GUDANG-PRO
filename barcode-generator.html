@@ -202,36 +202,33 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        // Global variables
-        let allItems = [];
-        let selectedPiId = null;
-        let piList = [];
-        let batchList = [];
-        let nextId = 1;
-        let sb = null; // Declare sb variable
+        // Global variables - gunakan window object untuk menghindari konflik dengan config.js
+        window.allItems = [];
+        window.selectedPiId = null;
+        window.piList = [];
+        window.batchList = [];
+        window.nextId = 1;
         
-        // Initialize Supabase from config.js
-        function initSupabase() {
+        // Gunakan sb dari config.js, jangan deklarasi ulang
+        // Jika sb tidak ada di window, buat baru
+        if (typeof window.sb === 'undefined') {
             if (typeof supabaseUrl !== 'undefined' && typeof supabaseKey !== 'undefined') {
-                sb = supabase.createClient(supabaseUrl, supabaseKey);
-                return true;
+                window.sb = supabase.createClient(supabaseUrl, supabaseKey);
             } else {
-                console.error('Supabase credentials not found in config.js');
-                return false;
+                console.error('Supabase credentials not found');
             }
         }
         
         // Session check
         async function cekSession() {
-            if (!sb) {
-                if (!initSupabase()) {
-                    window.location.href = 'login.html';
-                    return;
-                }
+            if (!window.sb) {
+                console.error('Supabase not initialized');
+                window.location.href = 'login.html';
+                return;
             }
             
             try {
-                const { data: { session } } = await sb.auth.getSession();
+                const { data: { session } } = await window.sb.auth.getSession();
                 if (!session) {
                     window.location.href = 'login.html';
                 }
@@ -244,14 +241,14 @@
         
         // Load PI list
         async function loadPiList() {
-            if (!sb) initSupabase();
+            if (!window.sb) return;
             
             try {
-                const { data: headers, error } = await sb.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
+                const { data: headers, error } = await window.sb.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
                 if (error) throw error;
-                piList = headers || [];
+                window.piList = headers || [];
                 let options = '<option value="">-- Pilih No PI --</option>';
-                for (const pi of piList) {
+                for (const pi of window.piList) {
                     options += `<option value="${pi.id}">${escapeHtml(pi.no_pi)}</option>`;
                 }
                 const selectEl = document.getElementById('pi_select');
@@ -270,16 +267,16 @@
                 document.getElementById('itemContainer').innerHTML = '';
                 return;
             }
-            selectedPiId = piId;
+            window.selectedPiId = piId;
             
-            if (!sb) initSupabase();
+            if (!window.sb) return;
             
             try {
-                const { data: details, error } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+                const { data: details, error } = await window.sb.from('pi_detail').select('*').eq('pi_id', piId);
                 if (error) throw error;
-                allItems = details || [];
+                window.allItems = details || [];
                 
-                if (allItems.length === 0) {
+                if (window.allItems.length === 0) {
                     document.getElementById('itemContainer').innerHTML = '<p style="padding:10px; color:#666">Tidak ada item untuk PI ini</p>';
                     return;
                 }
@@ -292,7 +289,7 @@
                         <tbody>
                 `;
                 
-                for (const item of allItems) {
+                for (const item of window.allItems) {
                     html += `
                         <tr>
                             <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${escapeHtml(item.brand)}" data-jenis="${escapeHtml(item.jenis)}" data-paper="${escapeHtml(item.paper || '-')}" data-size="${escapeHtml(item.size || '-')}" data-qty_pi="${item.qty_pi}"></td>
@@ -306,7 +303,7 @@
                         </tr>
                     `;
                 }
-                html += `</tbody>　　 </table>`;
+                html += `</tbody></table>`;
                 document.getElementById('itemContainer').innerHTML = html;
             } catch (error) {
                 console.error('Load PI details error:', error);
@@ -351,10 +348,10 @@
             const paper = checkbox.dataset.paper;
             const size = checkbox.dataset.size;
             const qtyPi = parseInt(checkbox.dataset.qty_pi);
-            const noPi = piList.find(p => p.id == selectedPiId)?.no_pi || '-';
+            const noPi = window.piList.find(p => p.id == window.selectedPiId)?.no_pi || '-';
             
-            batchList.push({
-                id: nextId++,
+            window.batchList.push({
+                id: window.nextId++,
                 itemId: itemId,
                 no_pi: noPi,
                 brand: brand,
@@ -373,7 +370,7 @@
         // Update batch item quantity
         function updateBatchItem(id, newQty) {
             if (newQty && newQty > 0) {
-                const batch = batchList.find(b => b.id == id);
+                const batch = window.batchList.find(b => b.id == id);
                 if (batch) {
                     batch.qty_per_qr = newQty;
                     updateBatchDisplay();
@@ -385,7 +382,7 @@
         
         // Delete batch
         function deleteBatch(id) {
-            batchList = batchList.filter(b => b.id != id);
+            window.batchList = window.batchList.filter(b => b.id != id);
             updateBatchDisplay();
         }
         
@@ -402,7 +399,7 @@
                 qrContainer.innerHTML = '';
             }
             
-            if (batchList.length === 0) {
+            if (window.batchList.length === 0) {
                 container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
                 const generateBtn = document.getElementById('generateBtn');
                 if (generateBtn) generateBtn.style.display = 'none';
@@ -410,7 +407,7 @@
             }
             
             let html = '';
-            for (const batch of batchList) {
+            for (const batch of window.batchList) {
                 html += `
                     <div class="batch-item">
                         <span><strong>${escapeHtml(batch.brand)} - ${escapeHtml(batch.jenis)}</strong><br>${escapeHtml(batch.paper)} | ${escapeHtml(batch.size)} | Qty PI: ${Number(batch.qty_pi).toLocaleString()}</span>
@@ -426,15 +423,15 @@
             const generateBtn = document.getElementById('generateBtn');
             if (generateBtn) {
                 generateBtn.style.display = 'block';
-                generateBtn.innerHTML = `🖨️ Generate QR Code (${batchList.length} Batch)`;
+                generateBtn.innerHTML = `🖨️ Generate QR Code (${window.batchList.length} Batch)`;
             }
         }
         
         // Generate and print QR codes
         function generateAndPrint() {
-            console.log("Generate dipanggil, batchList:", batchList);
+            console.log("Generate dipanggil, batchList:", window.batchList);
             
-            if (batchList.length === 0) {
+            if (window.batchList.length === 0) {
                 alert('Tidak ada batch untuk dicetak!');
                 return;
             }
@@ -465,7 +462,7 @@
             grid.innerHTML = '';
             
             // Create elements for each batch
-            for (const batch of batchList) {
+            for (const batch of window.batchList) {
                 const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
                 
                 const div = document.createElement('div');
@@ -490,9 +487,8 @@
                 let successCount = 0;
                 let failCount = 0;
                 
-                for (const batch of batchList) {
+                for (const batch of window.batchList) {
                     const qrElement = document.getElementById(`qr-${batch.id}`);
-                    const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
                     
                     if (qrElement) {
                         try {
@@ -500,7 +496,7 @@
                             qrElement.innerHTML = '';
                             // Create new QR code
                             new QRCode(qrElement, {
-                                text: qrText,
+                                text: `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}`,
                                 width: 130,
                                 height: 130,
                                 correctLevel: QRCode.CorrectLevel.M
@@ -569,8 +565,8 @@
         
         // Logout
         async function logout() { 
-            if (sb) {
-                await sb.auth.signOut(); 
+            if (window.sb) {
+                await window.sb.auth.signOut(); 
             }
             window.location.href = 'login.html'; 
         }
@@ -591,10 +587,9 @@
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
             
-            // Setup generate button listener after page load
+            // Setup generate button listener
             const generateBtn = document.getElementById('generateBtn');
             if (generateBtn) {
-                // Remove existing listeners to avoid duplicates
                 const newBtn = generateBtn.cloneNode(true);
                 generateBtn.parentNode.replaceChild(newBtn, generateBtn);
                 newBtn.addEventListener('click', generateAndPrint);
@@ -640,7 +635,6 @@
         
         // Initialize
         async function init() {
-            initSupabase();
             await cekSession();
             await loadPage();
         }
