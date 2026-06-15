@@ -293,7 +293,23 @@
             XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
             alert(`✅ Export ${filename} berhasil!`);
         }
-        
+        function goToMenu(menu) {
+    const files = {
+        dashboard: 'dashboard.html',
+        'pi-input': 'pi-input.html',
+        'stock-in': 'stock-in.html',
+        'stock-out': 'stock-out.html',
+        'stock-report': 'stock-report.html',
+        'stok-pendukung': 'stok-pendukung.html',
+        'barcode-generator': 'barcode-generator.html',
+        'scan-barcode': 'scan-barcode.html',
+        executive: 'executive-report.html',
+        'manage-users': 'manage-users.html',
+        'log-aktivitas': 'log-aktivitas.html',
+        export: 'export-final3.html'
+    };
+    window.location.href = files[menu] || 'dashboard.html';
+}
         function exportTopBrands() {
             const brandMap = {};
             itemsCache.forEach(item => {
