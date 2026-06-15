@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Generate QR Code - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -148,6 +148,22 @@
             .print-area { display: block; }
             .qrcode-item { break-inside: avoid; page-break-inside: avoid; }
         }
+        
+        select, input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        
+        label {
+            font-weight: 600;
+            font-size: 14px;
+            display: block;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -186,27 +202,57 @@
     <div class="container" id="mainContent"></div>
 
     <script>
+        // ========== INISIALISASI SUPABASE ==========
+        let sb;
+        if (typeof window.sb !== 'undefined') {
+            sb = window.sb;
+        } else if (typeof supabaseUrl !== 'undefined' && typeof supabaseKey !== 'undefined') {
+            sb = supabase.createClient(supabaseUrl, supabaseKey);
+        } else if (typeof config !== 'undefined' && config.supabaseUrl && config.supabaseKey) {
+            sb = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+        } else {
+            console.error('Supabase credentials not found');
+            alert('Error: Config.js tidak ditemukan!');
+        }
+        
+        // ========== GLOBAL VARIABLES ==========
         let allItems = [];
         let selectedPiId = null;
         let piList = [];
         let batchList = [];
         let nextId = 1;
         
+        // ========== FUNGSI SESSION ==========
         async function cekSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-        }
-        
-        async function loadPiList() {
-            const { data: headers } = await sb.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
-            piList = headers || [];
-            let options = '<option value="">-- Pilih No PI --</option>';
-            for (const pi of piList) {
-                options += `<option value="${pi.id}">${pi.no_pi}</option>`;
+            if (!sb) return;
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                if (!session) {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Session error:', error);
+                window.location.href = 'login.html';
             }
-            document.getElementById('pi_select').innerHTML = options;
         }
         
+        // ========== LOAD PI LIST ==========
+        async function loadPiList() {
+            if (!sb) return;
+            try {
+                const { data: headers } = await sb.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
+                piList = headers || [];
+                let options = '<option value="">-- Pilih No PI --</option>';
+                for (const pi of piList) {
+                    options += `<option value="${pi.id}">${escapeHtml(pi.no_pi)}</option>`;
+                }
+                document.getElementById('pi_select').innerHTML = options;
+            } catch (error) {
+                console.error('Load PI error:', error);
+            }
+        }
+        
+        // ========== ON PI CHANGE ==========
         async function onPiChange() {
             const piId = document.getElementById('pi_select').value;
             if (!piId) {
@@ -215,38 +261,72 @@
             }
             selectedPiId = piId;
             
-            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
-            allItems = details || [];
-            
-            let html = `
-                <table class="item-table">
-                    <thead>
-                        <tr><th style="width:40px">Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            for (const item of allItems) {
-                html += `
-                    <tr>
-                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}" data-qty_pi="${item.qty_pi}"></td>
-                        <td>${item.brand}</td>
-                        <td>${item.jenis}</td>
-                        <td>${item.paper || '-'}</td>
-                        <td>${item.size || '-'}</td>
-                        <td style="text-align:center">${item.qty_pi.toLocaleString()}</td>
-                        <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
-                        <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
-                    </tr>
+            try {
+                const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+                allItems = details || [];
+                
+                if (allItems.length === 0) {
+                    document.getElementById('itemContainer').innerHTML = '<p>Tidak ada item</p>';
+                    return;
+                }
+                
+                let html = `
+                    <table class="item-table">
+                        <thead>
+                            <tr><th style="width:40px">Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody>
                 `;
+                
+                for (const item of allItems) {
+                    html += `
+                        <tr>
+                            <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${escapeHtml(item.brand)}" data-jenis="${escapeHtml(item.jenis)}" data-paper="${escapeHtml(item.paper || '-')}" data-size="${escapeHtml(item.size || '-')}" data-qty_pi="${item.qty_pi}"></td>
+                            <td>${escapeHtml(item.brand)}</td>
+                            <td>${escapeHtml(item.jenis)}</td>
+                            <td>${escapeHtml(item.paper || '-')}</td>
+                            <td>${escapeHtml(item.size || '-')}</td>
+                            <td style="text-align:center">${Number(item.qty_pi).toLocaleString()}</td>
+                            <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
+                            <td><button type="button" class="btn-add-batch" data-id="${item.id}">+ Tambah ke Daftar</button></td>
+                        </tr>
+                    `;
+                }
+                html += `</tbody>　　</table>`;
+                document.getElementById('itemContainer').innerHTML = html;
+                
+                // Pasang event listener untuk semua tombol "Tambah ke Daftar"
+                document.querySelectorAll('.btn-add-batch').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-id'));
+                        addToBatch(id);
+                    });
+                });
+            } catch (error) {
+                console.error('Load items error:', error);
             }
-            html += `</tbody></table>`;
-            document.getElementById('itemContainer').innerHTML = html;
         }
         
+        // ========== ESCAPE HTML ==========
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // ========== ADD TO BATCH ==========
         function addToBatch(itemId) {
             const checkbox = document.querySelector(`.item-checkbox[data-id="${itemId}"]`);
             const qtyInput = document.querySelector(`.qty-input[data-id="${itemId}"]`);
+            
+            if (!checkbox) {
+                alert('Item tidak ditemukan!');
+                return;
+            }
             
             if (!checkbox.checked) {
                 alert('Centang item terlebih dahulu!');
@@ -283,93 +363,154 @@
             qtyInput.value = '';
         }
         
-        function updateBatchItem(id, newQty) {
-            const batch = batchList.find(b => b.id == id);
-            if (batch) {
-                batch.qty_per_qr = newQty;
-                updateBatchDisplay();
+        // ========== UPDATE BATCH ITEM ==========
+        function updateBatchItem(id) {
+            const qtyInput = document.getElementById(`qty_input_${id}`);
+            if (qtyInput) {
+                const newQty = parseInt(qtyInput.value);
+                if (newQty && newQty > 0) {
+                    const batch = batchList.find(b => b.id == id);
+                    if (batch) {
+                        batch.qty_per_qr = newQty;
+                        updateBatchDisplay();
+                    }
+                } else {
+                    alert('Masukkan jumlah yang valid!');
+                }
             }
         }
         
+        // ========== DELETE BATCH ==========
         function deleteBatch(id) {
             batchList = batchList.filter(b => b.id != id);
             updateBatchDisplay();
         }
         
+        // ========== UPDATE BATCH DISPLAY ==========
         function updateBatchDisplay() {
             const container = document.getElementById('batchItems');
             const generateBtn = document.getElementById('generateBtn');
             const qrContainer = document.getElementById('qrContainer');
             
-            qrContainer.style.display = 'none';
-            qrContainer.innerHTML = '';
+            if (!container) return;
+            
+            if (qrContainer) {
+                qrContainer.style.display = 'none';
+                qrContainer.innerHTML = '';
+            }
             
             if (batchList.length === 0) {
                 container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
-                generateBtn.style.display = 'none';
+                if (generateBtn) generateBtn.style.display = 'none';
                 return;
             }
             
             let html = '';
             for (const batch of batchList) {
                 html += `
-                    <div class="batch-item">
-                        <span><strong>${batch.brand} - ${batch.jenis}</strong><br>${batch.paper} | ${batch.size} | Qty PI: ${batch.qty_pi.toLocaleString()}</span>
-                        <input type="number" id="qty_${batch.id}" value="${batch.qty_per_qr}" placeholder="Qty per QR" min="1" style="width:100px">
-                        <button onclick="updateBatchItem(${batch.id}, parseInt(document.getElementById('qty_${batch.id}').value))" class="btn-update">✏️ Update</button>
-                        <button onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
+                    <div class="batch-item" id="batch_${batch.id}">
+                        <span><strong>${escapeHtml(batch.brand)} - ${escapeHtml(batch.jenis)}</strong><br>${escapeHtml(batch.paper)} | ${escapeHtml(batch.size)} | Qty PI: ${Number(batch.qty_pi).toLocaleString()}</span>
+                        <input type="number" id="qty_input_${batch.id}" value="${batch.qty_per_qr}" placeholder="Qty per QR" min="1" style="width:100px">
+                        <button type="button" class="btn-update" data-id="${batch.id}">✏️ Update</button>
+                        <button type="button" class="btn-delete" data-id="${batch.id}">🗑️ Hapus</button>
                     </div>
                 `;
             }
             container.innerHTML = html;
-            generateBtn.style.display = 'block';
-            generateBtn.innerHTML = `🖨️ Generate QR Code (${batchList.length} Batch)`;
+            
+            // Pasang event listener untuk tombol Update
+            document.querySelectorAll('.btn-update').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    updateBatchItem(id);
+                });
+            });
+            
+            // Pasang event listener untuk tombol Delete
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    deleteBatch(id);
+                });
+            });
+            
+            if (generateBtn) {
+                generateBtn.style.display = 'block';
+                generateBtn.innerHTML = `🖨️ Generate QR Code (${batchList.length} Batch)`;
+            }
         }
         
+        // ========== GENERATE QR CODE ==========
         function generateAndPrint() {
+            console.log("Generate QR dipanggil, batch:", batchList.length);
+            
             if (batchList.length === 0) {
                 alert('Tidak ada batch untuk dicetak!');
                 return;
             }
             
+            if (typeof QRCode === 'undefined') {
+                alert('Library QR Code tidak terload! Silakan refresh halaman.');
+                return;
+            }
+            
             const container = document.getElementById('qrContainer');
+            if (!container) return;
+            
+            container.style.display = 'block';
             container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
             const grid = document.getElementById('qrGrid');
             
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
             for (const batch of batchList) {
-                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
+                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}`;
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
                 div.id = `qr-item-${batch.id}`;
                 div.innerHTML = `
-                    <div id="qr-${batch.id}" style="display:flex; justify-content:center"></div>
-                    <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
-                    <div class="qty-info">📦 ${batch.qty_per_qr.toLocaleString()} pcs</div>
+                    <div id="qr-${batch.id}" style="display:flex; justify-content:center; min-height:130px"></div>
+                    <div class="batch-name">🏷️ ${escapeHtml(batch.brand)} - ${escapeHtml(batch.jenis)}</div>
+                    <div class="qty-info">📦 ${Number(batch.qty_per_qr).toLocaleString()} pcs</div>
                     <div class="info">
-                        <div>PI: ${batch.no_pi}</div>
-                        <div>Brand: ${batch.brand}</div>
-                        <div>Jenis: ${batch.jenis}</div>
-                        <div>Size: ${batch.size}</div>
+                        <div>PI: ${escapeHtml(batch.no_pi)}</div>
+                        <div>Brand: ${escapeHtml(batch.brand)}</div>
+                        <div>Jenis: ${escapeHtml(batch.jenis)}</div>
+                        <div>Size: ${escapeHtml(batch.size)}</div>
                     </div>
                 `;
                 grid.appendChild(div);
-                
-                setTimeout(() => {
-                    new QRCode(document.getElementById(`qr-${batch.id}`), {
-                        text: qrText,
-                        width: 130,
-                        height: 130,
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
-                }, 50);
             }
             
-            container.style.display = 'block';
-            container.scrollIntoView({ behavior: 'smooth' });
-            alert(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nSilakan tekan Ctrl+P untuk mencetak.`);
+            setTimeout(() => {
+                let success = 0;
+                for (const batch of batchList) {
+                    const qrElement = document.getElementById(`qr-${batch.id}`);
+                    if (qrElement) {
+                        try {
+                            qrElement.innerHTML = '';
+                            new QRCode(qrElement, {
+                                text: `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}`,
+                                width: 130,
+                                height: 130,
+                                correctLevel: QRCode.CorrectLevel.M
+                            });
+                            success++;
+                        } catch(e) {
+                            console.error(e);
+                            qrElement.innerHTML = '<p style="color:red">Error</p>';
+                        }
+                    }
+                }
+                alert(`✅ ${success} QR Code berhasil digenerate!\n\nTekan Ctrl+P untuk mencetak.`);
+                container.scrollIntoView({ behavior: 'smooth' });
+            }, 200);
         }
         
+        // ========== NAVIGASI ==========
         function goToMenu(menu) {
             const files = {
                 dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
@@ -385,16 +526,22 @@
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        async function logout() { if (sb) await sb.auth.signOut(); window.location.href = 'login.html'; }
         
         function setupEventListeners() {
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
+            
             document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
+            
+            const generateBtn = document.getElementById('generateBtn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', generateAndPrint);
+            }
         }
         
         async function loadPage() {
@@ -409,7 +556,7 @@
                     
                     <div id="itemContainer"></div>
                     
-                    <div class="batch-list" id="batchListContainer">
+                    <div class="batch-list">
                         <strong>📋 Daftar Batch yang akan dicetak:</strong>
                         <div id="batchItems"></div>
                         <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
@@ -420,14 +567,16 @@
             `;
             
             await loadPiList();
+            setupEventListeners();
         }
         
+        // ========== INIT ==========
         async function init() {
             await cekSession();
-            setupEventListeners();
             await loadPage();
         }
         
+        // Expose ke window
         window.onPiChange = onPiChange;
         window.addToBatch = addToBatch;
         window.updateBatchItem = updateBatchItem;
