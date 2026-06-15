@@ -104,7 +104,18 @@
         .qrcode-item .qty-info { font-size: 12px; font-weight: bold; margin-top: 5px; color: #10b981; }
         .qrcode-item .batch-name { font-size: 11px; font-weight: bold; background: #e0f2fe; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
         .print-area { text-align: center; }
-        .print-btn { background: #10b981; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; margin: 10px; }
+        .print-btn { 
+            background: #10b981; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 8px; 
+            color: white; 
+            cursor: pointer; 
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .print-btn:hover { background: #059669; }
         
         .item-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .item-table th, .item-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
@@ -113,7 +124,9 @@
         .item-table input[type="number"] { width: 100px; padding: 6px; border: 1px solid #ddd; border-radius: 6px; }
         
         .btn-generate { background: #8b5cf6; margin-top: 15px; width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
+        .btn-generate:hover { background: #7c3aed; }
         .btn-add-batch { background: #10b981; margin-top: 10px; padding: 8px 16px; border: none; border-radius: 8px; color: white; cursor: pointer; }
+        .btn-add-batch:hover { background: #059669; }
         
         .batch-list {
             margin-top: 15px;
@@ -134,6 +147,8 @@
         .batch-item input { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 6px; width: 100px; }
         .batch-item button { width: auto; padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; }
         .btn-update { background: #3b82f6 !important; margin-left: 5px; }
+        .btn-update:hover { background: #2563eb !important; }
+        .batch-item button:hover { opacity: 0.9; }
         
         .qr-grid {
             display: grid;
@@ -142,10 +157,12 @@
             padding: 10px;
         }
         
+        /* Sembunyikan tombol cetak saat print */
         @media print {
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             .print-area { display: block; }
             .qrcode-item { break-inside: avoid; page-break-inside: avoid; }
+            .print-btn-container { display: none !important; }
         }
         
         select, label { margin-top: 10px; }
@@ -153,6 +170,13 @@
         label { font-weight: bold; display: block; margin-bottom: 5px; }
         
         .error-msg { background: #fee; color: #c00; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; }
+        
+        .print-btn-container {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -204,7 +228,6 @@
         
         // Inisialisasi Supabase
         async function initSupabase() {
-            // Coba dari config.js dulu
             if (typeof supabaseConfig !== 'undefined' && supabaseConfig) {
                 supabaseClient = supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
                 console.log("Menggunakan config.js");
@@ -212,12 +235,10 @@
                 supabaseClient = supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
                 console.log("Menggunakan window.supabaseConfig");
             } else {
-                // Pakai fallback
                 console.log("Menggunakan fallback config");
                 supabaseClient = supabase.createClient(FALLBACK_URL, FALLBACK_KEY);
             }
             
-            // Test koneksi
             try {
                 const { data, error } = await supabaseClient.from('pi_header').select('count', { count: 'exact', head: true });
                 if (error) throw error;
@@ -402,6 +423,10 @@
             generateBtn.onclick = function() { generateAndPrint(); };
         }
         
+        function printQR() {
+            window.print();
+        }
+        
         function generateAndPrint() {
             if (batchList.length === 0) {
                 alert('Tidak ada batch untuk dicetak!');
@@ -436,9 +461,22 @@
                     }
                 }, 50);
             }
+            
+            // Tambah tombol cetak langsung
+            const printBtnContainer = document.createElement('div');
+            printBtnContainer.className = 'print-btn-container no-print';
+            printBtnContainer.innerHTML = '<button class="print-btn" onclick="printQR()">🖨️ CETAK QR CODE</button>';
+            container.appendChild(printBtnContainer);
+            
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth' });
-            alert(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nTekan Ctrl+P untuk mencetak.`);
+            
+            // Tanya apakah mau langsung cetak
+            if(confirm(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nApakah ingin langsung mencetak?`)) {
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            }
         }
         
         function goToMenu(menu) {
@@ -498,6 +536,7 @@
         window.updateBatchItem = updateBatchItem;
         window.deleteBatch = deleteBatch;
         window.generateAndPrint = generateAndPrint;
+        window.printQR = printQR;
         
         setupEventListeners();
         loadPage();
