@@ -190,32 +190,21 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        // TIDAK ADA DEKLARASI supabase LAGI - LANGSUNG PAKAI YANG DARI CONFIG.JS
-        
+        // LANGSUNG ISI HTML TANPA CEK SESSION
         let allItems = [];
         let selectedPiId = null;
         let piList = [];
         let batchList = [];
         let nextId = 1;
         
-        async function cekSession() {
-            try {
-                // Pastikan supabase sudah terdefinisi dari config.js
-                if (typeof supabase === 'undefined') {
-                    console.error('Supabase tidak terdefinisi - pastikan config.js benar');
-                    window.location.href = 'login.html';
-                    return;
-                }
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) window.location.href = 'login.html';
-            } catch (err) {
-                console.error('Session error:', err);
-                window.location.href = 'login.html';
-            }
-        }
-        
         async function loadPiList() {
-            const { data: headers } = await supabase.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
+            if (!window.supabase) {
+                console.log('Menunggu Supabase...');
+                setTimeout(loadPiList, 500);
+                return;
+            }
+            
+            const { data: headers } = await window.supabase.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
             piList = headers || [];
             let options = '<option value="">-- Pilih No PI --</option>';
             for (const pi of piList) {
@@ -226,6 +215,8 @@
         }
         
         async function onPiChange() {
+            if (!window.supabase) return;
+            
             const piId = document.getElementById('pi_select').value;
             if (!piId) {
                 document.getElementById('itemContainer').innerHTML = '';
@@ -233,7 +224,7 @@
             }
             selectedPiId = piId;
             
-            const { data: details } = await supabase.from('pi_detail').select('*').eq('pi_id', piId);
+            const { data: details } = await window.supabase.from('pi_detail').select('*').eq('pi_id', piId);
             allItems = details || [];
             
             let html = `
@@ -359,7 +350,6 @@
             generateBtn.style.display = 'block';
             generateBtn.innerHTML = `🖨️ Generate QR Code (${batchList.length} Batch)`;
             
-            // Hapus event listener lama dan pasang baru
             const newGenerateBtn = generateBtn.cloneNode(true);
             generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
             newGenerateBtn.onclick = function() { generateAndPrint(); };
@@ -429,30 +419,22 @@
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
-        async function logout() { 
-            if (typeof supabase !== 'undefined') await supabase.auth.signOut(); 
+        function logout() { 
             window.location.href = 'login.html'; 
         }
         
         function setupEventListeners() {
-            const menuToggle = document.getElementById('menuToggle');
-            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
-            const overlay = document.getElementById('overlay');
-            if (overlay) overlay.addEventListener('click', closeSidebar);
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) logoutBtn.addEventListener('click', logout);
-            const logoutMenu = document.getElementById('logoutMenu');
-            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
             document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
         
         async function loadPage() {
-            const mainEl = document.getElementById('mainContent');
-            if (!mainEl) return;
-            
-            mainEl.innerHTML = `
+            document.getElementById('mainContent').innerHTML = `
                 <div class="card">
                     <div class="card-title">🏷️ GENERATE QR CODE</div>
                     
@@ -473,29 +455,22 @@
                 </div>
             `;
             
-            await loadPiList();
+            // Tunggu supabase siap
+            if (window.supabase) {
+                await loadPiList();
+            } else {
+                setTimeout(loadPiList, 500);
+            }
         }
         
-        // EXPOSE FUNCTIONS KE GLOBAL WINDOW
         window.onPiChange = onPiChange;
         window.addToBatch = addToBatch;
         window.updateBatchItem = updateBatchItem;
         window.deleteBatch = deleteBatch;
         window.generateAndPrint = generateAndPrint;
         
-        async function init() {
-            await cekSession();
-            setupEventListeners();
-            await loadPage();
-        }
-        
-        // Tunggu supabase siap dari config.js
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            // Beri sedikit delay untuk memastikan config.js sudah load
-            setTimeout(init, 100);
-        }
+        setupEventListeners();
+        loadPage();
     </script>
 </body>
 </html>
