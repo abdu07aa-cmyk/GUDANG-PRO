@@ -10,22 +10,41 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
-        /* SEMUA YANG NO-PRINT TIDAK AKAN KELIHATAN SAAT CETAK */
+        /* ============ STYLE CETAK A4 ============ */
         @media print {
             .no-print { display: none !important; }
             .print-area { display: block !important; }
-            .qrcode-item { 
-                break-inside: avoid; 
-                page-break-inside: avoid;
-                margin: 5px;
-                padding: 5px;
-            }
             body { background: white; margin: 0; padding: 0; }
             .container { padding: 0; margin: 0; }
             .card { box-shadow: none; padding: 0; }
+            
+            /* Layout A4 - 3 kolom */
+            .qr-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+                padding: 10px;
+            }
+            
+            .qrcode-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                margin: 0;
+                padding: 10px;
+                width: 100%;
+            }
         }
         
         /* TAMPILAN LAYAR */
+        @media screen {
+            .qr-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+                gap: 10px;
+                padding: 10px;
+            }
+        }
+        
         .sidebar {
             position: fixed;
             top: 0;
@@ -120,6 +139,7 @@
         .qrcode-item .qty-info { font-size: 12px; font-weight: bold; margin-top: 5px; color: #10b981; }
         .qrcode-item .batch-name { font-size: 11px; font-weight: bold; background: #e0f2fe; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
         .print-area { text-align: center; }
+        
         .print-btn { 
             background: #10b981; 
             padding: 12px 24px; 
@@ -132,6 +152,28 @@
             font-weight: bold;
         }
         .print-btn:hover { background: #059669; }
+        
+        /* Pilihan layout */
+        .layout-selector {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .layout-selector label {
+            display: inline-block;
+            margin: 0;
+            font-weight: normal;
+        }
+        .layout-selector select {
+            width: auto;
+            margin: 0;
+            padding: 5px 10px;
+        }
         
         .item-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .item-table th, .item-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
@@ -165,13 +207,6 @@
         .btn-update { background: #3b82f6 !important; margin-left: 5px; }
         .btn-update:hover { background: #2563eb !important; }
         .batch-item button:hover { opacity: 0.9; }
-        
-        .qr-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-            gap: 10px;
-            padding: 10px;
-        }
         
         select, label { margin-top: 10px; }
         select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
@@ -208,6 +243,14 @@
             padding: 8px;
             border-radius: 8px;
             margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        /* Preview layout info */
+        .layout-info {
+            background: #e0f2fe;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-size: 12px;
         }
     </style>
@@ -258,6 +301,7 @@
         let allItemsByPi = {};
         let batchList = [];
         let nextId = 1;
+        let currentLayout = 3; // Default 3 kolom untuk A4
         
         async function initSupabase() {
             if (typeof supabaseConfig !== 'undefined' && supabaseConfig) {
@@ -275,6 +319,40 @@
             } catch (err) {
                 console.error("Supabase error:", err.message);
                 return false;
+            }
+        }
+        
+        function changeLayout() {
+            const select = document.getElementById('layoutSelect');
+            currentLayout = parseInt(select.value);
+            
+            // Update style untuk cetak
+            const style = document.createElement('style');
+            style.id = 'dynamicPrintStyle';
+            const oldStyle = document.getElementById('dynamicPrintStyle');
+            if (oldStyle) oldStyle.remove();
+            
+            style.innerHTML = `
+                @media print {
+                    .qr-grid {
+                        display: grid;
+                        grid-template-columns: repeat(${currentLayout}, 1fr);
+                        gap: 15px;
+                        padding: 10px;
+                    }
+                }
+            `;
+            style.id = 'dynamicPrintStyle';
+            document.head.appendChild(style);
+            
+            // Tampilkan info
+            const info = document.getElementById('layoutInfo');
+            if (info) {
+                let infoText = '';
+                if (currentLayout === 2) infoText = '📄 2 kolom per halaman A4 (cocok untuk QR besar)';
+                else if (currentLayout === 3) infoText = '📄 3 kolom per halaman A4 (standar)';
+                else if (currentLayout === 4) infoText = '📄 4 kolom per halaman A4 (QR kecil, hemat kertas)';
+                info.innerHTML = infoText;
             }
         }
         
@@ -497,7 +575,6 @@
             const grid = document.getElementById('qrGrid');
             
             for (const batch of batchList) {
-                // QR Code dengan detail lengkap
                 const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
                 
                 const div = document.createElement('div');
@@ -523,7 +600,7 @@
                 }, 50);
             }
             
-            // Tombol cetak (hanya tampil di layar, tidak ikut tercetak)
+            // Tombol cetak (hanya tampil di layar)
             const printBtnContainer = document.createElement('div');
             printBtnContainer.className = 'print-btn-container no-print';
             printBtnContainer.innerHTML = '<button class="print-btn" onclick="printQR()">🖨️ CETAK QR CODE</button>';
@@ -571,6 +648,17 @@
                 <div class="card">
                     <div class="card-title no-print">🏷️ GENERATE QR CODE</div>
                     
+                    <!-- Pilihan Layout Cetak A4 -->
+                    <div class="layout-selector no-print">
+                        <span>📄 Layout Cetak A4:</span>
+                        <select id="layoutSelect" onchange="changeLayout()">
+                            <option value="2">2 kolom (QR besar)</option>
+                            <option value="3" selected>3 kolom (standar)</option>
+                            <option value="4">4 kolom (hemat kertas)</option>
+                        </select>
+                        <span id="layoutInfo" class="layout-info">📄 3 kolom per halaman A4 (standar)</span>
+                    </div>
+                    
                     <div id="piSelectorContainer">⏳ Memuat daftar PI...</div>
                     
                     <div id="multiItemContainer"></div>
@@ -586,6 +674,7 @@
             `;
             
             await loadPiList();
+            changeLayout(); // Set default layout
         }
         
         window.togglePi = togglePi;
@@ -595,6 +684,7 @@
         window.deleteBatch = deleteBatch;
         window.generateAndPrint = generateAndPrint;
         window.printQR = printQR;
+        window.changeLayout = changeLayout;
         
         setupEventListeners();
         loadPage();
