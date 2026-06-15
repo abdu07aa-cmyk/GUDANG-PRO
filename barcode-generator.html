@@ -6,7 +6,6 @@
     <title>Generate QR Code - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -152,6 +151,8 @@
         select, label { margin-top: 10px; }
         select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
         label { font-weight: bold; display: block; margin-bottom: 5px; }
+        
+        .error-msg { background: #fee; color: #c00; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; }
     </style>
 </head>
 <body>
@@ -190,38 +191,70 @@
     <div class="container" id="mainContent"></div>
 
     <script>
+        // FALLBACK CONFIG SUPABASE (GANTI DENGAN MILIK ANDA)
+        const FALLBACK_URL = "https://txvgclavcmhyxamxgvsi.supabase.co";
+        const FALLBACK_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY";
+        
+        let supabaseClient = null;
         let allItems = [];
         let selectedPiId = null;
         let piList = [];
         let batchList = [];
         let nextId = 1;
-        let supabaseClient = null;
         
         // Inisialisasi Supabase
         async function initSupabase() {
-            if (typeof supabaseConfig !== 'undefined') {
+            // Coba dari config.js dulu
+            if (typeof supabaseConfig !== 'undefined' && supabaseConfig) {
                 supabaseClient = supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
-            } else if (window.supabaseConfig) {
+                console.log("Menggunakan config.js");
+            } else if (window.supabaseConfig && window.supabaseConfig.supabaseUrl) {
                 supabaseClient = supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
+                console.log("Menggunakan window.supabaseConfig");
+            } else {
+                // Pakai fallback
+                console.log("Menggunakan fallback config");
+                supabaseClient = supabase.createClient(FALLBACK_URL, FALLBACK_KEY);
             }
-            return supabaseClient;
+            
+            // Test koneksi
+            try {
+                const { data, error } = await supabaseClient.from('pi_header').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                console.log("Supabase connected!");
+                return true;
+            } catch (err) {
+                console.error("Supabase error:", err.message);
+                return false;
+            }
         }
         
         async function loadPiList() {
-            if (!supabaseClient) await initSupabase();
             if (!supabaseClient) {
-                setTimeout(loadPiList, 500);
-                return;
+                const connected = await initSupabase();
+                if (!connected) {
+                    const selectEl = document.getElementById('pi_select');
+                    if (selectEl) selectEl.innerHTML = '<option value="">❌ Gagal koneksi ke database</option>';
+                    return;
+                }
             }
             
-            const { data: headers } = await supabaseClient.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
-            piList = headers || [];
-            let options = '<option value="">-- Pilih No PI --</option>';
-            for (const pi of piList) {
-                options += `<option value="${pi.id}">${pi.no_pi}</option>`;
+            try {
+                const { data: headers, error } = await supabaseClient.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
+                if (error) throw error;
+                
+                piList = headers || [];
+                let options = '<option value="">-- Pilih No PI --</option>';
+                for (const pi of piList) {
+                    options += `<option value="${pi.id}">${pi.no_pi}</option>`;
+                }
+                const selectEl = document.getElementById('pi_select');
+                if (selectEl) selectEl.innerHTML = options;
+            } catch (err) {
+                console.error("Load PI error:", err);
+                const selectEl = document.getElementById('pi_select');
+                if (selectEl) selectEl.innerHTML = '<option value="">❌ Error loading data</option>';
             }
-            const selectEl = document.getElementById('pi_select');
-            if (selectEl) selectEl.innerHTML = options;
         }
         
         async function onPiChange() {
@@ -235,34 +268,41 @@
             }
             selectedPiId = piId;
             
-            const { data: details } = await supabaseClient.from('pi_detail').select('*').eq('pi_id', piId);
-            allItems = details || [];
-            
-            let html = `
-                <table class="item-table">
-                    <thead>
-                        <tr><th style="width:40px">Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            for (const item of allItems) {
-                html += `
-                    <tr>
-                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}" data-qty_pi="${item.qty_pi}"></td>
-                        <td>${item.brand}</td>
-                        <td>${item.jenis}</td>
-                        <td>${item.paper || '-'}</td>
-                        <td>${item.size || '-'}</td>
-                        <td style="text-align:center">${Number(item.qty_pi).toLocaleString()}</td>
-                        <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
-                        <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
-                    </tr>
+            try {
+                const { data: details, error } = await supabaseClient.from('pi_detail').select('*').eq('pi_id', piId);
+                if (error) throw error;
+                
+                allItems = details || [];
+                
+                let html = `
+                    <table class="item-table">
+                        <thead>
+                            <tr><th style="width:40px">Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody>
                 `;
+                
+                for (const item of allItems) {
+                    html += `
+                        <tr>
+                            <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}" data-qty_pi="${item.qty_pi}"></td>
+                            <td>${item.brand}</td>
+                            <td>${item.jenis}</td>
+                            <td>${item.paper || '-'}</td>
+                            <td>${item.size || '-'}</td>
+                            <td style="text-align:center">${Number(item.qty_pi).toLocaleString()}</td>
+                            <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
+                            <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
+                        </tr>
+                    `;
+                }
+                html += `</tbody>`;
+                html += `</table>`;
+                document.getElementById('itemContainer').innerHTML = html;
+            } catch (err) {
+                console.error("Load detail error:", err);
+                document.getElementById('itemContainer').innerHTML = '<div class="error-msg">❌ Gagal memuat data detail</div>';
             }
-            html += `</tbody>`;
-            html += `</table>`;
-            document.getElementById('itemContainer').innerHTML = html;
         }
         
         function addToBatch(itemId) {
@@ -435,7 +475,7 @@
                     
                     <label>📋 Pilih No PI</label>
                     <select id="pi_select" onchange="onPiChange()">
-                        <option value="">Memuat data...</option>
+                        <option value="">⏳ Menghubungkan ke database...</option>
                     </select>
                     
                     <div id="itemContainer"></div>
