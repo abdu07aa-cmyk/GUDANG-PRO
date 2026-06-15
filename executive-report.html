@@ -9,107 +9,101 @@
     <script src="config.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; padding: 15px; padding-bottom: 70px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
-        .header {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
             color: white;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 15px;
-            text-align: center;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
         }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #1e293b;
-            border-left: 4px solid #3b82f6;
-            padding-left: 10px;
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
         }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
         }
+        .overlay.show { display: block; }
 
-        .stat-card {
+        /* HEADER */
+        .header {
             background: white;
             padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #3b82f6;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 5px;
-        }
-
-        .warning-item {
-            padding: 10px;
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
             border-radius: 8px;
-            margin-bottom: 8px;
-            font-size: 13px;
         }
-
-        .warning-habis {
-            background: #fee2e2;
-            border-left-color: #ef4444;
-        }
-
-        .btn-export {
-            background: #10b981;
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 8px;
             font-size: 12px;
             cursor: pointer;
         }
 
-        .btn-back {
-            background: #64748b;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
-            width: 100%;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 30px;
-            color: #64748b;
-        }
-
+        /* KONTEN */
+        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1e293b; border-left: 4px solid #3b82f6; padding-left: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        
+        .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 28px; font-weight: bold; color: #3b82f6; }
+        .stat-label { font-size: 11px; color: #64748b; margin-top: 5px; }
+        
+        .warning-item { padding: 10px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        .warning-habis { background: #fee2e2; border-left-color: #ef4444; }
+        
+        .btn-export { background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; }
+        
         @media (max-width: 600px) {
             .stat-value { font-size: 22px; }
             .card-title { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -118,50 +112,62 @@
     </style>
 </head>
 <body>
-    <div id="hasil" style="padding:20px">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item active" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 GUDANG PRO</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <!-- KONTEN UTAMA -->
+    <div class="container" id="mainContent">
         <div class="loading">⏳ Memuat laporan...</div>
     </div>
 
     <script>
         let itemsCache = [];
 
-        async function loadReport() {
-            const container = document.getElementById('hasil');
-            
-            container.innerHTML = '<div class="loading">📡 Mengambil data dari database...</div>';
-            
+        async function cekSession() {
             const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
-                container.innerHTML = '<div class="loading">❌ Session habis, redirect ke login...</div>';
-                setTimeout(() => { window.location.href = 'login.html'; }, 2000);
-                return;
-            }
+            if (!session) window.location.href = 'login.html';
+        }
+
+        async function loadReport() {
+            const container = document.getElementById('mainContent');
+            container.innerHTML = '<div class="loading">📡 Mengambil data...</div>';
             
-            const { data: headers, error: err1 } = await sb.from('pi_header').select('*');
-            if (err1) {
-                container.innerHTML = '<div class="loading">❌ Error: ' + err1.message + '</div>';
-                return;
-            }
+            const { data: headers } = await sb.from('pi_header').select('*');
+            const { data: details } = await sb.from('pi_detail').select('*');
+            const { data: masuk } = await sb.from('barang_masuk').select('*');
+            const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            const { data: details, error: err2 } = await sb.from('pi_detail').select('*');
-            if (err2) {
-                container.innerHTML = '<div class="loading">❌ Error: ' + err2.message + '</div>';
-                return;
-            }
-            
-            const { data: masuk, error: err3 } = await sb.from('barang_masuk').select('*');
-            if (err3) {
-                container.innerHTML = '<div class="loading">❌ Error: ' + err3.message + '</div>';
-                return;
-            }
-            
-            const { data: keluar, error: err4 } = await sb.from('barang_keluar').select('*');
-            if (err4) {
-                container.innerHTML = '<div class="loading">❌ Error: ' + err4.message + '</div>';
-                return;
-            }
-            
-            // Hitung stok per item
             const items = [];
             for (const detail of details) {
                 const header = headers?.find(h => h.id === detail.pi_id);
@@ -185,9 +191,7 @@
             
             // Statistik
             const totalItem = items.length;
-            let totalStok = 0;
-            let totalMasukSemua = 0;
-            let totalKeluarSemua = 0;
+            let totalStok = 0, totalMasukSemua = 0, totalKeluarSemua = 0;
             items.forEach(item => {
                 totalStok += item.stok;
                 totalMasukSemua += item.masuk;
@@ -196,146 +200,125 @@
             
             // Top 5 Brand
             const brandMap = {};
-            items.forEach(item => {
-                if (!brandMap[item.brand]) brandMap[item.brand] = 0;
-                brandMap[item.brand] += item.stok;
-            });
+            items.forEach(item => { brandMap[item.brand] = (brandMap[item.brand] || 0) + item.stok; });
             const topBrands = Object.entries(brandMap).sort((a,b) => b[1] - a[1]).slice(0,5);
             
-            // Peringatan stok
+            // Peringatan
             const menipis = items.filter(item => item.stok > 0 && item.stok < 10);
             const habis = items.filter(item => item.stok <= 0);
             
             container.innerHTML = `
-                <div class="header">
-                    <h3>📊 LAPORAN EKSEKUTIF</h3>
-                    <p>Ringkasan Stok Material</p>
-                </div>
-                
-                <div class="stats">
-                    <div class="stat-card"><div class="stat-value">${totalItem}</div><div class="stat-label">Total Item</div></div>
-                    <div class="stat-card"><div class="stat-value">${totalStok.toLocaleString()}</div><div class="stat-label">Total Stok</div></div>
-                    <div class="stat-card"><div class="stat-value">${totalMasukSemua.toLocaleString()}</div><div class="stat-label">Total Masuk</div></div>
-                    <div class="stat-card"><div class="stat-value">${totalKeluarSemua.toLocaleString()}</div><div class="stat-label">Total Keluar</div></div>
+                <div class="card">
+                    <div class="stats">
+                        <div class="stat-card"><div class="stat-value">${totalItem}</div><div class="stat-label">Total Item</div></div>
+                        <div class="stat-card"><div class="stat-value">${totalStok.toLocaleString()}</div><div class="stat-label">Total Stok</div></div>
+                        <div class="stat-card"><div class="stat-value">${totalMasukSemua.toLocaleString()}</div><div class="stat-label">Total Masuk</div></div>
+                        <div class="stat-card"><div class="stat-value">${totalKeluarSemua.toLocaleString()}</div><div class="stat-label">Total Keluar</div></div>
+                    </div>
                 </div>
                 
                 <div class="card">
                     <div class="card-title">
-                        <span>🏆 TOP 5 BRAND (Stok Terbanyak)</span>
-                        <button class="btn-export" onclick="exportTopBrands()">📎 Export Top Brand</button>
+                        <span>🏆 TOP 5 BRAND</span>
+                        <button class="btn-export" onclick="exportTopBrands()">📎 Export</button>
                     </div>
-                    ${topBrands.map(b => `<div style="padding:8px 0; border-bottom:1px solid #eee"><b>${b[0]}</b> - ${b[1].toLocaleString()} bundles</div>`).join('')}
-                    ${topBrands.length === 0 ? '<div>Belum ada data</div>' : ''}
+                    ${topBrands.map(b => `<div style="padding:8px 0; border-bottom:1px solid #eee"><b>${b[0]}</b> - ${b[1].toLocaleString()} stok</div>`).join('')}
                 </div>
                 
                 <div class="card">
                     <div class="card-title">
-                        <span>⚠️ STOK MENIPIS (Perlu Restock)</span>
-                        <button class="btn-export" onclick="exportMenipis()">📎 Export Stok Menipis</button>
+                        <span>⚠️ STOK MENIPIS</span>
+                        <button class="btn-export" onclick="exportMenipis()">📎 Export</button>
                     </div>
-                    ${menipis.length > 0 ? menipis.map(item => `
-                        <div class="warning-item">
-                            <b>${item.brand} - ${item.jenis}</b><br>
-                            Paper: ${item.paper} | Size: ${item.size}<br>
-                            Sisa: ${item.stok} bundles
-                        </div>
-                    `).join('') : '<div>✅ Tidak ada stok menipis</div>'}
+                    ${menipis.map(item => `<div class="warning-item"><b>${item.brand} - ${item.jenis}</b><br>Paper: ${item.paper} | Size: ${item.size}<br>Sisa: ${item.stok}</div>`).join('') || '<div>✅ Tidak ada stok menipis</div>'}
                 </div>
                 
                 <div class="card">
                     <div class="card-title">
                         <span>❌ STOK HABIS</span>
-                        <button class="btn-export" onclick="exportHabis()">📎 Export Stok Habis</button>
+                        <button class="btn-export" onclick="exportHabis()">📎 Export</button>
                     </div>
-                    ${habis.length > 0 ? habis.map(item => `
-                        <div class="warning-item warning-habis">
-                            <b>${item.brand} - ${item.jenis}</b><br>
-                            Paper: ${item.paper} | Size: ${item.size}<br>
-                            Stok habis!
-                        </div>
-                    `).join('') : '<div>✅ Semua stok tersedia</div>'}
+                    ${habis.map(item => `<div class="warning-item warning-habis"><b>${item.brand} - ${item.jenis}</b><br>Paper: ${item.paper} | Size: ${item.size}<br>Stok habis!</div>`).join('') || '<div>✅ Semua stok tersedia</div>'}
                 </div>
                 
                 <div class="card">
                     <div class="card-title">
                         <span>📋 SEMUA DATA STOK</span>
-                        <button class="btn-export" onclick="exportAll()">📎 Export Semua Data</button>
+                        <button class="btn-export" onclick="exportAll()">📎 Export</button>
                     </div>
                     <div style="overflow-x:auto">
-                        <table style="width:100%">
-                            <thead>
-                                <tr><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Stok</th></tr>
-                            </thead>
-                            <tbody>
-                                ${items.map(item => `<tr><td>${item.brand}</td><td>${item.jenis}</td><td>${item.paper}</td><td>${item.size}</td><td>${item.stok}</td></tr>`).join('')}
-                                ${items.length === 0 ? '<tr><td colspan="5">Belum ada data</td>' : ''}
-                            </tbody>
+                        <table>
+                            <thead><tr><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Stok</th></tr></thead>
+                            <tbody>${items.map(item => `<tr><td>${item.brand}</td><td>${item.jenis}</td><td>${item.paper}</td><td>${item.size}</td><td>${item.stok}</td>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
-                
-                <button class="btn-back" onclick="window.location.href='dashboard.html'">⬅ Kembali ke Dashboard</button>
             `;
         }
         
-        function exportToExcel(data, filename, headers) {
-            if (!data || data.length === 0) {
-                alert('Tidak ada data untuk diexport!');
-                return;
-            }
-            
-            const excelData = [headers];
-            data.forEach(row => excelData.push(row));
-            
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
+        function exportExcel(data, filename, headers) {
+            if (!data.length) { alert('Tidak ada data'); return; }
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, filename);
             XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
-            alert(`✅ Export ${filename} berhasil!`);
+            alert(`✅ Export ${filename} berhasil`);
         }
-        function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+        
         function exportTopBrands() {
             const brandMap = {};
-            itemsCache.forEach(item => {
-                if (!brandMap[item.brand]) brandMap[item.brand] = 0;
-                brandMap[item.brand] += item.stok;
-            });
-            const topBrands = Object.entries(brandMap).sort((a,b) => b[1] - a[1]).slice(0,10);
-            const data = topBrands.map((b, i) => [i+1, b[0], b[1]]);
-            exportToExcel(data, 'Top_10_Brand', ['No', 'Brand', 'Total Stok']);
+            itemsCache.forEach(item => { brandMap[item.brand] = (brandMap[item.brand] || 0) + item.stok; });
+            const data = Object.entries(brandMap).sort((a,b) => b[1] - a[1]).slice(0,10).map((b,i) => [i+1, b[0], b[1]]);
+            exportExcel(data, 'Top_10_Brand', ['No', 'Brand', 'Total Stok']);
         }
         
         function exportMenipis() {
-            const menipis = itemsCache.filter(item => item.stok > 0 && item.stok < 10);
-            const data = menipis.map(item => [item.brand, item.jenis, item.paper, item.size, item.stok]);
-            exportToExcel(data, 'Stok_Menipis', ['Brand', 'Jenis', 'Paper', 'Size', 'Sisa Stok']);
+            const data = itemsCache.filter(i => i.stok > 0 && i.stok < 10).map(i => [i.brand, i.jenis, i.paper, i.size, i.stok]);
+            exportExcel(data, 'Stok_Menipis', ['Brand', 'Jenis', 'Paper', 'Size', 'Sisa Stok']);
         }
         
         function exportHabis() {
-            const habis = itemsCache.filter(item => item.stok <= 0);
-            const data = habis.map(item => [item.brand, item.jenis, item.paper, item.size]);
-            exportToExcel(data, 'Stok_Habis', ['Brand', 'Jenis', 'Paper', 'Size']);
+            const data = itemsCache.filter(i => i.stok <= 0).map(i => [i.brand, i.jenis, i.paper, i.size]);
+            exportExcel(data, 'Stok_Habis', ['Brand', 'Jenis', 'Paper', 'Size']);
         }
         
         function exportAll() {
-            const data = itemsCache.map(item => [item.brand, item.jenis, item.paper, item.size, item.qty_pi, item.masuk, item.keluar, item.stok]);
-            exportToExcel(data, 'Semua_Data_Stok', ['Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok Akhir']);
+            const data = itemsCache.map(i => [i.brand, i.jenis, i.paper, i.size, i.qty_pi, i.masuk, i.keluar, i.stok]);
+            exportExcel(data, 'Semua_Data_Stok', ['Brand', 'Jenis', 'Paper', 'Size', 'Qty PI', 'Masuk', 'Keluar', 'Stok Akhir']);
+        }
+        
+        // ==================== NAVIGASI ====================
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html', 'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+        
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+        
+        async function init() {
+            await cekSession();
+            setupEventListeners();
+            await loadReport();
         }
         
         window.exportTopBrands = exportTopBrands;
@@ -343,7 +326,7 @@
         window.exportHabis = exportHabis;
         window.exportAll = exportAll;
         
-        loadReport();
+        init();
     </script>
 </body>
 </html>
