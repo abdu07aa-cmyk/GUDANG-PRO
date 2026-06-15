@@ -10,22 +10,18 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
-        /* ============ STYLE CETAK A4 ============ */
         @media print {
             .no-print { display: none !important; }
             .print-area { display: block !important; }
             body { background: white; margin: 0; padding: 0; }
             .container { padding: 0; margin: 0; }
             .card { box-shadow: none; padding: 0; }
-            
-            /* Layout A4 - 3 kolom */
             .qr-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 15px;
                 padding: 10px;
             }
-            
             .qrcode-item {
                 break-inside: avoid;
                 page-break-inside: avoid;
@@ -35,7 +31,6 @@
             }
         }
         
-        /* TAMPILAN LAYAR */
         @media screen {
             .qr-grid {
                 display: grid;
@@ -153,7 +148,6 @@
         }
         .print-btn:hover { background: #059669; }
         
-        /* Pilihan layout */
         .layout-selector {
             background: #f1f5f9;
             padding: 10px;
@@ -164,15 +158,119 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .layout-selector label {
-            display: inline-block;
-            margin: 0;
-            font-weight: normal;
+        .layout-selector label { display: inline-block; margin: 0; font-weight: normal; }
+        .layout-selector select { width: auto; margin: 0; padding: 5px 10px; }
+        
+        /* TAB STYLE */
+        .tab-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
         }
-        .layout-selector select {
-            width: auto;
-            margin: 0;
-            padding: 5px 10px;
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+            background: #eff6ff;
+        }
+        .tab-btn:hover:not(.active) {
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* HISTORY STYLE */
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .history-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-item:hover {
+            background: #e0f2fe;
+            border-color: #3b82f6;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .history-date {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .history-user {
+            font-size: 12px;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .history-summary {
+            font-size: 13px;
+            color: #1e293b;
+        }
+        .history-summary span {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 8px;
+        }
+        .btn-reprint {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-reprint:hover {
+            background: #7c3aed;
+        }
+        .delete-history {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .delete-history:hover {
+            background: #dc2626;
+        }
+        .empty-history {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
         }
         
         .item-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -246,12 +344,17 @@
             font-size: 12px;
         }
         
-        /* Preview layout info */
         .layout-info {
             background: #e0f2fe;
             padding: 5px 10px;
             border-radius: 6px;
             font-size: 12px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
         }
     </style>
 </head>
@@ -291,7 +394,6 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        // FALLBACK CONFIG SUPABASE
         const FALLBACK_URL = "https://txvgclavcmhyxamxgvsi.supabase.co";
         const FALLBACK_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY";
         
@@ -301,7 +403,8 @@
         let allItemsByPi = {};
         let batchList = [];
         let nextId = 1;
-        let currentLayout = 3; // Default 3 kolom untuk A4
+        let currentLayout = 3;
+        let currentUser = null;
         
         async function initSupabase() {
             if (typeof supabaseConfig !== 'undefined' && supabaseConfig) {
@@ -313,6 +416,8 @@
             }
             
             try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                currentUser = user?.email || 'Unknown';
                 const { error } = await supabaseClient.from('pi_header').select('count', { count: 'exact', head: true });
                 if (error) throw error;
                 return true;
@@ -322,11 +427,129 @@
             }
         }
         
+        // SAVE TO HISTORY
+        async function saveToHistory(batchData, totalQr) {
+            if (!supabaseClient) await initSupabase();
+            if (!supabaseClient) return;
+            
+            try {
+                const { error } = await supabaseClient.from('qr_history').insert({
+                    batch_data: batchData,
+                    total_qr: totalQr,
+                    created_by: currentUser
+                });
+                if (error) throw error;
+                console.log('History saved');
+            } catch (err) {
+                console.error('Save history error:', err);
+            }
+        }
+        
+        // LOAD HISTORY
+        async function loadHistory() {
+            if (!supabaseClient) await initSupabase();
+            if (!supabaseClient) {
+                document.getElementById('historyList').innerHTML = '<div class="empty-history">❌ Gagal memuat riwayat</div>';
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('qr_history')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                
+                const container = document.getElementById('historyList');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="empty-history">📭 Belum ada riwayat generate QR Code</div>';
+                    return;
+                }
+                
+                let html = '<div class="history-list">';
+                for (const item of data) {
+                    const date = new Date(item.created_at).toLocaleString('id-ID');
+                    html += `
+                        <div class="history-item" data-id="${item.id}" data-batch='${JSON.stringify(item.batch_data)}'>
+                            <div class="history-header">
+                                <span class="history-date">📅 ${date}</span>
+                                <span class="history-user">👤 ${item.created_by || 'Unknown'}</span>
+                            </div>
+                            <div class="history-summary">
+                                <span>🎫 ${item.total_qr} QR Code</span>
+                                ${item.batch_data.length} item
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <button class="btn-reprint" onclick="reprintHistory(${item.id}, ${JSON.stringify(item.batch_data).replace(/"/g, '&quot;')})">🖨️ Cetak Ulang</button>
+                                <button class="delete-history" onclick="deleteHistory(${item.id})">🗑️ Hapus</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (err) {
+                console.error('Load history error:', err);
+                document.getElementById('historyList').innerHTML = '<div class="empty-history">❌ Error memuat riwayat</div>';
+            }
+        }
+        
+        // REPRINT FROM HISTORY
+        async function reprintHistory(id, batchData) {
+            try {
+                const parsedData = typeof batchData === 'string' ? JSON.parse(batchData) : batchData;
+                
+                // Clear current batch list
+                batchList = [];
+                nextId = 1;
+                
+                // Restore from history
+                for (const item of parsedData) {
+                    batchList.push({
+                        id: nextId++,
+                        ...item
+                    });
+                }
+                
+                updateBatchDisplay();
+                
+                // Switch to generate tab
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById('tabGenerate').classList.add('active');
+                document.getElementById('contentGenerate').classList.add('active');
+                
+                // Scroll to batch list
+                document.getElementById('batchListContainer').scrollIntoView({ behavior: 'smooth' });
+                
+                alert(`✅ Berhasil memuat ${batchList.length} QR Code dari riwayat!\nKlik "Generate QR Code" untuk cetak ulang.`);
+            } catch (err) {
+                console.error('Reprint error:', err);
+                alert('Gagal memuat ulang QR Code');
+            }
+        }
+        
+        // DELETE HISTORY
+        async function deleteHistory(id) {
+            if (!confirm('Hapus riwayat ini? Data tidak bisa dikembalikan.')) return;
+            
+            if (!supabaseClient) await initSupabase();
+            try {
+                const { error } = await supabaseClient.from('qr_history').delete().eq('id', id);
+                if (error) throw error;
+                alert('✅ Riwayat dihapus');
+                loadHistory();
+            } catch (err) {
+                console.error('Delete error:', err);
+                alert('Gagal menghapus riwayat');
+            }
+        }
+        
         function changeLayout() {
             const select = document.getElementById('layoutSelect');
+            if (!select) return;
             currentLayout = parseInt(select.value);
             
-            // Update style untuk cetak
             const style = document.createElement('style');
             style.id = 'dynamicPrintStyle';
             const oldStyle = document.getElementById('dynamicPrintStyle');
@@ -345,14 +568,24 @@
             style.id = 'dynamicPrintStyle';
             document.head.appendChild(style);
             
-            // Tampilkan info
             const info = document.getElementById('layoutInfo');
             if (info) {
                 let infoText = '';
                 if (currentLayout === 2) infoText = '📄 2 kolom per halaman A4 (cocok untuk QR besar)';
                 else if (currentLayout === 3) infoText = '📄 3 kolom per halaman A4 (standar)';
-                else if (currentLayout === 4) infoText = '📄 4 kolom per halaman A4 (QR kecil, hemat kertas)';
+                else if (currentLayout === 4) infoText = '📄 4 kolom per halaman A4 (hemat kertas)';
                 info.innerHTML = infoText;
+            }
+        }
+        
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`tab${tabId}`).classList.add('active');
+            document.getElementById(`content${tabId}`).classList.add('active');
+            
+            if (tabId === 'History') {
+                loadHistory();
             }
         }
         
@@ -564,130 +797,6 @@
             window.print();
         }
         
-        function generateAndPrint() {
+        async function generateAndPrint() {
             if (batchList.length === 0) {
-                alert('Tidak ada batch untuk dicetak!');
-                return;
-            }
-            
-            const container = document.getElementById('qrContainer');
-            container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
-            const grid = document.getElementById('qrGrid');
-            
-            for (const batch of batchList) {
-                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
-                
-                const div = document.createElement('div');
-                div.className = 'qrcode-item';
-                const qrDivId = `qr_${batch.id}_${Date.now()}_${Math.random()}`;
-                div.innerHTML = `
-                    <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
-                    <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
-                    <div class="qty-info">📦 ${Number(batch.qty_per_qr).toLocaleString()} pcs</div>
-                    <div class="info">
-                        <div>PI: ${batch.no_pi}</div>
-                        <div>Brand: ${batch.brand}</div>
-                        <div>Jenis: ${batch.jenis}</div>
-                        <div>Size: ${batch.size}</div>
-                    </div>
-                `;
-                grid.appendChild(div);
-                setTimeout(() => {
-                    const qrElement = document.getElementById(qrDivId);
-                    if (qrElement && typeof QRCode !== 'undefined') {
-                        new QRCode(qrElement, { text: qrText, width: 130, height: 130 });
-                    }
-                }, 50);
-            }
-            
-            // Tombol cetak (hanya tampil di layar)
-            const printBtnContainer = document.createElement('div');
-            printBtnContainer.className = 'print-btn-container no-print';
-            printBtnContainer.innerHTML = '<button class="print-btn" onclick="printQR()">🖨️ CETAK QR CODE</button>';
-            container.appendChild(printBtnContainer);
-            
-            container.style.display = 'block';
-            container.scrollIntoView({ behavior: 'smooth' });
-            
-            if(confirm(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nApakah ingin langsung mencetak?`)) {
-                setTimeout(() => {
-                    window.print();
-                }, 500);
-            }
-        }
-        
-        function goToMenu(menu) {
-            const files = {
-                dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
-                'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
-                executive: 'executive-report.html', 'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
-            };
-            window.location.href = files[menu] || 'dashboard.html';
-        }
-        
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-        
-        function logout() { window.location.href = 'login.html'; }
-        
-        function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
-            });
-        }
-        
-        async function loadPage() {
-            document.getElementById('mainContent').innerHTML = `
-                <div class="card">
-                    <div class="card-title no-print">🏷️ GENERATE QR CODE</div>
-                    
-                    <!-- Pilihan Layout Cetak A4 -->
-                    <div class="layout-selector no-print">
-                        <span>📄 Layout Cetak A4:</span>
-                        <select id="layoutSelect" onchange="changeLayout()">
-                            <option value="2">2 kolom (QR besar)</option>
-                            <option value="3" selected>3 kolom (standar)</option>
-                            <option value="4">4 kolom (hemat kertas)</option>
-                        </select>
-                        <span id="layoutInfo" class="layout-info">📄 3 kolom per halaman A4 (standar)</span>
-                    </div>
-                    
-                    <div id="piSelectorContainer">⏳ Memuat daftar PI...</div>
-                    
-                    <div id="multiItemContainer"></div>
-                    
-                    <div class="batch-list no-print" id="batchListContainer">
-                        <strong>📋 Daftar Batch yang akan dicetak:</strong>
-                        <div id="batchItems"></div>
-                        <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
-                    </div>
-                    
-                    <div id="qrContainer" class="print-area" style="display:none"></div>
-                </div>
-            `;
-            
-            await loadPiList();
-            changeLayout(); // Set default layout
-        }
-        
-        window.togglePi = togglePi;
-        window.loadSelectedPi = loadSelectedPi;
-        window.addToBatchMulti = addToBatchMulti;
-        window.updateBatchItem = updateBatchItem;
-        window.deleteBatch = deleteBatch;
-        window.generateAndPrint = generateAndPrint;
-        window.printQR = printQR;
-        window.changeLayout = changeLayout;
-        
-        setupEventListeners();
-        loadPage();
-    </script>
-</body>
-</html>
+               
