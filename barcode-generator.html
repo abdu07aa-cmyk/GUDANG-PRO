@@ -107,20 +107,14 @@
         .print-area { text-align: center; }
         .print-btn { background: #10b981; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; margin: 10px; }
         
-        .form-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        .form-box input, .form-box select {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
+        .item-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .item-table th, .item-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .item-table th { background: #f8fafc; }
+        .item-table input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        .item-table input[type="number"] { width: 100px; padding: 6px; border: 1px solid #ddd; border-radius: 6px; }
+        
+        .btn-generate { background: #8b5cf6; margin-top: 15px; width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
+        .btn-add-batch { background: #10b981; margin-top: 10px; padding: 8px 16px; border: none; border-radius: 8px; color: white; cursor: pointer; }
         
         .batch-list {
             margin-top: 15px;
@@ -138,23 +132,21 @@
             border-radius: 8px;
         }
         .batch-item span { flex: 2; font-size: 12px; }
-        .batch-item input { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; width: 100px; }
-        .batch-item button { width: auto; padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; }
+        .batch-item input { flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 6px; width: 100px; }
+        .batch-item button { width: auto; padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; }
         .btn-update { background: #3b82f6 !important; margin-left: 5px; }
-        .btn-add { background: #10b981; margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; }
-        .btn-generate { background: #8b5cf6; margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; }
-        
-        @media print {
-            .no-print { display: none; }
-            .print-area { display: block; }
-            .qrcode-item { break-inside: avoid; page-break-inside: avoid; }
-        }
         
         .qr-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
             gap: 10px;
             padding: 10px;
+        }
+        
+        @media print {
+            .no-print { display: none; }
+            .print-area { display: block; }
+            .qrcode-item { break-inside: avoid; page-break-inside: avoid; }
         }
     </style>
 </head>
@@ -195,6 +187,8 @@
 
     <script>
         let allItems = [];
+        let selectedPiId = null;
+        let piList = [];
         let batchList = [];
         let nextId = 1;
         
@@ -203,87 +197,96 @@
             if (!session) window.location.href = 'login.html';
         }
         
-        async function loadItems() {
-            const { data: details } = await sb.from('pi_detail').select('*, pi_header(no_pi)').order('pi_header(no_pi)', { ascending: true });
-            allItems = details || [];
-            renderForm();
+        async function loadPiList() {
+            const { data: headers } = await sb.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
+            piList = headers || [];
+            let options = '<option value="">-- Pilih No PI --</option>';
+            for (const pi of piList) {
+                options += `<option value="${pi.id}">${pi.no_pi}</option>`;
+            }
+            document.getElementById('pi_select').innerHTML = options;
         }
         
-        function renderForm() {
-            let itemOptions = '<option value="">-- Pilih Item --</option>';
-            for (const item of allItems) {
-                const noPi = item.pi_header?.no_pi || '-';
-                itemOptions += `<option value="${item.id}">${noPi} - ${item.brand} - ${item.jenis} (${item.paper || '-'} | ${item.size || '-'})</option>`;
+        async function onPiChange() {
+            const piId = document.getElementById('pi_select').value;
+            if (!piId) {
+                document.getElementById('itemContainer').innerHTML = '';
+                return;
             }
+            selectedPiId = piId;
             
-            const html = `
-                <div class="card">
-                    <div class="card-title">🏷️ GENERATE QR CODE (BATCH)</div>
-                    
-                    <div class="form-box no-print">
-                        <label>📋 Pilih PI & Item</label>
-                        <select id="item_select">${itemOptions}</select>
-                        
-                        <label>📦 Qty untuk Batch ini (pcs)</label>
-                        <input type="number" id="qty_input" placeholder="Contoh: 20000" min="1">
-                        
-                        <label>📝 Nama Batch (opsional)</label>
-                        <input type="text" id="batch_name" placeholder="Contoh: Booklet Batch A">
-                        
-                        <button id="addBatchBtn" class="btn-add">+ Tambahkan ke Daftar Batch</button>
-                    </div>
-                    
-                    <div class="batch-list no-print" id="batchListContainer">
-                        <strong>📋 Daftar Batch yang akan dicetak (${batchList.length} batch):</strong>
-                        <div id="batchItems"></div>
-                        <button id="generateBtn" class="btn-generate" style="${batchList.length === 0 ? 'display:none' : 'display:block'}">🖨️ Generate & Cetak SEMUA Batch (${batchList.length} QR)</button>
-                    </div>
-                    
-                    <div id="qrContainer" class="print-area" style="display:none"></div>
-                </div>
+            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+            allItems = details || [];
+            
+            let html = `
+                <table class="item-table">
+                    <thead>
+                        <tr><th style="width:40px">Pilih</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th><th>Qty PI</th><th>Qty per QR</th><th>Aksi</th></tr>
+                    </thead>
+                    <tbody>
             `;
             
-            document.getElementById('mainContent').innerHTML = html;
-            
-            document.getElementById('addBatchBtn').onclick = addBatch;
-            document.getElementById('generateBtn').onclick = generateAndPrint;
-            updateBatchDisplay();
+            for (const item of allItems) {
+                html += `
+                    <tr>
+                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" data-brand="${item.brand}" data-jenis="${item.jenis}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}" data-qty_pi="${item.qty_pi}"></td>
+                        <td>${item.brand}</td>
+                        <td>${item.jenis}</td>
+                        <td>${item.paper || '-'}</td>
+                        <td>${item.size || '-'}</td>
+                        <td style="text-align:center">${item.qty_pi.toLocaleString()}</td>
+                        <td><input type="number" class="qty-input" data-id="${item.id}" placeholder="Qty per QR" min="1" style="width:100px"></td>
+                        <td><button class="btn-add-batch" onclick="addToBatch(${item.id})">+ Tambah ke Daftar</button></td>
+                    </tr>
+                `;
+            }
+            html += `</tbody></table>`;
+            document.getElementById('itemContainer').innerHTML = html;
         }
         
-        function addBatch() {
-            const itemId = document.getElementById('item_select').value;
-            const qty = parseInt(document.getElementById('qty_input').value);
-            const batchName = document.getElementById('batch_name').value;
+        function addToBatch(itemId) {
+            const checkbox = document.querySelector(`.item-checkbox[data-id="${itemId}"]`);
+            const qtyInput = document.querySelector(`.qty-input[data-id="${itemId}"]`);
             
-            if (!itemId) {
-                alert('Pilih item terlebih dahulu!');
+            if (!checkbox.checked) {
+                alert('Centang item terlebih dahulu!');
                 return;
             }
+            
+            const qty = parseInt(qtyInput.value);
             if (!qty || qty <= 0) {
-                alert('Masukkan qty yang valid!');
+                alert('Masukkan Qty per QR yang valid!');
                 return;
             }
             
-            const item = allItems.find(i => i.id == itemId);
-            if (!item) return;
+            const brand = checkbox.dataset.brand;
+            const jenis = checkbox.dataset.jenis;
+            const paper = checkbox.dataset.paper;
+            const size = checkbox.dataset.size;
+            const qtyPi = parseInt(checkbox.dataset.qty_pi);
+            const noPi = piList.find(p => p.id == selectedPiId)?.no_pi || '-';
             
             batchList.push({
                 id: nextId++,
                 itemId: itemId,
-                item: item,
-                qty: qty,
-                batchName: batchName || `Batch ${batchList.length + 1}`
+                no_pi: noPi,
+                brand: brand,
+                jenis: jenis,
+                paper: paper,
+                size: size,
+                qty_pi: qtyPi,
+                qty_per_qr: qty
             });
             
-            document.getElementById('qty_input').value = '';
-            document.getElementById('batch_name').value = '';
             updateBatchDisplay();
+            checkbox.checked = false;
+            qtyInput.value = '';
         }
         
         function updateBatchItem(id, newQty) {
             const batch = batchList.find(b => b.id == id);
             if (batch) {
-                batch.qty = newQty;
+                batch.qty_per_qr = newQty;
                 updateBatchDisplay();
             }
         }
@@ -302,18 +305,17 @@
             qrContainer.innerHTML = '';
             
             if (batchList.length === 0) {
-                container.innerHTML = '<div style="padding:10px; color:#666">Belum ada batch. Tambahkan batch di atas.</div>';
+                container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
                 generateBtn.style.display = 'none';
                 return;
             }
             
             let html = '';
             for (const batch of batchList) {
-                const noPi = batch.item.pi_header?.no_pi || '-';
                 html += `
                     <div class="batch-item">
-                        <span><strong>${batch.batchName}</strong><br>${noPi} - ${batch.item.brand} - ${batch.item.jenis}</span>
-                        <input type="number" id="qty_${batch.id}" value="${batch.qty}" placeholder="Qty" min="1" style="width:100px">
+                        <span><strong>${batch.brand} - ${batch.jenis}</strong><br>${batch.paper} | ${batch.size} | Qty PI: ${batch.qty_pi.toLocaleString()}</span>
+                        <input type="number" id="qty_${batch.id}" value="${batch.qty_per_qr}" placeholder="Qty per QR" min="1" style="width:100px">
                         <button onclick="updateBatchItem(${batch.id}, parseInt(document.getElementById('qty_${batch.id}').value))" class="btn-update">✏️ Update</button>
                         <button onclick="deleteBatch(${batch.id})">🗑️ Hapus</button>
                     </div>
@@ -321,7 +323,7 @@
             }
             container.innerHTML = html;
             generateBtn.style.display = 'block';
-            generateBtn.innerHTML = `🖨️ Generate & Cetak SEMUA Batch (${batchList.length} QR)`;
+            generateBtn.innerHTML = `🖨️ Generate QR Code (${batchList.length} Batch)`;
         }
         
         function generateAndPrint() {
@@ -334,24 +336,21 @@
             container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
             const grid = document.getElementById('qrGrid');
             
-            let generatedCount = 0;
-            
             for (const batch of batchList) {
-                const noPi = batch.item.pi_header?.no_pi || '-';
-                const qrText = `PI: ${noPi}, BRAND: ${batch.item.brand}, JENIS: ${batch.item.jenis}, PAPER: ${batch.item.paper || '-'}, SIZE: ${batch.item.size || '-'}, QTY: ${batch.qty}, BATCH: ${batch.batchName}`;
+                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
                 div.id = `qr-item-${batch.id}`;
                 div.innerHTML = `
                     <div id="qr-${batch.id}" style="display:flex; justify-content:center"></div>
-                    <div class="batch-name">🏷️ ${batch.batchName}</div>
-                    <div class="qty-info">📦 ${batch.qty.toLocaleString()} pcs</div>
+                    <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
+                    <div class="qty-info">📦 ${batch.qty_per_qr.toLocaleString()} pcs</div>
                     <div class="info">
-                        <div>No PI: ${noPi}</div>
-                        <div>Brand: ${batch.item.brand}</div>
-                        <div>Jenis: ${batch.item.jenis}</div>
-                        <div>Size: ${batch.item.size || '-'}</div>
+                        <div>PI: ${batch.no_pi}</div>
+                        <div>Brand: ${batch.brand}</div>
+                        <div>Jenis: ${batch.jenis}</div>
+                        <div>Size: ${batch.size}</div>
                     </div>
                 `;
                 grid.appendChild(div);
@@ -363,30 +362,21 @@
                         height: 130,
                         correctLevel: QRCode.CorrectLevel.M
                     });
-                    generatedCount++;
-                    if (generatedCount === batchList.length) {
-                        container.style.display = 'block';
-                        container.scrollIntoView({ behavior: 'smooth' });
-                        alert(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nSilakan tekan Ctrl+P untuk mencetak.`);
-                    }
                 }, 50);
             }
+            
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth' });
+            alert(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nSilakan tekan Ctrl+P untuk mencetak.`);
         }
         
         function goToMenu(menu) {
             const files = {
-                dashboard: 'dashboard.html',
-                'pi-input': 'pi-input.html',
-                'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html',
-                'stock-report': 'stock-report.html',
-                'stok-pendukung': 'stok-pendukung.html',
-                'barcode-generator': 'barcode-generator.html',
-                'scan-barcode': 'scan-barcode.html',
-                executive: 'executive-report.html',
-                'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html',
-                export: 'export-final3.html'
+                dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html', 'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
             };
             window.location.href = files[menu] || 'dashboard.html';
         }
@@ -407,14 +397,42 @@
             });
         }
         
+        async function loadPage() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card">
+                    <div class="card-title">🏷️ GENERATE QR CODE</div>
+                    
+                    <label>📋 Pilih No PI</label>
+                    <select id="pi_select" onchange="onPiChange()">
+                        <option value="">Loading...</option>
+                    </select>
+                    
+                    <div id="itemContainer"></div>
+                    
+                    <div class="batch-list" id="batchListContainer">
+                        <strong>📋 Daftar Batch yang akan dicetak:</strong>
+                        <div id="batchItems"></div>
+                        <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
+                    </div>
+                    
+                    <div id="qrContainer" class="print-area" style="display:none"></div>
+                </div>
+            `;
+            
+            await loadPiList();
+        }
+        
         async function init() {
             await cekSession();
             setupEventListeners();
-            await loadItems();
+            await loadPage();
         }
         
+        window.onPiChange = onPiChange;
+        window.addToBatch = addToBatch;
         window.updateBatchItem = updateBatchItem;
         window.deleteBatch = deleteBatch;
+        window.generateAndPrint = generateAndPrint;
         
         init();
     </script>
