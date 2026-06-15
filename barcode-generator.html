@@ -190,26 +190,7 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        // ========== INISIALISASI SUPABASE ==========
-        let supabaseClient = null;
-        
-        // Cek dan inisialisasi Supabase
-        if (typeof supabaseConfig !== 'undefined') {
-            supabaseClient = supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
-        } else if (typeof window.supabaseConfig !== 'undefined') {
-            supabaseClient = supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
-        } else {
-            // Fallback config manual
-            console.warn('Config.js tidak ditemukan, menggunakan fallback manual');
-            const fallbackConfig = {
-                supabaseUrl: "https://txvgclavcmhyxamxgvsi.supabase.co",
-                supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY"
-            };
-            supabaseClient = supabase.createClient(fallbackConfig.supabaseUrl, fallbackConfig.supabaseKey);
-        }
-        
-        // Alias untuk kemudahan (tetap pakai 'supabase' seperti kode asli)
-        const supabase = supabaseClient;
+        // TIDAK ADA DEKLARASI supabase LAGI - LANGSUNG PAKAI YANG DARI CONFIG.JS
         
         let allItems = [];
         let selectedPiId = null;
@@ -218,8 +199,19 @@
         let nextId = 1;
         
         async function cekSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) window.location.href = 'login.html';
+            try {
+                // Pastikan supabase sudah terdefinisi dari config.js
+                if (typeof supabase === 'undefined') {
+                    console.error('Supabase tidak terdefinisi - pastikan config.js benar');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) window.location.href = 'login.html';
+            } catch (err) {
+                console.error('Session error:', err);
+                window.location.href = 'login.html';
+            }
         }
         
         async function loadPiList() {
@@ -229,7 +221,8 @@
             for (const pi of piList) {
                 options += `<option value="${pi.id}">${pi.no_pi}</option>`;
             }
-            document.getElementById('pi_select').innerHTML = options;
+            const selectEl = document.getElementById('pi_select');
+            if (selectEl) selectEl.innerHTML = options;
         }
         
         async function onPiChange() {
@@ -311,6 +304,8 @@
         
         function updateBatchItem(id) {
             const qtyInput = document.getElementById(`qty_input_${id}`);
+            if (!qtyInput) return;
+            
             const newQty = parseInt(qtyInput.value);
             
             if (isNaN(newQty) || newQty <= 0) {
@@ -377,6 +372,8 @@
             }
             
             const container = document.getElementById('qrContainer');
+            if (!container) return;
+            
             container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
             const grid = document.getElementById('qrGrid');
             
@@ -400,12 +397,15 @@
                 grid.appendChild(div);
                 
                 setTimeout(() => {
-                    new QRCode(document.getElementById(qrDivId), {
-                        text: qrText,
-                        width: 130,
-                        height: 130,
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
+                    const qrElement = document.getElementById(qrDivId);
+                    if (qrElement && typeof QRCode !== 'undefined') {
+                        new QRCode(qrElement, {
+                            text: qrText,
+                            width: 130,
+                            height: 130,
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
                 }, 50);
             }
             
@@ -429,20 +429,30 @@
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
-        async function logout() { await supabase.auth.signOut(); window.location.href = 'login.html'; }
+        async function logout() { 
+            if (typeof supabase !== 'undefined') await supabase.auth.signOut(); 
+            window.location.href = 'login.html'; 
+        }
         
         function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
+            const menuToggle = document.getElementById('menuToggle');
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            const overlay = document.getElementById('overlay');
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            const logoutMenu = document.getElementById('logoutMenu');
+            if (logoutMenu) logoutMenu.addEventListener('click', logout);
             document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
         
         async function loadPage() {
-            document.getElementById('mainContent').innerHTML = `
+            const mainEl = document.getElementById('mainContent');
+            if (!mainEl) return;
+            
+            mainEl.innerHTML = `
                 <div class="card">
                     <div class="card-title">🏷️ GENERATE QR CODE</div>
                     
@@ -479,7 +489,13 @@
             await loadPage();
         }
         
-        init();
+        // Tunggu supabase siap dari config.js
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            // Beri sedikit delay untuk memastikan config.js sudah load
+            setTimeout(init, 100);
+        }
     </script>
 </body>
 </html>
