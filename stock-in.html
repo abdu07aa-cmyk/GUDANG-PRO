@@ -430,22 +430,22 @@
         }
         
         function goToMenu(menu) {
-            const files = {
-                dashboard: 'dashboard.html',
-                'pi-input': 'pi-input.html',
-                'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html',
-                'stock-report': 'stock-report.html',
-                'stok-pendukung': 'stok-pendukung.html',
-                'scan-barcode': 'scan-barcode.html',
-                'scan-qr': 'scan-qr.html',
-                executive: 'executive-report.html',
-                'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html',
-                export: 'export-final3.html'
-            };
-            window.location.href = files[menu] || 'dashboard.html';
-        }
+    const files = {
+        dashboard: 'dashboard.html',
+        'pi-input': 'pi-input.html',
+        'stock-in': 'stock-in.html',
+        'stock-out': 'stock-out.html',
+        'stock-report': 'stock-report.html',
+        'stok-pendukung': 'stok-pendukung.html',
+        'barcode-generator': 'barcode-generator.html',
+        'scan-barcode': 'scan-barcode.html',
+        executive: 'executive-report.html',
+        'manage-users': 'manage-users.html',
+        'log-aktivitas': 'log-aktivitas.html',
+        export: 'export-final3.html'
+    };
+    window.location.href = files[menu] || 'dashboard.html';
+}
         
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
