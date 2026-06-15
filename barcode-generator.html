@@ -190,33 +190,28 @@
     <div class="container" id="mainContent"></div>
 
     <script>
-        // LANGSUNG ISI HTML TANPA CEK SESSION
         let allItems = [];
         let selectedPiId = null;
         let piList = [];
         let batchList = [];
         let nextId = 1;
         
+        async function cekSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+        }
+        
         async function loadPiList() {
-            if (!window.supabase) {
-                console.log('Menunggu Supabase...');
-                setTimeout(loadPiList, 500);
-                return;
-            }
-            
-            const { data: headers } = await window.supabase.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
+            const { data: headers } = await supabase.from('pi_header').select('id, no_pi').order('no_pi', { ascending: true });
             piList = headers || [];
             let options = '<option value="">-- Pilih No PI --</option>';
             for (const pi of piList) {
                 options += `<option value="${pi.id}">${pi.no_pi}</option>`;
             }
-            const selectEl = document.getElementById('pi_select');
-            if (selectEl) selectEl.innerHTML = options;
+            document.getElementById('pi_select').innerHTML = options;
         }
         
         async function onPiChange() {
-            if (!window.supabase) return;
-            
             const piId = document.getElementById('pi_select').value;
             if (!piId) {
                 document.getElementById('itemContainer').innerHTML = '';
@@ -224,7 +219,7 @@
             }
             selectedPiId = piId;
             
-            const { data: details } = await window.supabase.from('pi_detail').select('*').eq('pi_id', piId);
+            const { data: details } = await supabase.from('pi_detail').select('*').eq('pi_id', piId);
             allItems = details || [];
             
             let html = `
@@ -293,6 +288,7 @@
             qtyInput.value = '';
         }
         
+        // ========== PERBAIKAN 1: FUNGSI UPDATE ==========
         function updateBatchItem(id) {
             const qtyInput = document.getElementById(`qty_input_${id}`);
             if (!qtyInput) return;
@@ -313,7 +309,7 @@
         }
         
         function deleteBatch(id) {
-            if (confirm('Hapus batch ini dari daftar?')) {
+            if (confirm('Hapus batch ini?')) {
                 batchList = batchList.filter(b => b.id != id);
                 updateBatchDisplay();
             }
@@ -324,14 +320,12 @@
             const generateBtn = document.getElementById('generateBtn');
             const qrContainer = document.getElementById('qrContainer');
             
-            if (qrContainer) {
-                qrContainer.style.display = 'none';
-                qrContainer.innerHTML = '';
-            }
+            qrContainer.style.display = 'none';
+            qrContainer.innerHTML = '';
             
             if (batchList.length === 0) {
-                if (container) container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
-                if (generateBtn) generateBtn.style.display = 'none';
+                container.innerHTML = '<div style="padding:10px; color:#666">Belum ada item yang ditambahkan. Centang item dan isi Qty per QR, lalu klik "Tambah ke Daftar".</div>';
+                generateBtn.style.display = 'none';
                 return;
             }
             
@@ -350,6 +344,8 @@
             generateBtn.style.display = 'block';
             generateBtn.innerHTML = `🖨️ Generate QR Code (${batchList.length} Batch)`;
             
+            // ========== PERBAIKAN 2: TOMBOL GENERATE ==========
+            // Hapus event listener lama dan pasang baru
             const newGenerateBtn = generateBtn.cloneNode(true);
             generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
             newGenerateBtn.onclick = function() { generateAndPrint(); };
@@ -362,8 +358,6 @@
             }
             
             const container = document.getElementById('qrContainer');
-            if (!container) return;
-            
             container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
             const grid = document.getElementById('qrGrid');
             
@@ -372,7 +366,7 @@
                 
                 const div = document.createElement('div');
                 div.className = 'qrcode-item';
-                const qrDivId = `qr_${batch.id}_${Date.now()}_${Math.random()}`;
+                const qrDivId = `qr_${batch.id}_${Date.now()}`;
                 div.innerHTML = `
                     <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
                     <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
@@ -387,15 +381,12 @@
                 grid.appendChild(div);
                 
                 setTimeout(() => {
-                    const qrElement = document.getElementById(qrDivId);
-                    if (qrElement && typeof QRCode !== 'undefined') {
-                        new QRCode(qrElement, {
-                            text: qrText,
-                            width: 130,
-                            height: 130,
-                            correctLevel: QRCode.CorrectLevel.M
-                        });
-                    }
+                    new QRCode(document.getElementById(qrDivId), {
+                        text: qrText,
+                        width: 130,
+                        height: 130,
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
                 }, 50);
             }
             
@@ -419,9 +410,7 @@
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
         
-        function logout() { 
-            window.location.href = 'login.html'; 
-        }
+        async function logout() { await supabase.auth.signOut(); window.location.href = 'login.html'; }
         
         function setupEventListeners() {
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
@@ -455,22 +444,23 @@
                 </div>
             `;
             
-            // Tunggu supabase siap
-            if (window.supabase) {
-                await loadPiList();
-            } else {
-                setTimeout(loadPiList, 500);
-            }
+            await loadPiList();
         }
         
+        // EXPOSE FUNCTIONS KE GLOBAL WINDOW
         window.onPiChange = onPiChange;
         window.addToBatch = addToBatch;
         window.updateBatchItem = updateBatchItem;
         window.deleteBatch = deleteBatch;
         window.generateAndPrint = generateAndPrint;
         
-        setupEventListeners();
-        loadPage();
+        async function init() {
+            await cekSession();
+            setupEventListeners();
+            await loadPage();
+        }
+        
+        init();
     </script>
 </body>
 </html>
