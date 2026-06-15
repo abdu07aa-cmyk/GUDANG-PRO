@@ -799,4 +799,159 @@
         
         async function generateAndPrint() {
             if (batchList.length === 0) {
-               
+                alert('Tidak ada batch untuk dicetak!');
+                return;
+            }
+            
+            const container = document.getElementById('qrContainer');
+            container.innerHTML = '<div class="qr-grid" id="qrGrid"></div>';
+            const grid = document.getElementById('qrGrid');
+            
+            // Prepare data for history
+            const historyData = batchList.map(batch => ({
+                id: batch.id,
+                itemId: batch.itemId,
+                pi_id: batch.pi_id,
+                no_pi: batch.no_pi,
+                brand: batch.brand,
+                jenis: batch.jenis,
+                paper: batch.paper,
+                size: batch.size,
+                qty_pi: batch.qty_pi,
+                qty_per_qr: batch.qty_per_qr
+            }));
+            
+            for (const batch of batchList) {
+                const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
+                
+                const div = document.createElement('div');
+                div.className = 'qrcode-item';
+                const qrDivId = `qr_${batch.id}_${Date.now()}_${Math.random()}`;
+                div.innerHTML = `
+                    <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
+                    <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
+                    <div class="qty-info">📦 ${Number(batch.qty_per_qr).toLocaleString()} pcs</div>
+                    <div class="info">
+                        <div>PI: ${batch.no_pi}</div>
+                        <div>Brand: ${batch.brand}</div>
+                        <div>Jenis: ${batch.jenis}</div>
+                        <div>Size: ${batch.size}</div>
+                    </div>
+                `;
+                grid.appendChild(div);
+                setTimeout(() => {
+                    const qrElement = document.getElementById(qrDivId);
+                    if (qrElement && typeof QRCode !== 'undefined') {
+                        new QRCode(qrElement, { text: qrText, width: 130, height: 130 });
+                    }
+                }, 50);
+            }
+            
+            // Save to history
+            await saveToHistory(historyData, batchList.length);
+            
+            const printBtnContainer = document.createElement('div');
+            printBtnContainer.className = 'print-btn-container no-print';
+            printBtnContainer.innerHTML = '<button class="print-btn" onclick="printQR()">🖨️ CETAK QR CODE</button>';
+            container.appendChild(printBtnContainer);
+            
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth' });
+            
+            if(confirm(`✅ ${batchList.length} QR Code berhasil digenerate!\n\nRiwayat telah disimpan.\n\nApakah ingin langsung mencetak?`)) {
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            }
+        }
+        
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html', 'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+        
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        
+        function logout() { window.location.href = 'login.html'; }
+        
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+        
+        async function loadPage() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card">
+                    <div class="card-title no-print">🏷️ GENERATE QR CODE</div>
+                    
+                    <!-- TAB NAVIGATION -->
+                    <div class="tab-container no-print">
+                        <button class="tab-btn active" id="tabGenerate" onclick="switchTab('Generate')">📝 Generate Baru</button>
+                        <button class="tab-btn" id="tabHistory" onclick="switchTab('History')">📜 Riwayat QR Code</button>
+                    </div>
+                    
+                    <!-- TAB GENERATE -->
+                    <div id="contentGenerate" class="tab-content active">
+                        <div class="layout-selector no-print">
+                            <span>📄 Layout Cetak A4:</span>
+                            <select id="layoutSelect" onchange="changeLayout()">
+                                <option value="2">2 kolom (QR besar)</option>
+                                <option value="3" selected>3 kolom (standar)</option>
+                                <option value="4">4 kolom (hemat kertas)</option>
+                            </select>
+                            <span id="layoutInfo" class="layout-info">📄 3 kolom per halaman A4 (standar)</span>
+                        </div>
+                        
+                        <div id="piSelectorContainer">⏳ Memuat daftar PI...</div>
+                        <div id="multiItemContainer"></div>
+                        
+                        <div class="batch-list no-print" id="batchListContainer">
+                            <strong>📋 Daftar Batch yang akan dicetak:</strong>
+                            <div id="batchItems"></div>
+                            <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
+                        </div>
+                        
+                        <div id="qrContainer" class="print-area" style="display:none"></div>
+                    </div>
+                    
+                    <!-- TAB HISTORY -->
+                    <div id="contentHistory" class="tab-content">
+                        <div id="historyList" class="loading">⏳ Memuat riwayat...</div>
+                    </div>
+                </div>
+            `;
+            
+            await loadPiList();
+            changeLayout();
+        }
+        
+        window.togglePi = togglePi;
+        window.loadSelectedPi = loadSelectedPi;
+        window.addToBatchMulti = addToBatchMulti;
+        window.updateBatchItem = updateBatchItem;
+        window.deleteBatch = deleteBatch;
+        window.generateAndPrint = generateAndPrint;
+        window.printQR = printQR;
+        window.changeLayout = changeLayout;
+        window.switchTab = switchTab;
+        window.reprintHistory = reprintHistory;
+        window.deleteHistory = deleteHistory;
+        
+        setupEventListeners();
+        loadPage();
+    </script>
+</body>
+</html>
