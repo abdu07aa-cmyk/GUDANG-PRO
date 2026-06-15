@@ -105,6 +105,7 @@
         .qrcode-item .qty-info { font-size: 12px; font-weight: bold; margin-top: 5px; color: #10b981; }
         .qrcode-item .batch-name { font-size: 11px; font-weight: bold; background: #e0f2fe; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
         .print-area { text-align: center; }
+        .print-btn { background: #10b981; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; margin: 10px; }
         
         .form-box {
             background: #f8fafc;
@@ -170,7 +171,7 @@
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
             <div class="menu-item active" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
             <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="scan-qr"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
@@ -345,7 +346,7 @@
                 div.innerHTML = `
                     <div id="qr-${batch.id}" style="display:flex; justify-content:center"></div>
                     <div class="batch-name">🏷️ ${batch.batchName}</div>
-                    <div class="qty-info"> ${batch.qty.toLocaleString()} PCS</div>
+                    <div class="qty-info">📦 ${batch.qty.toLocaleString()} pcs</div>
                     <div class="info">
                         <div>No PI: ${noPi}</div>
                         <div>Brand: ${batch.item.brand}</div>
@@ -381,7 +382,7 @@
                 'stock-report': 'stock-report.html',
                 'stok-pendukung': 'stok-pendukung.html',
                 'barcode-generator': 'barcode-generator.html',
-                'scan-qr': 'scan-qr.html',
+                'scan-barcode': 'scan-barcode.html',
                 executive: 'executive-report.html',
                 'manage-users': 'manage-users.html',
                 'log-aktivitas': 'log-aktivitas.html',
