@@ -22,6 +22,7 @@
             }
             body { background: white; margin: 0; padding: 0; }
             .container { padding: 0; margin: 0; }
+            .card { box-shadow: none; padding: 0; }
         }
         
         /* TAMPILAN LAYAR */
@@ -292,7 +293,7 @@
                 
                 allPiList = headers || [];
                 
-                let html = '<div class="pi-selector"><strong>📋 Pilih PI (bisa lebih dari satu):</strong><br><br>';
+                let html = '<div class="pi-selector no-print"><strong>📋 Pilih PI (bisa lebih dari satu):</strong><br><br>';
                 for (const pi of allPiList) {
                     html += `
                         <div class="pi-checkbox">
@@ -359,7 +360,7 @@
                 const items = allItemsByPi[piId] || [];
                 totalItems += items.length;
                 
-                html += `<div style="margin-top:20px; border:1px solid #ddd; border-radius:8px; padding:10px; background:#f9fafb;">
+                html += `<div style="margin-top:20px; border:1px solid #ddd; border-radius:8px; padding:10px; background:#f9fafb;" class="no-print">
                     <div style="font-weight:bold; background:#e0f2fe; padding:8px; border-radius:6px; margin-bottom:10px;">📄 PI: ${piData?.no_pi}</div>
                     <table class="item-table">
                         <thead>
@@ -385,7 +386,7 @@
                 html += `</tbody></table></div>`;
             }
             
-            html += `<div class="selected-pi-info" style="margin-top:10px">✅ Total ${totalItems} item dari ${selectedPiIds.length} PI</div>`;
+            html += `<div class="selected-pi-info no-print" style="margin-top:10px">✅ Total ${totalItems} item dari ${selectedPiIds.length} PI</div>`;
             document.getElementById('multiItemContainer').innerHTML = html;
             document.getElementById('selectedPiInfo').style.display = 'block';
         }
@@ -496,7 +497,7 @@
             const grid = document.getElementById('qrGrid');
             
             for (const batch of batchList) {
-                // QR Code dengan detail lengkap (seperti yang pertama)
+                // QR Code dengan detail lengkap
                 const qrText = `PI: ${batch.no_pi}, BRAND: ${batch.brand}, JENIS: ${batch.jenis}, PAPER: ${batch.paper}, SIZE: ${batch.size}, QTY: ${batch.qty_per_qr}, BATCH: ${batch.brand}-${batch.jenis}`;
                 
                 const div = document.createElement('div');
@@ -568,13 +569,13 @@
         async function loadPage() {
             document.getElementById('mainContent').innerHTML = `
                 <div class="card">
-                    <div class="card-title">🏷️ GENERATE QR CODE</div>
+                    <div class="card-title no-print">🏷️ GENERATE QR CODE</div>
                     
                     <div id="piSelectorContainer">⏳ Memuat daftar PI...</div>
                     
                     <div id="multiItemContainer"></div>
                     
-                    <div class="batch-list" id="batchListContainer">
+                    <div class="batch-list no-print" id="batchListContainer">
                         <strong>📋 Daftar Batch yang akan dicetak:</strong>
                         <div id="batchItems"></div>
                         <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
