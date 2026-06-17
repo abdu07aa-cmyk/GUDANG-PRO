@@ -10,47 +10,18 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
-        /* ============================================ */
-        /* YANG TERCETAK HANYA QR CODE + INFO           */
-        /* SEMUA TOMBOL, FORM, SIDEBAR, HEADER HILANG  */
-        /* ============================================ */
         @media print {
-            /* SEMUA YANG ADA CLASS no-print HILANG */
             .no-print { display: none !important; }
-            
-            /* AREA CETAK */
-            .print-area { 
-                display: block !important; 
-                padding: 10px;
-            }
-            
-            body { 
-                background: white; 
-                margin: 0; 
-                padding: 0; 
-            }
-            
-            .container { 
-                padding: 0; 
-                margin: 0; 
-                max-width: 100%;
-            }
-            
-            .card { 
-                box-shadow: none; 
-                padding: 0; 
-                margin: 0;
-                border-radius: 0;
-            }
-            
-            /* GRID UNTUK CETAK - 3 KOLOM */
+            .print-area { display: block !important; }
+            body { background: white; margin: 0; padding: 0; }
+            .container { padding: 0; margin: 0; }
+            .card { box-shadow: none; padding: 0; margin: 0; border-radius: 0; }
             .qr-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 12px;
                 padding: 10px;
             }
-            
             .qrcode-item {
                 break-inside: avoid;
                 page-break-inside: avoid;
@@ -61,23 +32,10 @@
                 border-radius: 6px;
                 background: white;
             }
-            
-            /* HIDE SEMUA TOMBOL CETAK */
-            .print-btn-container,
-            .print-btn,
-            button {
-                display: none !important;
-            }
-            
-            /* HIDE HEADER & FOOTER BROWSER */
-            @page {
-                margin: 10mm;
-            }
+            .print-btn-container, .print-btn, button { display: none !important; }
+            @page { margin: 10mm; }
         }
         
-        /* ============================================ */
-        /* TAMPILAN LAYAR (TIDAK UNTUK CETAK)           */
-        /* ============================================ */
         @media screen {
             .qr-grid {
                 display: grid;
@@ -85,7 +43,6 @@
                 gap: 10px;
                 padding: 10px;
             }
-            
             .qrcode-item {
                 display: inline-block;
                 text-align: center;
@@ -99,7 +56,6 @@
             }
         }
         
-        /* SIDEBAR */
         .sidebar {
             position: fixed;
             top: 0;
@@ -208,11 +164,16 @@
             padding: 8px;
             border-radius: 6px;
             border: 1px solid #ccc;
+            flex: 1;
+            min-width: 120px;
         }
         .batch-form-row label {
             font-weight: bold;
             margin: 0;
             min-width: 100px;
+        }
+        .batch-form-row .small-input {
+            flex: 0 0 120px;
         }
         
         .btn-generate-batch { background: #8b5cf6; padding: 12px 24px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
@@ -253,6 +214,7 @@
             gap: 5px;
             margin-bottom: 15px;
             border-bottom: 2px solid #e2e8f0;
+            flex-wrap: wrap;
         }
         .tab-btn {
             padding: 8px 16px;
@@ -262,6 +224,7 @@
             font-size: 14px;
             font-weight: 600;
             color: #64748b;
+            border-bottom: 2px solid transparent;
         }
         .tab-btn.active {
             color: #3b82f6;
@@ -309,7 +272,6 @@
         .btn-update { background: #3b82f6 !important; }
         .btn-generate { background: #8b5cf6; margin-top: 15px; width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
         
-        /* STYLE QR DI CETAK */
         .qrcode-item .serial-badge {
             background: #3b82f6;
             color: white;
@@ -342,8 +304,28 @@
             border-top: 1px solid #e2e8f0;
             padding-top: 5px;
         }
-        .qrcode-item .detail-info div {
-            line-height: 1.4;
+        .qrcode-item .detail-info div { line-height: 1.4; }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 15px 0 10px 0;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title .badge {
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .divider {
+            border: none;
+            border-top: 2px dashed #e2e8f0;
+            margin: 20px 0;
         }
     </style>
 </head>
@@ -414,7 +396,7 @@
             }
         }
         
-        // ============ FITUR BARU: GENERATE SERIAL UNIK ============
+        // ============ FITUR GENERATE SERIAL UNIK (MANUAL) ============
         async function saveBarcodeBatch(batchName, barcodes) {
             if (!supabaseClient) await initSupabase();
             try {
@@ -502,7 +484,6 @@
                 }, 50);
             }
             
-            // Tombol cetak (HANYA TAMPIL DI LAYAR, TIDAK IKUT CETAK)
             const printBtn = document.createElement('div');
             printBtn.className = 'print-btn-container no-print';
             printBtn.innerHTML = '<button class="print-btn" onclick="window.print()">🖨️ CETAK QR CODE</button>';
@@ -731,31 +712,81 @@
             document.getElementById('mainContent').innerHTML = `
                 <div class="card">
                     <div class="card-title no-print">🏷️ GENERATE QR CODE</div>
+                    
                     <div class="tab-container no-print">
                         <button class="tab-btn active" id="tabGenerate" onclick="switchTab('Generate')">📝 Generate Baru</button>
                         <button class="tab-btn" id="tabHistory" onclick="switchTab('History')">📜 Riwayat Generate</button>
                     </div>
+                    
                     <div id="contentGenerate" class="tab-content active">
-                        <div class="batch-form no-print">
-                            <div class="batch-form-row"><label>📋 PI:</label><input type="text" id="input_pi" placeholder="Contoh: 139.05.26.DRW" style="flex:2"></div>
-                            <div class="batch-form-row"><label>🏷️ Brand:</label><input type="text" id="input_brand" placeholder="Contoh: Straight cones tubes" style="flex:2"></div>
-                            <div class="batch-form-row"><label>📦 Jenis:</label><input type="text" id="input_jenis" placeholder="Contoh: Glass Tips 11x30mm" style="flex:2"></div>
-                            <div class="batch-form-row"><label>📄 Paper:</label><input type="text" id="input_paper" placeholder="Opsional" style="flex:1"></div>
-                            <div class="batch-form-row"><label>📏 Size:</label><input type="text" id="input_size" placeholder="Opsional" style="flex:1"></div>
-                            <div class="batch-form-row"><label>🔢 Qty per Barcode:</label><input type="number" id="input_qty" value="2000" style="width:120px"></div>
-                            <div class="batch-form-row"><label>🔢 Jumlah Barcode:</label><input type="number" id="input_jumlah" value="20" style="width:120px"></div>
-                            <div class="batch-form-row"><label>🏷️ Prefix Serial:</label><input type="text" id="input_prefix" value="BC" style="width:100px"><span style="font-size:12px;"> → BC001, BC002, dst</span></div>
-                            <button class="btn-generate-batch" onclick="generateSerialBarcodes()">🚀 GENERATE QR CODE SERIAL UNIK</button>
+                        
+                        <!-- ====== BAGIAN 1: UNTUK STOCK NON-PI (MANUAL) ====== -->
+                        <div class="section-title no-print">
+                            📦 STOCK NON-PI / MANUAL
+                            <span class="badge">INPUT MANUAL</span>
                         </div>
-                        <div class="summary-card no-print">💡 <strong>Penjelasan:</strong> Setiap QR Code memiliki <strong>Serial Number UNIK</strong> (BC001, BC002, dst).<br>✅ Bisa tracking barcode mana yang sudah discan.</div>
+                        <div class="batch-form no-print">
+                            <div class="batch-form-row">
+                                <label>📋 PI/Kode:</label>
+                                <input type="text" id="input_pi" placeholder="Contoh: STOCK-001 atau 139.05.26.DRW" style="flex:2">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>🏷️ Brand:</label>
+                                <input type="text" id="input_brand" placeholder="Contoh: Straight cones tubes" style="flex:2">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>📦 Jenis:</label>
+                                <input type="text" id="input_jenis" placeholder="Contoh: Glass Tips 11x30mm" style="flex:2">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>📄 Paper:</label>
+                                <input type="text" id="input_paper" placeholder="Opsional" style="flex:1">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>📏 Size:</label>
+                                <input type="text" id="input_size" placeholder="Opsional" style="flex:1">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>🔢 Qty per Barcode:</label>
+                                <input type="number" id="input_qty" value="2000" class="small-input">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>🔢 Jumlah Barcode:</label>
+                                <input type="number" id="input_jumlah" value="20" class="small-input">
+                            </div>
+                            <div class="batch-form-row">
+                                <label>🏷️ Prefix Serial:</label>
+                                <input type="text" id="input_prefix" value="BC" style="width:100px">
+                                <span style="font-size:12px; color:#666;">→ BC001, BC002, dst</span>
+                            </div>
+                            <button class="btn-generate-batch" onclick="generateSerialBarcodes()">🚀 GENERATE QR CODE (MANUAL)</button>
+                        </div>
+                        <div class="summary-card no-print">
+                            💡 <strong>Untuk stock yang tidak terdaftar di PI:</strong> Isi manual semua field, gunakan kode PI internal (contoh: STOCK-001).<br>
+                            ✅ Setiap QR Code memiliki <strong>Serial Number UNIK</strong> (BC001, BC002, dst).
+                        </div>
                         <div id="qrContainer" class="print-area" style="display:none"></div>
-                        <hr style="margin: 20px 0;" class="no-print">
+                        
+                        <hr class="divider no-print">
+                        
+                        <!-- ====== BAGIAN 2: UNTUK STOCK DARI PI ====== -->
+                        <div class="section-title no-print">
+                            📋 STOCK DARI PI
+                            <span class="badge">AMBIL DARI DATABASE</span>
+                        </div>
                         <div id="piSelectorContainer" class="no-print">⏳ Memuat daftar PI...</div>
                         <div id="multiItemContainer" class="no-print"></div>
-                        <div class="batch-list no-print" id="batchListContainer"><strong>📋 Daftar Batch:</strong><div id="batchItems"></div><button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button></div>
+                        <div class="batch-list no-print" id="batchListContainer">
+                            <strong>📋 Daftar Batch:</strong>
+                            <div id="batchItems"></div>
+                            <button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button>
+                        </div>
                         <div id="qrContainerOld" class="print-area" style="display:none"></div>
                     </div>
-                    <div id="contentHistory" class="tab-content"><div id="historyList" class="loading">⏳ Memuat riwayat...</div></div>
+                    
+                    <div id="contentHistory" class="tab-content">
+                        <div id="historyList" class="loading">⏳ Memuat riwayat...</div>
+                    </div>
                 </div>
             `;
             await initSupabase();
