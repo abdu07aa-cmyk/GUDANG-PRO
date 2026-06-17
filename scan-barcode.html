@@ -271,113 +271,129 @@
         }
 
         // ===== PROSES SCAN =====
-        async function processScan(decodedText, decodedResult) {
-            if (isScanning) return;
-            isScanning = true;
+       // ===== PROSES SCAN (PERBAIKAN) =====
+async function processScan(decodedText, decodedResult) {
+    if (isScanning) return;
+    isScanning = true;
 
-            const resultContainer = document.getElementById('result-container');
-            const resultContent = document.getElementById('result-content');
+    const resultContainer = document.getElementById('result-container');
+    const resultContent = document.getElementById('result-content');
 
-            try {
-                // Cari barcode di database
-                const { data: barcodeData, error } = await supabaseClient
-                    .from('barcode_tracking')
-                    .select('*')
-                    .eq('barcode_id', decodedText.trim())
-                    .single();
-
-                let html = '';
-                let statusClass = 'info';
-                let statusText = '';
-
-                if (error || !barcodeData) {
-                    // Barcode tidak ditemukan
-                    statusClass = 'error';
-                    statusText = '❌ BARCODE TIDAK TERDAFTAR';
-                    html = `
-                        <div style="font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 10px;">${statusText}</div>
-                        <div class="result-value"><span class="result-label">Kode:</span> ${decodedText}</div>
-                        <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; text-align: center;">
-                            ⚠️ Barcode ini tidak terdaftar di sistem.<br>
-                            Silakan generate ulang di halaman QR Code.
-                        </div>
-                    `;
-                } else if (barcodeData.status === 'SCANNED') {
-                    // Barcode sudah pernah discan
-                    statusClass = 'warning';
-                    statusText = '⚠️ BARCODE SUDAH PERNAH DISCAN';
-                    const scanDate = barcodeData.scanned_at ? new Date(barcodeData.scanned_at).toLocaleString('id-ID') : '-';
-                    html = `
-                        <div style="font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">${statusText}</div>
-                        <div class="result-value"><span class="result-label">Kode:</span> ${barcodeData.barcode_id}</div>
-                        <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-scanned">SUDAH DISCAN</span></div>
-                        <div class="result-value"><span class="result-label">Discan pada:</span> ${scanDate}</div>
-                        <div class="result-value"><span class="result-label">Discan oleh:</span> ${barcodeData.scanned_by || '-'}</div>
-                        <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 6px; text-align: center;">
-                            ⚠️ Barcode ini sudah digunakan. Tidak bisa discan lagi.
-                        </div>
-                    `;
-                } else {
-                    // Barcode ACTIVE - bisa discan
-                    statusClass = 'success';
-                    statusText = '✅ BARCODE VALID - SCAN BERHASIL';
-                    
-                    const productInfo = barcodeData.product_info || {};
-                    
-                    html = `
-                        <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">${statusText}</div>
-                        <div class="result-value"><span class="result-label">Kode:</span> <strong>${barcodeData.barcode_id}</strong></div>
-                        <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-active">AKTIF</span></div>
-                        <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px;">
-                            <div class="result-value"><span class="result-label">📋 PI/Kode:</span> ${productInfo.pi || '-'}</div>
-                            <div class="result-value"><span class="result-label">🏷️ Brand:</span> ${productInfo.brand || '-'}</div>
-                            <div class="result-value"><span class="result-label">📦 Jenis:</span> ${productInfo.jenis || '-'}</div>
-                            <div class="result-value"><span class="result-label">📄 Paper:</span> ${productInfo.paper || '-'}</div>
-                            <div class="result-value"><span class="result-label">📏 Size:</span> ${productInfo.size || '-'}</div>
-                            <div class="result-value"><span class="result-label">🔢 Qty:</span> <strong>${productInfo.qty ? Number(productInfo.qty).toLocaleString() : '-'}</strong></div>
-                        </div>
-                    `;
-
-                    // UPDATE STATUS barcode menjadi SCANNED
-                    await supabaseClient
-                        .from('barcode_tracking')
-                        .update({
-                            status: 'SCANNED',
-                            scanned_at: new Date().toISOString(),
-                            scanned_by: currentUser
-                        })
-                        .eq('barcode_id', decodedText.trim());
-
-                    // SIMPAN ke scan_history
-                    await supabaseClient
-                        .from('scan_history')
-                        .insert({
-                            barcode_id: decodedText.trim(),
-                            action: 'SCAN',
-                            qty: productInfo.qty || 0,
-                            scanned_by: currentUser
-                        });
-                }
-
-                resultContainer.className = statusClass;
-                resultContent.innerHTML = html;
-                resultContainer.style.display = 'block';
-
-                // Play sound notifikasi (opsional)
-                playBeep();
-
-            } catch (err) {
-                console.error('Scan error:', err);
-                resultContainer.className = 'error';
-                resultContent.innerHTML = `
-                    <div style="font-size: 16px; font-weight: bold; color: #dc2626;">❌ ERROR</div>
-                    <div>${err.message}</div>
-                `;
-                resultContainer.style.display = 'block';
-            }
-
-            isScanning = false;
+    try {
+        // ----- EKSTRAK SERIAL NUMBER DARI FORMAT PANJANG -----
+        let barcodeId = decodedText.trim();
+        
+        // Coba ekstrak SN:xxx dari format panjang
+        const snMatch = barcodeId.match(/SN:([A-Za-z0-9]+)/);
+        if (snMatch) {
+            barcodeId = snMatch[1]; // Ambil BC007 dari SN:BC007
+            console.log('✅ Ekstrak SN:', barcodeId);
         }
+        
+        // Coba ekstrak dari format lain (BC001|...)
+        const simpleMatch = barcodeId.match(/^([A-Za-z0-9]+)\|/);
+        if (simpleMatch && !snMatch) {
+            barcodeId = simpleMatch[1];
+            console.log('✅ Ekstrak dari format pipe:', barcodeId);
+        }
+
+        // ----- CEK DI DATABASE -----
+        const { data: barcodeData, error } = await supabaseClient
+            .from('barcode_tracking')
+            .select('*')
+            .eq('barcode_id', barcodeId)
+            .single();
+
+        let html = '';
+        let statusClass = 'info';
+        let statusText = '';
+
+        if (error || !barcodeData) {
+            // Barcode tidak ditemukan
+            statusClass = 'error';
+            statusText = '❌ BARCODE TIDAK TERDAFTAR';
+            html = `
+                <div style="font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 10px;">${statusText}</div>
+                <div class="result-value"><span class="result-label">Kode:</span> ${barcodeId}</div>
+                <div class="result-value"><span class="result-label">Raw:</span> ${decodedText}</div>
+                <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; text-align: center;">
+                    ⚠️ Barcode ini tidak terdaftar di sistem.<br>
+                    Silakan generate ulang di halaman QR Code.
+                </div>
+            `;
+        } else if (barcodeData.status === 'SCANNED') {
+            statusClass = 'warning';
+            statusText = '⚠️ BARCODE SUDAH PERNAH DISCAN';
+            const scanDate = barcodeData.scanned_at ? new Date(barcodeData.scanned_at).toLocaleString('id-ID') : '-';
+            html = `
+                <div style="font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">${statusText}</div>
+                <div class="result-value"><span class="result-label">Kode:</span> ${barcodeData.barcode_id}</div>
+                <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-scanned">SUDAH DISCAN</span></div>
+                <div class="result-value"><span class="result-label">Discan pada:</span> ${scanDate}</div>
+                <div class="result-value"><span class="result-label">Discan oleh:</span> ${barcodeData.scanned_by || '-'}</div>
+                <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 6px; text-align: center;">
+                    ⚠️ Barcode ini sudah digunakan. Tidak bisa discan lagi.
+                </div>
+            `;
+        } else {
+            // BARCODE ACTIVE - SCAN BERHASIL
+            statusClass = 'success';
+            statusText = '✅ BARCODE VALID - SCAN BERHASIL';
+            
+            const productInfo = barcodeData.product_info || {};
+            
+            html = `
+                <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">${statusText}</div>
+                <div class="result-value"><span class="result-label">Kode:</span> <strong>${barcodeData.barcode_id}</strong></div>
+                <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-active">AKTIF</span></div>
+                <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px;">
+                    <div class="result-value"><span class="result-label">📋 PI/Kode:</span> ${productInfo.pi || '-'}</div>
+                    <div class="result-value"><span class="result-label">🏷️ Brand:</span> ${productInfo.brand || '-'}</div>
+                    <div class="result-value"><span class="result-label">📦 Jenis:</span> ${productInfo.jenis || '-'}</div>
+                    <div class="result-value"><span class="result-label">📄 Paper:</span> ${productInfo.paper || '-'}</div>
+                    <div class="result-value"><span class="result-label">📏 Size:</span> ${productInfo.size || '-'}</div>
+                    <div class="result-value"><span class="result-label">🔢 Qty:</span> <strong>${productInfo.qty ? Number(productInfo.qty).toLocaleString() : '-'}</strong></div>
+                </div>
+            `;
+
+            // UPDATE STATUS barcode menjadi SCANNED
+            await supabaseClient
+                .from('barcode_tracking')
+                .update({
+                    status: 'SCANNED',
+                    scanned_at: new Date().toISOString(),
+                    scanned_by: currentUser
+                })
+                .eq('barcode_id', barcodeId);
+
+            // SIMPAN ke scan_history
+            await supabaseClient
+                .from('scan_history')
+                .insert({
+                    barcode_id: barcodeId,
+                    action: 'SCAN',
+                    qty: productInfo.qty || 0,
+                    scanned_by: currentUser
+                });
+        }
+
+        resultContainer.className = statusClass;
+        resultContent.innerHTML = html;
+        resultContainer.style.display = 'block';
+        playBeep();
+
+    } catch (err) {
+        console.error('Scan error:', err);
+        resultContainer.className = 'error';
+        resultContent.innerHTML = `
+            <div style="font-size: 16px; font-weight: bold; color: #dc2626;">❌ ERROR</div>
+            <div>${err.message}</div>
+        `;
+        resultContainer.style.display = 'block';
+    }
+
+    isScanning = false;
+}
 
         // ===== PLAY BEEP =====
         function playBeep() {
