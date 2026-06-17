@@ -341,19 +341,48 @@
         }
         
         async function hapusPi() {
-            const piId = document.getElementById('edit_pi_select').value;
-            if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
-            const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
-            if (confirm(`Hapus PI "${header.no_pi}" dan semua item di dalamnya? Data masuk/keluar juga akan ikut terhapus.`)) {
-                await sb.from('barang_masuk').delete().eq('pi_id', piId);
-                await sb.from('barang_keluar').delete().eq('pi_id', piId);
-                await sb.from('pi_detail').delete().eq('pi_id', piId);
-                await sb.from('pi_header').delete().eq('id', piId);
-                alert('PI berhasil dihapus!');
-                window.location.href = 'dashboard.html';
-            }
-        }
+    const piId = document.getElementById('edit_pi_select').value;
+    if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
+    
+    const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
+    if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
+    
+    try {
+        // 1. Hapus barang masuk yang terkait
+        await sb.from('barang_masuk').delete().eq('pi_id', piId);
         
+        // 2. Hapus barang keluar yang terkait
+        await sb.from('barang_keluar').delete().eq('pi_id', piId);
+        
+        // 3. Hapus detail PI
+        await sb.from('pi_detail').delete().eq('pi_id', piId);
+        
+        // 4. Hapus header PI
+        await sb.from('pi_header').delete().eq('id', piId);
+        
+        alert('✅ PI berhasil dihapus!');
+        
+        // ===== PERBAIKAN: Refresh dropdown =====
+        // Reset form edit
+        document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
+        document.getElementById('edit_no_pi').value = '';
+        document.getElementById('edit_tanggal_pi').value = '';
+        document.getElementById('itemContainerEdit').innerHTML = '';
+        
+        // Load ulang daftar PI
+        await loadPiList();
+        
+        // Kosongkan item list
+        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        
+        // Tampilkan pesan sukses
+        document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
+        
+    } catch (err) {
+        console.error('Error hapus PI:', err);
+        alert('❌ Gagal hapus PI: ' + err.message);
+    }
+}
         function resetForm() {
             itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
             document.getElementById('no_pi').value = '';
