@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Scan QR - Gudang Pro</title>
+    <title>Scan QR Code - Gudang Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="config.js"></script>
+    <!-- HTML5 QR Code Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -87,102 +89,97 @@
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; }
-        
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; }
-        #reader video { width: 100%; border-radius: 12px; }
-        
-        .scan-result {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
+
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
             border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
+            overflow: hidden;
         }
-        
-        .btn-scan {
+
+        #result-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+        #result-container.success {
+            display: block;
+            background: #d1fae5;
+            border: 2px solid #10b981;
+        }
+        #result-container.error {
+            display: block;
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+        }
+        #result-container.warning {
+            display: block;
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
+        #result-container.info {
+            display: block;
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+        }
+
+        .scan-btn {
             background: #3b82f6;
             color: white;
-            padding: 12px 20px;
             border: none;
+            padding: 12px 24px;
             border-radius: 8px;
             font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
             width: 100%;
-            margin-bottom: 15px;
-        }
-        
-        .btn-stop {
-            background: #ef4444;
-        }
-        
-        .btn-submit {
-            background: #f59e0b;
             margin-top: 10px;
         }
-        
-        .info-text { color: #64748b; font-size: 13px; margin-top: 10px; text-align: center; }
-        
-        .form-input {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
+        .scan-btn:hover { background: #2563eb; }
+        .scan-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
         }
-        
-        .form-input input, .form-input select {
+
+        .result-label { font-weight: 600; color: #1e293b; }
+        .result-value { color: #334155; margin-bottom: 5px; }
+        .badge-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-scanned { background: #fee2e2; color: #991b1b; }
+        .badge-notfound { background: #fef3c7; color: #92400e; }
+
+        .history-table {
             width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        .history-table th {
+            background: #f8fafc;
             padding: 10px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
         }
-        
-        .stok-info {
-            background: #fef3c7;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
+        .history-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
         }
-        
-        .alert-warning {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        select, input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
-        
-        .daftar-pi { max-height: 200px; overflow-y: auto; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; }
-        .daftar-pi-item { padding: 5px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
-        .daftar-pi-item:hover { background: #e2e8f0; }
-        
-        @media (max-width: 600px) {
-            .btn-scan { font-size: 14px; }
-        }
+        .history-table tr:hover { background: #f8fafc; }
+
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar no-print" id="sidebar">
         <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
         <div class="sidebar-menu">
             <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
@@ -192,8 +189,8 @@
             <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
             <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
-            <div class="menu-item active" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
             <div class="menu-divider"></div>
+            <div class="menu-item active" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
@@ -205,351 +202,344 @@
         </div>
     </div>
 
-    <div class="overlay" id="overlay"></div>
+    <div class="overlay no-print" id="overlay"></div>
 
-    <div class="header">
+    <div class="header no-print">
         <button class="menu-toggle" id="menuToggle">☰</button>
         <div class="logo">📦 GUDANG PRO</div>
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
-    <div class="container" id="mainContent"></div>
+    <div class="container" id="mainContent">
+        <div class="card">
+            <div class="card-title">📷 SCAN QR CODE</div>
+            
+            <div id="reader"></div>
+            
+            <button class="scan-btn" id="scanBtn" onclick="startScan()">▶️ Mulai Scan</button>
+            
+            <div id="result-container">
+                <div id="result-content"></div>
+            </div>
+
+            <hr style="margin: 20px 0;">
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <button class="scan-btn" onclick="loadHistory()" style="background: #8b5cf6; width: auto; padding: 8px 16px;">📜 Lihat History Scan</button>
+                <button class="scan-btn" onclick="clearHistory()" style="background: #ef4444; width: auto; padding: 8px 16px;">🗑️ Hapus History</button>
+            </div>
+
+            <div id="historyContainer"></div>
+        </div>
+    </div>
 
     <script>
+        // ===== FALLBACK CONFIG =====
+        const FALLBACK_URL = "https://txvgclavcmhyxamxgvsi.supabase.co";
+        const FALLBACK_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY";
+
+        let supabaseClient = null;
+        let currentUser = null;
         let html5QrCode = null;
         let isScanning = false;
-        let scannedData = null;
-        let piList = [];
-        
-        async function cekSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-            return session;
-        }
-        
-        async function loadDaftarPi() {
-            const { data: headers } = await sb.from('pi_header').select('no_pi').order('no_pi', { ascending: true });
-            piList = headers || [];
-            let html = '<div class="daftar-pi">';
-            for (const pi of piList) {
-                html += `<div class="daftar-pi-item" onclick="pilihPiManual('${pi.no_pi}')">📄 ${pi.no_pi}</div>`;
-            }
-            html += '</div>';
-            return html;
-        }
-        
-        async function loadPage() {
-            const daftarPiHtml = await loadDaftarPi();
-            
-            document.getElementById('mainContent').innerHTML = `
-                <div class="card">
-                    <div class="card-title">🔍 SCAN QR CODE</div>
-                    
-                    <div class="info-text" style="margin-bottom:15px">
-                        📌 <strong>Aturan Penggunaan:</strong><br>
-                        • Scan pertama → WAJIB <strong>BARANG MASUK</strong><br>
-                        • Scan berikutnya → <strong>BARANG KELUAR</strong><br>
-                        • 1 QR Code hanya bisa scan MASUK 1x dan KELUAR 1x<br>
-                        • Tidak bisa KELUAR jika belum pernah MASUK
-                    </div>
-                    
-                    <div class="manual-input">
-                        <div class="card-title" style="margin-bottom:10px">📝 Atau Ketik No PI Manual</div>
-                        <input type="text" id="manualNoPi" placeholder="Masukkan No PI...">
-                        <button class="btn-cari" onclick="cariManual()" style="background:#10b981">🔍 Cari PI</button>
-                    </div>
-                    
-                    <div style="text-align:center; margin:10px 0">— ATAU —</div>
-                    
-                    <button id="startScanBtn" class="btn-scan">📷 Scan QR Code</button>
-                    <button id="stopScanBtn" class="btn-scan btn-stop" style="display:none">⏹️ Hentikan Scan</button>
-                    <div id="reader" style="display:none"></div>
-                    <div id="result"></div>
-                    
-                    <div class="info-text">
-                        <strong>📋 DAFTAR PI YANG TERSEDIA:</strong>
-                        ${daftarPiHtml}
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('startScanBtn').onclick = startScan;
-            document.getElementById('stopScanBtn').onclick = stopScan;
-        }
-        
-        window.pilihPiManual = (noPi) => {
-            document.getElementById('manualNoPi').value = noPi;
-            cariManual();
-        };
-        
-        window.cariManual = async () => {
-            const noPi = document.getElementById('manualNoPi').value.trim();
-            if (!noPi) {
-                alert('Masukkan No PI!');
-                return;
-            }
-            
-            document.getElementById('result').innerHTML = `<div class="scan-result">⏳ Mencari PI "${noPi}"...</div>`;
-            
-            const { data: headers } = await sb.from('pi_header').select('id, no_pi').eq('no_pi', noPi);
-            
-            if (headers && headers.length > 0) {
-                const pi = headers[0];
-                document.getElementById('result').innerHTML = `<div class="scan-result">✅ Ditemukan PI: <strong>${pi.no_pi}</strong><br>
-                    📌 Pilih tindakan:<br>
-                    <button onclick="goToStockIn('${pi.id}')" style="margin-top:10px; margin-right:10px">📥 Barang Masuk</button>
-                    <button onclick="goToStockOut('${pi.id}')" style="margin-top:10px">📤 Barang Keluar</button>
-                </div>`;
+
+        // ===== INISIALISASI SUPABASE =====
+        async function initSupabase() {
+            if (typeof supabaseConfig !== 'undefined' && supabaseConfig) {
+                supabaseClient = supabase.createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
+            } else if (window.supabaseConfig && window.supabaseConfig.supabaseUrl) {
+                supabaseClient = supabase.createClient(window.supabaseConfig.supabaseUrl, window.supabaseConfig.supabaseKey);
             } else {
-                document.getElementById('result').innerHTML = `<div class="scan-result">⚠️ PI "${noPi}" tidak ditemukan.<br>
-                    <button onclick="window.location.href='pi-input.html'" style="margin-top:10px">➕ Buat PI Baru</button>
-                </div>`;
+                supabaseClient = supabase.createClient(FALLBACK_URL, FALLBACK_KEY);
             }
-        };
-        
-        async function startScan() {
-            if (isScanning) return;
-            
-            document.getElementById('startScanBtn').style.display = 'none';
-            document.getElementById('stopScanBtn').style.display = 'block';
-            document.getElementById('reader').style.display = 'block';
-            document.getElementById('result').innerHTML = '<div class="info-text">⏳ Menunggu scan QR Code...</div>';
-            
-            html5QrCode = new Html5Qrcode("reader");
-            
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-            
             try {
-                await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError);
-                isScanning = true;
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                currentUser = user?.email || 'Unknown';
+                return true;
             } catch (err) {
-                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ Gagal mengakses kamera: ${err.message}</div>`;
-                stopScan();
+                console.error("Supabase error:", err);
+                return false;
             }
         }
-        
-        async function parseQRText(qrText) {
-            const data = {};
-            const parts = qrText.split(',');
-            for (const part of parts) {
-                const [key, ...valueParts] = part.trim().split(':');
-                if (key && valueParts.length) {
-                    data[key.trim()] = valueParts.join(':').trim();
-                }
-            }
-            return data;
-        }
-        
-        async function onScanSuccess(decodedText) {
-            stopScan();
-            
-            document.getElementById('result').innerHTML = '<div class="info-text">⏳ Memproses QR Code...</div>';
-            
-            const qrData = await parseQRText(decodedText);
-            const noPi = qrData['PI'] || '';
-            const brand = qrData['BRAND'] || '';
-            const jenis = qrData['JENIS'] || '';
-            const qtyBatch = parseInt(qrData['QTY']) || 0;
-            const batchName = qrData['BATCH'] || '';
-            
-            if (!noPi || !brand || !jenis) {
-                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ QR Code tidak valid! Format tidak sesuai.</div>`;
-                return;
-            }
-            
-            // Cek apakah QR sudah pernah scan KELUAR (expired)
-            const { data: scanKeluar } = await sb.from('scan_log').select('*').eq('qr_text', decodedText).eq('transaksi_jenis', 'KELUAR').single();
-            if (scanKeluar) {
-                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ QR Code ini sudah pernah digunakan untuk BARANG KELUAR. Tidak bisa dipakai lagi!</div>`;
-                return;
-            }
-            
-            // Cek apakah QR sudah pernah scan MASUK
-            const { data: scanMasuk } = await sb.from('scan_log').select('*').eq('qr_text', decodedText).eq('transaksi_jenis', 'MASUK').single();
-            const sudahMasuk = !!scanMasuk;
-            
-            // Cari PI di database
-            const { data: piHeader } = await sb.from('pi_header').select('id').eq('no_pi', noPi).single();
-            if (!piHeader) {
-                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ PI "${noPi}" tidak ditemukan!</div>`;
-                return;
-            }
-            
-            // Cari detail item
-            const { data: detailItem } = await sb.from('pi_detail')
-                .select('id')
-                .eq('pi_id', piHeader.id)
-                .eq('brand', brand)
-                .eq('jenis', jenis)
-                .single();
-            
-            if (!detailItem) {
-                document.getElementById('result').innerHTML = `<div class="alert-warning">❌ Item "${brand} - ${jenis}" tidak ditemukan!</div>`;
-                return;
-            }
-            
-            // Hitung stok
-            const { data: masuk } = await sb.from('barang_masuk').select('qty').eq('detail_id', detailItem.id);
-            const { data: keluar } = await sb.from('barang_keluar').select('qty').eq('detail_id', detailItem.id);
-            let totalMasuk = 0, totalKeluar = 0;
-            if (masuk) masuk.forEach(m => totalMasuk += m.qty);
-            if (keluar) keluar.forEach(k => totalKeluar += k.qty);
-            const stokSaatIni = totalMasuk - totalKeluar;
-            
-            let html = `
-                <div class="scan-result">
-                    <strong>✅ QR Code terbaca:</strong><br>
-                    <code style="font-size:11px; word-break:break-all">${decodedText}</code>
-                    <div style="margin-top:10px">
-                        <div><strong>No PI:</strong> ${noPi}</div>
-                        <div><strong>Brand:</strong> ${brand}</div>
-                        <div><strong>Jenis:</strong> ${jenis}</div>
-                        <div><strong>Qty per QR:</strong> ${qtyBatch.toLocaleString()} pcs</div>
-                        <div><strong>Batch:</strong> ${batchName}</div>
-                    </div>
-            `;
-            
-            if (!sudahMasuk) {
-                html += `
-                    <div class="alert-info" style="margin-top:10px">⚠️ QR Code ini belum pernah di-scan MASUK. Scan pertama WAJIB untuk BARANG MASUK.</div>
-                    <div class="form-input">
-                        <label>📅 Tanggal Masuk</label>
-                        <input type="date" id="tanggal_transaksi" value="${new Date().toISOString().split('T')[0]}">
-                        <label>📦 Jumlah (Qty)</label>
-                        <input type="number" id="qty_transaksi" value="${qtyBatch}" min="1">
-                        <label>📋 Keterangan (opsional)</label>
-                        <input type="text" id="keterangan" placeholder="Keterangan">
-                        <button class="btn-submit" onclick="simpanTransaksi('MASUK', '${decodedText}', ${detailItem.id})">✅ Simpan Barang Masuk</button>
-                    </div>
-                `;
-            } else {
-                if (stokSaatIni <= 0) {
-                    html += `<div class="alert-warning" style="margin-top:10px">⚠️ Stok habis! Tidak bisa melakukan barang keluar. Stok saat ini: 0</div>`;
-                } else {
-                    html += `
-                        <div class="stok-info" style="margin-top:10px">📊 Stok saat ini: <strong>${stokSaatIni}</strong> pcs (bisa keluar)</div>
-                        <div class="form-input">
-                            <label>📅 Tanggal Keluar</label>
-                            <input type="date" id="tanggal_transaksi" value="${new Date().toISOString().split('T')[0]}">
-                            <label>📦 Jumlah (Qty)</label>
-                            <input type="number" id="qty_transaksi" value="${Math.min(qtyBatch, stokSaatIni)}" min="1" max="${stokSaatIni}">
-                            <label>📋 Keterangan (opsional)</label>
-                            <input type="text" id="keterangan" placeholder="Keterangan">
-                            <button class="btn-submit" onclick="simpanTransaksi('KELUAR', '${decodedText}', ${detailItem.id})">✅ Simpan Barang Keluar</button>
+
+        // ===== PROSES SCAN =====
+        async function processScan(decodedText, decodedResult) {
+            if (isScanning) return;
+            isScanning = true;
+
+            const resultContainer = document.getElementById('result-container');
+            const resultContent = document.getElementById('result-content');
+
+            try {
+                // Cari barcode di database
+                const { data: barcodeData, error } = await supabaseClient
+                    .from('barcode_tracking')
+                    .select('*')
+                    .eq('barcode_id', decodedText.trim())
+                    .single();
+
+                let html = '';
+                let statusClass = 'info';
+                let statusText = '';
+
+                if (error || !barcodeData) {
+                    // Barcode tidak ditemukan
+                    statusClass = 'error';
+                    statusText = '❌ BARCODE TIDAK TERDAFTAR';
+                    html = `
+                        <div style="font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 10px;">${statusText}</div>
+                        <div class="result-value"><span class="result-label">Kode:</span> ${decodedText}</div>
+                        <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; text-align: center;">
+                            ⚠️ Barcode ini tidak terdaftar di sistem.<br>
+                            Silakan generate ulang di halaman QR Code.
                         </div>
                     `;
+                } else if (barcodeData.status === 'SCANNED') {
+                    // Barcode sudah pernah discan
+                    statusClass = 'warning';
+                    statusText = '⚠️ BARCODE SUDAH PERNAH DISCAN';
+                    const scanDate = barcodeData.scanned_at ? new Date(barcodeData.scanned_at).toLocaleString('id-ID') : '-';
+                    html = `
+                        <div style="font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">${statusText}</div>
+                        <div class="result-value"><span class="result-label">Kode:</span> ${barcodeData.barcode_id}</div>
+                        <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-scanned">SUDAH DISCAN</span></div>
+                        <div class="result-value"><span class="result-label">Discan pada:</span> ${scanDate}</div>
+                        <div class="result-value"><span class="result-label">Discan oleh:</span> ${barcodeData.scanned_by || '-'}</div>
+                        <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 6px; text-align: center;">
+                            ⚠️ Barcode ini sudah digunakan. Tidak bisa discan lagi.
+                        </div>
+                    `;
+                } else {
+                    // Barcode ACTIVE - bisa discan
+                    statusClass = 'success';
+                    statusText = '✅ BARCODE VALID - SCAN BERHASIL';
+                    
+                    const productInfo = barcodeData.product_info || {};
+                    
+                    html = `
+                        <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">${statusText}</div>
+                        <div class="result-value"><span class="result-label">Kode:</span> <strong>${barcodeData.barcode_id}</strong></div>
+                        <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-active">AKTIF</span></div>
+                        <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px;">
+                            <div class="result-value"><span class="result-label">📋 PI/Kode:</span> ${productInfo.pi || '-'}</div>
+                            <div class="result-value"><span class="result-label">🏷️ Brand:</span> ${productInfo.brand || '-'}</div>
+                            <div class="result-value"><span class="result-label">📦 Jenis:</span> ${productInfo.jenis || '-'}</div>
+                            <div class="result-value"><span class="result-label">📄 Paper:</span> ${productInfo.paper || '-'}</div>
+                            <div class="result-value"><span class="result-label">📏 Size:</span> ${productInfo.size || '-'}</div>
+                            <div class="result-value"><span class="result-label">🔢 Qty:</span> <strong>${productInfo.qty ? Number(productInfo.qty).toLocaleString() : '-'}</strong></div>
+                        </div>
+                    `;
+
+                    // UPDATE STATUS barcode menjadi SCANNED
+                    await supabaseClient
+                        .from('barcode_tracking')
+                        .update({
+                            status: 'SCANNED',
+                            scanned_at: new Date().toISOString(),
+                            scanned_by: currentUser
+                        })
+                        .eq('barcode_id', decodedText.trim());
+
+                    // SIMPAN ke scan_history
+                    await supabaseClient
+                        .from('scan_history')
+                        .insert({
+                            barcode_id: decodedText.trim(),
+                            action: 'SCAN',
+                            qty: productInfo.qty || 0,
+                            scanned_by: currentUser
+                        });
                 }
+
+                resultContainer.className = statusClass;
+                resultContent.innerHTML = html;
+                resultContainer.style.display = 'block';
+
+                // Play sound notifikasi (opsional)
+                playBeep();
+
+            } catch (err) {
+                console.error('Scan error:', err);
+                resultContainer.className = 'error';
+                resultContent.innerHTML = `
+                    <div style="font-size: 16px; font-weight: bold; color: #dc2626;">❌ ERROR</div>
+                    <div>${err.message}</div>
+                `;
+                resultContainer.style.display = 'block';
             }
-            
-            html += `<button onclick="startScan()" style="margin-top:10px; background:#64748b">🔍 Scan Lagi</button>`;
-            html += `</div>`;
-            
-            document.getElementById('result').innerHTML = html;
-            scannedData = { qrText: decodedText, qtyBatch, noPi, brand, jenis };
+
+            isScanning = false;
         }
-        
-        async function simpanTransaksi(jenis, qrText, detailId) {
-            const tanggal = document.getElementById('tanggal_transaksi').value;
-            const qty = parseInt(document.getElementById('qty_transaksi').value);
-            const keterangan = document.getElementById('keterangan').value;
-            
-            if (!qty || qty <= 0) {
-                alert('Masukkan jumlah yang valid!');
+
+        // ===== PLAY BEEP =====
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 200);
+            } catch(e) { /* silent fail */ }
+        }
+
+        // ===== START SCAN =====
+        function startScan() {
+            const reader = document.getElementById('reader');
+            const scanBtn = document.getElementById('scanBtn');
+
+            if (html5QrCode) {
+                html5QrCode.stop();
+                html5QrCode.clear();
+                html5QrCode = null;
+                scanBtn.textContent = '▶️ Mulai Scan';
                 return;
             }
-            
-            const userEmail = (await sb.auth.getUser()).data.user?.email;
-            
-            let error = null;
-            let transaksiId = null;
-            
-            if (jenis === 'MASUK') {
-                const result = await sb.from('barang_masuk').insert([{
-                    detail_id: detailId,
-                    tanggal: tanggal,
-                    qty: qty,
-                    keterangan: keterangan || 'QR SCAN MASUK',
-                    created_by: userEmail
-                }]).select();
-                if (result.error) error = result.error;
-                else transaksiId = result.data[0].id;
-            } else {
-                const result = await sb.from('barang_keluar').insert([{
-                    detail_id: detailId,
-                    tanggal: tanggal,
-                    qty: qty,
-                    keterangan: keterangan || 'QR SCAN KELUAR',
-                    created_by: userEmail
-                }]).select();
-                if (result.error) error = result.error;
-                else transaksiId = result.data[0].id;
-            }
-            
-            if (error) {
-                alert('Gagal: ' + error.message);
-                return;
-            }
-            
-            // Catat ke scan_log
-            await sb.from('scan_log').insert([{
-                qr_text: qrText,
-                detail_id: detailId,
-                transaksi_jenis: jenis,
-                transaksi_id: transaksiId,
-                scanned_by: userEmail
-            }]);
-            
-            alert(`✅ ${jenis === 'MASUK' ? 'Barang Masuk' : 'Barang Keluar'} berhasil dicatat!`);
-            
-            // Reset form
-            document.getElementById('result').innerHTML = '<div class="alert-success">✅ Transaksi berhasil! Silakan scan lagi.</div>';
+
+            scanBtn.textContent = '⏹️ Berhenti Scan';
+            scanBtn.disabled = true;
+
+            html5QrCode = new Html5Qrcode("reader");
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                scanBtn.disabled = false;
+            }).catch(err => {
+                console.error('Camera error:', err);
+                scanBtn.textContent = '▶️ Mulai Scan';
+                scanBtn.disabled = false;
+                alert('Gagal mengakses kamera. Pastikan izin kamera diberikan.');
+            });
         }
-        
-        function onScanError(errorMessage) { console.log(errorMessage); }
-        
-        function stopScan() {
-            if (html5QrCode && isScanning) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    isScanning = false;
-                    document.getElementById('reader').style.display = 'none';
-                    document.getElementById('startScanBtn').style.display = 'block';
-                    document.getElementById('stopScanBtn').style.display = 'none';
-                }).catch(err => console.log(err));
-            } else {
-                document.getElementById('reader').style.display = 'none';
-                document.getElementById('startScanBtn').style.display = 'block';
-                document.getElementById('stopScanBtn').style.display = 'none';
+
+        function onScanSuccess(decodedText, decodedResult) {
+            processScan(decodedText, decodedResult);
+        }
+
+        function onScanFailure(err) {
+            // ignore
+        }
+
+        // ===== LOAD HISTORY SCAN =====
+        async function loadHistory() {
+            if (!supabaseClient) await initSupabase();
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = '<div style="text-align:center; padding:20px;">⏳ Memuat history...</div>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('scan_history')
+                    .select('*')
+                    .order('scanned_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">📭 Belum ada history scan</div>';
+                    return;
+                }
+
+                let html = `
+                    <div style="overflow-x: auto;">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>🕐 Waktu</th>
+                                    <th>🔢 Barcode</th>
+                                    <th>📦 Qty</th>
+                                    <th>👤 User</th>
+                                    <th>📌 Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                for (const item of data) {
+                    const date = new Date(item.scanned_at).toLocaleString('id-ID');
+                    // Cek status barcode
+                    const { data: barcodeData } = await supabaseClient
+                        .from('barcode_tracking')
+                        .select('status')
+                        .eq('barcode_id', item.barcode_id)
+                        .single();
+                    
+                    const status = barcodeData?.status || 'UNKNOWN';
+                    const statusBadge = status === 'SCANNED' 
+                        ? '<span class="badge-status badge-scanned">DISCAN</span>'
+                        : status === 'ACTIVE' 
+                        ? '<span class="badge-status badge-active">AKTIF</span>'
+                        : '<span class="badge-status badge-notfound">-</span>';
+
+                    html += `
+                        <tr>
+                            <td>${date}</td>
+                            <td><strong>${item.barcode_id}</strong></td>
+                            <td>${Number(item.qty || 0).toLocaleString()}</td>
+                            <td>${item.scanned_by || '-'}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                }
+
+                html += `</tbody></table></div>`;
+                html += `<div style="margin-top:10px; font-size:12px; color:#94a3b8;">Menampilkan 50 data terakhir</div>`;
+                container.innerHTML = html;
+
+            } catch (err) {
+                console.error('Load history error:', err);
+                container.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">❌ Error memuat history: ${err.message}</div>`;
             }
         }
-        
-        function goToStockIn(piId) { window.location.href = `stock-in.html?pi_id=${piId}`; }
-        function goToStockOut(piId) { window.location.href = `stock-out.html?pi_id=${piId}`; }
-        
+
+        // ===== CLEAR HISTORY =====
+        async function clearHistory() {
+            if (!confirm('Hapus semua history scan? Data tidak bisa dikembalikan!')) return;
+            if (!supabaseClient) await initSupabase();
+            
+            try {
+                const { error } = await supabaseClient.from('scan_history').delete().neq('id', 0);
+                if (error) throw error;
+                alert('✅ History scan berhasil dihapus');
+                document.getElementById('historyContainer').innerHTML = '';
+            } catch (err) {
+                alert('❌ Gagal hapus history: ' + err.message);
+            }
+        }
+
+        // ===== NAVIGASI =====
         function goToMenu(menu) {
             const files = {
-                dashboard: 'dashboard.html',
-                'pi-input': 'pi-input.html',
-                'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html',
-                'stock-report': 'stock-report.html',
-                'stok-pendukung': 'stok-pendukung.html',
-                'barcode-generator': 'barcode-generator.html',
-                'scan-barcode': 'scan-barcode.html',
-                executive: 'executive-report.html',
-                'manage-users': 'manage-users.html',
-                'log-aktivitas': 'log-aktivitas.html',
-                export: 'export-final3.html'
+                dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html', 'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
             };
             window.location.href = files[menu] || 'dashboard.html';
         }
-        
+
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
         function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-        
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-        
+        function logout() { window.location.href = 'login.html'; }
+
         function setupEventListeners() {
             document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
@@ -559,19 +549,36 @@
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
-        
+
+        // ===== INIT =====
         async function init() {
-            await cekSession();
+            await initSupabase();
             setupEventListeners();
-            await loadPage();
+            
+            // Cek apakah ada barcode_tracking
+            try {
+                const { count, error } = await supabaseClient
+                    .from('barcode_tracking')
+                    .select('*', { count: 'exact', head: true });
+                if (error) {
+                    console.warn('Tabel barcode_tracking belum dibuat atau error:', error);
+                } else {
+                    console.log('✅ barcode_tracking ready, total:', count);
+                }
+            } catch(e) {
+                console.warn('⚠️ Tabel barcode_tracking belum dibuat. Buat dulu di SQL Editor.');
+            }
         }
-        
-        window.cariManual = cariManual;
-        window.pilihPiManual = pilihPiManual;
+
+        // EXPOSE ke window
         window.startScan = startScan;
-        window.stopScan = stopScan;
-        window.simpanTransaksi = simpanTransaksi;
-        
+        window.loadHistory = loadHistory;
+        window.clearHistory = clearHistory;
+        window.goToMenu = goToMenu;
+        window.toggleSidebar = toggleSidebar;
+        window.closeSidebar = closeSidebar;
+        window.logout = logout;
+
         init();
     </script>
 </body>
