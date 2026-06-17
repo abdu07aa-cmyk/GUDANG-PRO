@@ -10,27 +10,74 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
+        /* ============================================ */
+        /* YANG TERCETAK HANYA QR CODE + INFO           */
+        /* SEMUA TOMBOL, FORM, SIDEBAR, HEADER HILANG  */
+        /* ============================================ */
         @media print {
+            /* SEMUA YANG ADA CLASS no-print HILANG */
             .no-print { display: none !important; }
-            .print-area { display: block !important; }
-            body { background: white; margin: 0; padding: 0; }
-            .container { padding: 0; margin: 0; }
-            .card { box-shadow: none; padding: 0; }
+            
+            /* AREA CETAK */
+            .print-area { 
+                display: block !important; 
+                padding: 10px;
+            }
+            
+            body { 
+                background: white; 
+                margin: 0; 
+                padding: 0; 
+            }
+            
+            .container { 
+                padding: 0; 
+                margin: 0; 
+                max-width: 100%;
+            }
+            
+            .card { 
+                box-shadow: none; 
+                padding: 0; 
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            /* GRID UNTUK CETAK - 3 KOLOM */
             .qr-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
+                gap: 12px;
                 padding: 10px;
             }
+            
             .qrcode-item {
                 break-inside: avoid;
                 page-break-inside: avoid;
                 margin: 0;
                 padding: 8px;
                 width: 100%;
+                border: 1px solid #eee;
+                border-radius: 6px;
+                background: white;
+            }
+            
+            /* HIDE SEMUA TOMBOL CETAK */
+            .print-btn-container,
+            .print-btn,
+            button {
+                display: none !important;
+            }
+            
+            /* HIDE HEADER & FOOTER BROWSER */
+            @page {
+                margin: 10mm;
             }
         }
         
+        /* ============================================ */
+        /* TAMPILAN LAYAR (TIDAK UNTUK CETAK)           */
+        /* ============================================ */
         @media screen {
             .qr-grid {
                 display: grid;
@@ -38,8 +85,21 @@
                 gap: 10px;
                 padding: 10px;
             }
+            
+            .qrcode-item {
+                display: inline-block;
+                text-align: center;
+                margin: 5px;
+                padding: 10px;
+                background: white;
+                border-radius: 10px;
+                width: 220px;
+                vertical-align: top;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
         }
         
+        /* SIDEBAR */
         .sidebar {
             position: fixed;
             top: 0;
@@ -117,21 +177,7 @@
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         
-        .qrcode-item {
-            display: inline-block;
-            text-align: center;
-            margin: 5px;
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            width: 220px;
-            vertical-align: top;
-            break-inside: avoid;
-            page-break-inside: avoid;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
         .print-area { text-align: center; }
-        
         .print-btn { 
             background: #10b981; 
             padding: 12px 24px; 
@@ -143,6 +189,7 @@
             font-size: 16px;
             font-weight: bold;
         }
+        .print-btn:hover { background: #059669; }
         
         .batch-form {
             background: #f1f5f9;
@@ -261,6 +308,43 @@
         .batch-item button { padding: 4px 10px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .btn-update { background: #3b82f6 !important; }
         .btn-generate { background: #8b5cf6; margin-top: 15px; width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
+        
+        /* STYLE QR DI CETAK */
+        .qrcode-item .serial-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        .qrcode-item .batch-name {
+            font-size: 11px;
+            font-weight: bold;
+            background: #e0f2fe;
+            padding: 4px 8px;
+            border-radius: 10px;
+            margin: 6px 0;
+            display: inline-block;
+        }
+        .qrcode-item .qty-info {
+            font-size: 12px;
+            font-weight: bold;
+            color: #10b981;
+            margin: 3px 0;
+        }
+        .qrcode-item .detail-info {
+            font-size: 9px;
+            margin-top: 5px;
+            text-align: left;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+        }
+        .qrcode-item .detail-info div {
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -398,10 +482,10 @@
                 const qrDivId = `qr_${bc.serial}_${Date.now()}_${Math.random()}`;
                 div.innerHTML = `
                     <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
-                    <div style="background:#3b82f6; color:white; padding:3px 10px; border-radius:15px; font-size:11px; font-weight:bold; margin-top:6px;">🔢 ${bc.serial}</div>
-                    <div style="font-size:11px; font-weight:bold; background:#e0f2fe; padding:4px 8px; border-radius:10px; margin:6px 0;">🏷️ ${bc.brand} - ${bc.jenis}</div>
-                    <div style="font-size:12px; font-weight:bold; color:#10b981; margin:3px 0;">📦 ${Number(bc.qty).toLocaleString()} pcs</div>
-                    <div style="font-size:9px; margin-top:5px; text-align:left; border-top:1px solid #e2e8f0; padding-top:5px;">
+                    <div class="serial-badge">🔢 ${bc.serial}</div>
+                    <div class="batch-name">🏷️ ${bc.brand} - ${bc.jenis}</div>
+                    <div class="qty-info">📦 ${Number(bc.qty).toLocaleString()} pcs</div>
+                    <div class="detail-info">
                         <div><strong>PI:</strong> ${bc.pi}</div>
                         <div><strong>Brand:</strong> ${bc.brand}</div>
                         <div><strong>Jenis:</strong> ${bc.jenis}</div>
@@ -418,6 +502,7 @@
                 }, 50);
             }
             
+            // Tombol cetak (HANYA TAMPIL DI LAYAR, TIDAK IKUT CETAK)
             const printBtn = document.createElement('div');
             printBtn.className = 'print-btn-container no-print';
             printBtn.innerHTML = '<button class="print-btn" onclick="window.print()">🖨️ CETAK QR CODE</button>';
@@ -551,9 +636,9 @@
                 const qrDivId = `qr_old_${batch.id}_${Date.now()}`;
                 div.innerHTML = `
                     <div id="${qrDivId}" style="display:flex; justify-content:center"></div>
-                    <div style="font-size:11px; font-weight:bold; background:#e0f2fe; padding:4px 8px; border-radius:10px; margin:6px 0;">🏷️ ${batch.brand} - ${batch.jenis}</div>
-                    <div style="font-size:12px; font-weight:bold; color:#10b981;">📦 ${Number(batch.qty_per_qr).toLocaleString()} pcs</div>
-                    <div style="font-size:9px; margin-top:5px; text-align:left; border-top:1px solid #e2e8f0; padding-top:5px;">
+                    <div class="batch-name">🏷️ ${batch.brand} - ${batch.jenis}</div>
+                    <div class="qty-info">📦 ${Number(batch.qty_per_qr).toLocaleString()} pcs</div>
+                    <div class="detail-info">
                         <div><strong>PI:</strong> ${batch.no_pi}</div>
                         <div><strong>Brand:</strong> ${batch.brand}</div>
                         <div><strong>Jenis:</strong> ${batch.jenis}</div>
@@ -651,7 +736,7 @@
                         <button class="tab-btn" id="tabHistory" onclick="switchTab('History')">📜 Riwayat Generate</button>
                     </div>
                     <div id="contentGenerate" class="tab-content active">
-                        <div class="batch-form">
+                        <div class="batch-form no-print">
                             <div class="batch-form-row"><label>📋 PI:</label><input type="text" id="input_pi" placeholder="Contoh: 139.05.26.DRW" style="flex:2"></div>
                             <div class="batch-form-row"><label>🏷️ Brand:</label><input type="text" id="input_brand" placeholder="Contoh: Straight cones tubes" style="flex:2"></div>
                             <div class="batch-form-row"><label>📦 Jenis:</label><input type="text" id="input_jenis" placeholder="Contoh: Glass Tips 11x30mm" style="flex:2"></div>
@@ -664,9 +749,9 @@
                         </div>
                         <div class="summary-card no-print">💡 <strong>Penjelasan:</strong> Setiap QR Code memiliki <strong>Serial Number UNIK</strong> (BC001, BC002, dst).<br>✅ Bisa tracking barcode mana yang sudah discan.</div>
                         <div id="qrContainer" class="print-area" style="display:none"></div>
-                        <hr style="margin: 20px 0;">
-                        <div id="piSelectorContainer">⏳ Memuat daftar PI...</div>
-                        <div id="multiItemContainer"></div>
+                        <hr style="margin: 20px 0;" class="no-print">
+                        <div id="piSelectorContainer" class="no-print">⏳ Memuat daftar PI...</div>
+                        <div id="multiItemContainer" class="no-print"></div>
                         <div class="batch-list no-print" id="batchListContainer"><strong>📋 Daftar Batch:</strong><div id="batchItems"></div><button id="generateBtn" class="btn-generate" style="display:none">🖨️ Generate QR Code</button></div>
                         <div id="qrContainerOld" class="print-area" style="display:none"></div>
                     </div>
