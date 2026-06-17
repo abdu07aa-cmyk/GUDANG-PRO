@@ -377,7 +377,7 @@ async function processScan(decodedText, decodedResult) {
     isScanning = false;
 }
 
-// ===== HANDLE AKSI SCAN =====
+// ===== HANDLE AKSI SCAN (VERSI PERBAIKAN) =====
 async function handleScanAction(barcodeId, action, qty) {
     if (!confirm(`Konfirmasi:\n\n📌 Barcode: ${barcodeId}\n📋 Aksi: ${action}\n📦 Qty: ${qty.toLocaleString()}\n\nLanjutkan?`)) return;
     
@@ -394,31 +394,43 @@ async function handleScanAction(barcodeId, action, qty) {
                 action: action
             })
             .eq('barcode_id', barcodeId);
-   //2. ===== UPDATE STOK KE TABEL MASING-MASING =====
-if (action === 'STOCK_IN') {
-    await supabaseClient.from('stock_in').insert({
-        barcode_id: barcodeId,
-        qty: qty,
-        scanned_by: currentUser,
-        created_at: new Date()
-    });
-} else if (action === 'STOCK_OUT') {
-    await supabaseClient.from('stock_out').insert({
-        barcode_id: barcodeId,
-        qty: qty,
-        scanned_by: currentUser,
-        created_at: new Date()
-    });
-} else if (action === 'STOCK_SUPPORT') {
-    await supabaseClient.from('stok_pendukung').insert({
-        barcode_id: barcodeId,
-        qty: qty,
-        scanned_by: currentUser,
-        created_at: new Date()
-    });
-}
 
-        // 3. Simpan ke scan_history dengan aksi
+        // ===== 2. SIMPAN KE TABEL YANG BENAR =====
+        if (action === 'STOCK_IN') {
+            // PAKAI TABEL barang_masuk
+            await supabaseClient.from('barang_masuk').insert({
+                detail_id: barcodeId,     // barcode disimpan di detail_id
+                qty: qty,
+                created_by: currentUser,
+                created_at: new Date().toISOString(),
+                keterangan: 'Scan QR Code - Barang Masuk'
+            });
+            console.log('✅ Tersimpan di barang_masuk');
+
+        } else if (action === 'STOCK_OUT') {
+            // PAKAI TABEL barang_keluar
+            await supabaseClient.from('barang_keluar').insert({
+                detail_id: barcodeId,     // barcode disimpan di detail_id
+                qty: qty,
+                created_by: currentUser,
+                created_at: new Date().toISOString(),
+                keterangan: 'Scan QR Code - Barang Keluar'
+            });
+            console.log('✅ Tersimpan di barang_keluar');
+
+        } else if (action === 'STOCK_SUPPORT') {
+            // PAKAI TABEL histori_stok_pendukung
+            await supabaseClient.from('histori_stok_pendukung').insert({
+                barcode_id: barcodeId,
+                qty: qty,
+                created_by: currentUser,
+                created_at: new Date().toISOString(),
+                keterangan: 'Scan QR Code - Stok Pendukung'
+            });
+            console.log('✅ Tersimpan di histori_stok_pendukung');
+        }
+
+        // 3. Simpan ke scan_history
         await supabaseClient
             .from('scan_history')
             .insert({
@@ -447,7 +459,10 @@ if (action === 'STOCK_IN') {
             <div class="result-value"><span class="result-label">Qty:</span> <strong>${qty.toLocaleString()}</strong></div>
             <div class="result-value"><span class="result-label">User:</span> ${currentUser}</div>
             <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px; text-align: center; font-size: 14px;">
-                ✅ Data sudah tercatat di history scan
+                ✅ Tersimpan di tabel ${action === 'STOCK_IN' ? 'barang_masuk' : action === 'STOCK_OUT' ? 'barang_keluar' : 'histori_stok_pendukung'}
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: #dbeafe; border-radius: 6px; text-align: center; font-size: 12px; color: #1e40af;">
+                📋 History scan juga tersimpan di scan_history
             </div>
         `;
         
