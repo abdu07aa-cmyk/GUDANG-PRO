@@ -215,6 +215,14 @@
             <div class="card-title">📷 SCAN QR CODE</div>
             
             <div id="reader"></div>
+            <!-- Tambahan untuk test manual -->
+<div style="margin: 15px 0; padding: 15px; background: #f1f5f9; border-radius: 8px;">
+    <label style="font-weight: bold;">🔍 Test Scan Manual (ketik kode):</label>
+    <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <input type="text" id="manualBarcode" placeholder="Contoh: BC001" style="flex:1; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+        <button onclick="testManualScan()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Test Scan</button>
+    </div>
+</div>
             
             <button class="scan-btn" id="scanBtn" onclick="startScan()">▶️ Mulai Scan</button>
             
@@ -549,7 +557,14 @@
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
         }
-
+function testManualScan() {
+    const barcode = document.getElementById('manualBarcode').value.trim();
+    if (!barcode) {
+        alert('Masukkan kode barcode!');
+        return;
+    }
+    processScan(barcode, null);
+}
         // ===== INIT =====
         async function init() {
             await initSupabase();
