@@ -394,29 +394,29 @@ async function handleScanAction(barcodeId, action, qty) {
                 action: action
             })
             .eq('barcode_id', barcodeId);
-         // 2. ===== UPDATE STOK KE TABEL MASING-MASING =====
-        if (action === 'STOCK_IN') {
-            await supabaseClient.from('stock_in').insert({
-                barcode_id: barcodeId,
-                qty: qty,
-                user: currentUser,
-                created_at: new Date()
-            });
-        } else if (action === 'STOCK_OUT') {
-            await supabaseClient.from('stock_out').insert({
-                barcode_id: barcodeId,
-                qty: qty,
-                user: currentUser,
-                created_at: new Date()
-            });
-        } else if (action === 'STOCK_SUPPORT') {
-            await supabaseClient.from('stok_pendukung').insert({
-                barcode_id: barcodeId,
-                qty: qty,
-                user: currentUser,
-                created_at: new Date()
-            });
-        }
+   //2. ===== UPDATE STOK KE TABEL MASING-MASING =====
+if (action === 'STOCK_IN') {
+    await supabaseClient.from('stock_in').insert({
+        barcode_id: barcodeId,
+        qty: qty,
+        scanned_by: currentUser,
+        created_at: new Date()
+    });
+} else if (action === 'STOCK_OUT') {
+    await supabaseClient.from('stock_out').insert({
+        barcode_id: barcodeId,
+        qty: qty,
+        scanned_by: currentUser,
+        created_at: new Date()
+    });
+} else if (action === 'STOCK_SUPPORT') {
+    await supabaseClient.from('stok_pendukung').insert({
+        barcode_id: barcodeId,
+        qty: qty,
+        scanned_by: currentUser,
+        created_at: new Date()
+    });
+}
 
         // 3. Simpan ke scan_history dengan aksi
         await supabaseClient
