@@ -272,6 +272,7 @@
 
         // ===== PROSES SCAN =====
        // ===== PROSES SCAN (PERBAIKAN) =====
+// ===== PROSES SCAN (DENGAN PILIHAN AKSI) =====
 async function processScan(decodedText, decodedResult) {
     if (isScanning) return;
     isScanning = true;
@@ -280,24 +281,18 @@ async function processScan(decodedText, decodedResult) {
     const resultContent = document.getElementById('result-content');
 
     try {
-        // ----- EKSTRAK SERIAL NUMBER DARI FORMAT PANJANG -----
+        // Ekstrak SN dari format panjang
         let barcodeId = decodedText.trim();
-        
-        // Coba ekstrak SN:xxx dari format panjang
         const snMatch = barcodeId.match(/SN:([A-Za-z0-9]+)/);
         if (snMatch) {
-            barcodeId = snMatch[1]; // Ambil BC007 dari SN:BC007
-            console.log('✅ Ekstrak SN:', barcodeId);
+            barcodeId = snMatch[1];
         }
-        
-        // Coba ekstrak dari format lain (BC001|...)
         const simpleMatch = barcodeId.match(/^([A-Za-z0-9]+)\|/);
         if (simpleMatch && !snMatch) {
             barcodeId = simpleMatch[1];
-            console.log('✅ Ekstrak dari format pipe:', barcodeId);
         }
 
-        // ----- CEK DI DATABASE -----
+        // Cek di database
         const { data: barcodeData, error } = await supabaseClient
             .from('barcode_tracking')
             .select('*')
@@ -306,29 +301,22 @@ async function processScan(decodedText, decodedResult) {
 
         let html = '';
         let statusClass = 'info';
-        let statusText = '';
 
         if (error || !barcodeData) {
-            // Barcode tidak ditemukan
             statusClass = 'error';
-            statusText = '❌ BARCODE TIDAK TERDAFTAR';
             html = `
-                <div style="font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 10px;">${statusText}</div>
+                <div style="font-size: 18px; font-weight: bold; color: #dc2626; margin-bottom: 10px;">❌ BARCODE TIDAK TERDAFTAR</div>
                 <div class="result-value"><span class="result-label">Kode:</span> ${barcodeId}</div>
-                <div class="result-value"><span class="result-label">Raw:</span> ${decodedText}</div>
                 <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; text-align: center;">
-                    ⚠️ Barcode ini tidak terdaftar di sistem.<br>
-                    Silakan generate ulang di halaman QR Code.
+                    ⚠️ Barcode ini tidak terdaftar di sistem.
                 </div>
             `;
         } else if (barcodeData.status === 'SCANNED') {
             statusClass = 'warning';
-            statusText = '⚠️ BARCODE SUDAH PERNAH DISCAN';
             const scanDate = barcodeData.scanned_at ? new Date(barcodeData.scanned_at).toLocaleString('id-ID') : '-';
             html = `
-                <div style="font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">${statusText}</div>
+                <div style="font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px;">⚠️ BARCODE SUDAH PERNAH DISCAN</div>
                 <div class="result-value"><span class="result-label">Kode:</span> ${barcodeData.barcode_id}</div>
-                <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-scanned">SUDAH DISCAN</span></div>
                 <div class="result-value"><span class="result-label">Discan pada:</span> ${scanDate}</div>
                 <div class="result-value"><span class="result-label">Discan oleh:</span> ${barcodeData.scanned_by || '-'}</div>
                 <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 6px; text-align: center;">
@@ -336,14 +324,12 @@ async function processScan(decodedText, decodedResult) {
                 </div>
             `;
         } else {
-            // BARCODE ACTIVE - SCAN BERHASIL
-            statusClass = 'success';
-            statusText = '✅ BARCODE VALID - SCAN BERHASIL';
-            
+            // BARCODE ACTIVE - TAMPILKAN PILIHAN AKSI
             const productInfo = barcodeData.product_info || {};
+            statusClass = 'success';
             
             html = `
-                <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">${statusText}</div>
+                <div style="font-size: 18px; font-weight: bold; color: #10b981; margin-bottom: 10px;">✅ BARCODE VALID</div>
                 <div class="result-value"><span class="result-label">Kode:</span> <strong>${barcodeData.barcode_id}</strong></div>
                 <div class="result-value"><span class="result-label">Status:</span> <span class="badge-status badge-active">AKTIF</span></div>
                 <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px;">
@@ -354,27 +340,23 @@ async function processScan(decodedText, decodedResult) {
                     <div class="result-value"><span class="result-label">📏 Size:</span> ${productInfo.size || '-'}</div>
                     <div class="result-value"><span class="result-label">🔢 Qty:</span> <strong>${productInfo.qty ? Number(productInfo.qty).toLocaleString() : '-'}</strong></div>
                 </div>
+                
+                <!-- PILIHAN AKSI -->
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <button onclick="handleScanAction('${barcodeId}', 'STOCK_IN', ${productInfo.qty || 0})" 
+                            style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; min-width: 120px;">
+                        📥 Barang Masuk
+                    </button>
+                    <button onclick="handleScanAction('${barcodeId}', 'STOCK_OUT', ${productInfo.qty || 0})" 
+                            style="background: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; min-width: 120px;">
+                        📤 Barang Keluar
+                    </button>
+                    <button onclick="handleScanAction('${barcodeId}', 'STOCK_SUPPORT', ${productInfo.qty || 0})" 
+                            style="background: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; min-width: 120px;">
+                        📦 Stok Pendukung
+                    </button>
+                </div>
             `;
-
-            // UPDATE STATUS barcode menjadi SCANNED
-            await supabaseClient
-                .from('barcode_tracking')
-                .update({
-                    status: 'SCANNED',
-                    scanned_at: new Date().toISOString(),
-                    scanned_by: currentUser
-                })
-                .eq('barcode_id', barcodeId);
-
-            // SIMPAN ke scan_history
-            await supabaseClient
-                .from('scan_history')
-                .insert({
-                    barcode_id: barcodeId,
-                    action: 'SCAN',
-                    qty: productInfo.qty || 0,
-                    scanned_by: currentUser
-                });
         }
 
         resultContainer.className = statusClass;
@@ -394,6 +376,89 @@ async function processScan(decodedText, decodedResult) {
 
     isScanning = false;
 }
+
+// ===== HANDLE AKSI SCAN =====
+async function handleScanAction(barcodeId, action, qty) {
+    if (!confirm(`Konfirmasi:\n\n📌 Barcode: ${barcodeId}\n📋 Aksi: ${action}\n📦 Qty: ${qty.toLocaleString()}\n\nLanjutkan?`)) return;
+    
+    if (!supabaseClient) await initSupabase();
+    
+    try {
+        // 1. Update status barcode jadi SCANNED
+        await supabaseClient
+            .from('barcode_tracking')
+            .update({
+                status: 'SCANNED',
+                scanned_at: new Date().toISOString(),
+                scanned_by: currentUser,
+                action: action
+            })
+            .eq('barcode_id', barcodeId);
+         // 2. ===== UPDATE STOK KE TABEL MASING-MASING =====
+        if (action === 'STOCK_IN') {
+            await supabaseClient.from('stock_in').insert({
+                barcode_id: barcodeId,
+                qty: qty,
+                user: currentUser,
+                created_at: new Date()
+            });
+        } else if (action === 'STOCK_OUT') {
+            await supabaseClient.from('stock_out').insert({
+                barcode_id: barcodeId,
+                qty: qty,
+                user: currentUser,
+                created_at: new Date()
+            });
+        } else if (action === 'STOCK_SUPPORT') {
+            await supabaseClient.from('stok_pendukung').insert({
+                barcode_id: barcodeId,
+                qty: qty,
+                user: currentUser,
+                created_at: new Date()
+            });
+        }
+
+        // 3. Simpan ke scan_history dengan aksi
+        await supabaseClient
+            .from('scan_history')
+            .insert({
+                barcode_id: barcodeId,
+                action: action,
+                qty: qty,
+                scanned_by: currentUser
+            });
+
+        // 4. Tampilkan pesan sukses
+        let actionName = '';
+        let actionColor = '';
+        if (action === 'STOCK_IN') { actionName = '📥 Barang Masuk'; actionColor = '#10b981'; }
+        else if (action === 'STOCK_OUT') { actionName = '📤 Barang Keluar'; actionColor = '#f59e0b'; }
+        else if (action === 'STOCK_SUPPORT') { actionName = '📦 Stok Pendukung'; actionColor = '#8b5cf6'; }
+        
+        alert(`✅ ${actionName} berhasil!\n\n📌 Barcode: ${barcodeId}\n📦 Qty: ${qty.toLocaleString()}\n👤 Oleh: ${currentUser}`);
+        
+        // Refresh hasil scan
+        document.getElementById('result-container').className = 'success';
+        document.getElementById('result-content').innerHTML = `
+            <div style="font-size: 18px; font-weight: bold; color: ${actionColor}; margin-bottom: 10px;">
+                ✅ ${actionName} BERHASIL!
+            </div>
+            <div class="result-value"><span class="result-label">Kode:</span> <strong>${barcodeId}</strong></div>
+            <div class="result-value"><span class="result-label">Qty:</span> <strong>${qty.toLocaleString()}</strong></div>
+            <div class="result-value"><span class="result-label">User:</span> ${currentUser}</div>
+            <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px; text-align: center; font-size: 14px;">
+                ✅ Data sudah tercatat di history scan
+            </div>
+        `;
+        
+    } catch (err) {
+        console.error('Action error:', err);
+        alert('❌ Gagal memproses aksi: ' + err.message);
+    }
+}
+
+// ===== EXPOSE FUNGSI =====
+window.handleScanAction = handleScanAction;
 
         // ===== PLAY BEEP =====
         function playBeep() {
