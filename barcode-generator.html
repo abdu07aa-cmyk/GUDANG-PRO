@@ -327,6 +327,29 @@
             border-top: 2px dashed #e2e8f0;
             margin: 20px 0;
         }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -364,6 +387,8 @@
 
     <div class="container" id="mainContent"></div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
         const FALLBACK_URL = "https://txvgclavcmhyxamxgvsi.supabase.co";
         const FALLBACK_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY";
@@ -389,6 +414,7 @@
             try {
                 const { data: { user } } = await supabaseClient.auth.getUser();
                 currentUser = user?.email || 'Unknown';
+                console.log('✅ User:', currentUser);
                 return true;
             } catch (err) {
                 console.error("Supabase error:", err);
@@ -396,24 +422,83 @@
             }
         }
         
+        // ===== TOAST NOTIFICATION =====
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => { toast.className = 'toast'; }, 3000);
+        }
+        
         // ============ FITUR GENERATE SERIAL UNIK (MANUAL) ============
         async function saveBarcodeBatch(batchName, barcodes) {
             if (!supabaseClient) await initSupabase();
+            
+            let successCount = 0;
+            let failCount = 0;
+            
             try {
-                await supabaseClient.from('qr_generate_history').insert({
+                // 1. Simpan ke qr_generate_history
+                const { error: historyError } = await supabaseClient.from('qr_generate_history').insert({
                     batch_name: batchName,
                     total_qr: barcodes.length,
                     barcodes: barcodes,
                     created_by: currentUser
                 });
-                for (const bc of barcodes) {
-                    await supabaseClient.from('barcode_tracking').upsert({
-                        barcode_id: bc.serial,
-                        product_info: bc,
-                        status: 'ACTIVE'
-                    }, { onConflict: 'barcode_id' });
+                if (historyError) {
+                    console.error('History error:', historyError);
+                    throw historyError;
                 }
-            } catch(err) { console.error('Save error:', err); }
+                console.log('✅ History saved');
+                
+                // 2. Simpan ke barcode_tracking SATU PER SATU
+                for (const bc of barcodes) {
+                    try {
+                        const productInfo = {
+                            pi: bc.pi || '-',
+                            brand: bc.brand || '-',
+                            jenis: bc.jenis || '-',
+                            paper: bc.paper || '-',
+                            size: bc.size || '-',
+                            qty: bc.qty || 0
+                        };
+                        
+                        const { error: trackingError } = await supabaseClient
+                            .from('barcode_tracking')
+                            .upsert({
+                                barcode_id: bc.serial,
+                                product_info: productInfo,
+                                status: 'ACTIVE',
+                                created_at: new Date().toISOString()
+                            }, { onConflict: 'barcode_id' });
+                        
+                        if (trackingError) {
+                            console.error('Error saving barcode:', bc.serial, trackingError);
+                            failCount++;
+                        } else {
+                            console.log('✅ Barcode saved:', bc.serial);
+                            successCount++;
+                        }
+                    } catch (err) {
+                        console.error('Error saving barcode:', bc.serial, err);
+                        failCount++;
+                    }
+                }
+                
+                console.log(`✅ ${successCount} barcode saved, ${failCount} failed`);
+                
+                if (successCount > 0) {
+                    showToast(`✅ ${successCount} barcode berhasil disimpan!`, 'success');
+                } else {
+                    showToast('❌ Gagal menyimpan barcode!', 'error');
+                }
+                
+                return true;
+            } catch(err) {
+                console.error('Save error:', err);
+                showToast('❌ Error: ' + err.message, 'error');
+                return false;
+            }
         }
         
         function generateSerialBarcodes() {
@@ -427,7 +512,7 @@
             const prefix = document.getElementById('input_prefix').value || 'BC';
             
             if (!pi || !brand || !jenis || !qtyPerBarcode || !jumlahBarcode) {
-                alert('Isi semua field yang diperlukan!');
+                showToast('Isi semua field yang diperlukan!', 'error');
                 return;
             }
             
@@ -448,7 +533,7 @@
             displayBarcodes(barcodes);
             const batchName = `${pi} - ${brand} - ${jenis} (${jumlahBarcode} pcs)`;
             saveBarcodeBatch(batchName, barcodes);
-            alert(`✅ Berhasil generate ${jumlahBarcode} barcode dengan serial number unik!\n\nContoh: ${barcodes[0].serial} s/d ${barcodes[barcodes.length-1].serial}`);
+            showToast(`✅ ${jumlahBarcode} barcode berhasil digenerate!`, 'success');
         }
         
         function displayBarcodes(barcodes) {
@@ -513,7 +598,7 @@
         }
         
         async function loadSelectedPi() {
-            if (selectedPiIds.length === 0) { alert('Pilih minimal 1 PI!'); return; }
+            if (selectedPiIds.length === 0) { showToast('Pilih minimal 1 PI!', 'error'); return; }
             document.getElementById('multiItemContainer').innerHTML = '<div class="loading">⏳ Memuat data...</div>';
             let allItemsCombined = [];
             for (const piId of selectedPiIds) {
@@ -554,9 +639,9 @@
         function addToBatchOld(piId, itemId) {
             const checkbox = document.querySelector(`.item-checkbox[data-id="${itemId}"][data-pi="${piId}"]`);
             const qtyInput = document.querySelector(`.qty-input[data-id="${itemId}"][data-pi="${piId}"]`);
-            if (!checkbox.checked) { alert('Centang item terlebih dahulu!'); return; }
+            if (!checkbox.checked) { showToast('Centang item terlebih dahulu!', 'error'); return; }
             const qty = parseInt(qtyInput.value);
-            if (!qty || qty <= 0) { alert('Masukkan Qty per QR yang valid!'); return; }
+            if (!qty || qty <= 0) { showToast('Masukkan Qty per QR yang valid!', 'error'); return; }
             batchList.push({
                 id: nextId++, itemId: itemId, pi_id: piId, no_pi: checkbox.dataset.no_pi,
                 brand: checkbox.dataset.brand, jenis: checkbox.dataset.jenis,
@@ -566,14 +651,15 @@
             updateBatchDisplay();
             checkbox.checked = false;
             qtyInput.value = '';
+            showToast(`✅ ${checkbox.dataset.brand} - ${checkbox.dataset.jenis} ditambahkan!`, 'success');
         }
         
         function updateBatchItem(id) {
             const qtyInput = document.getElementById(`qty_input_${id}`);
             const newQty = parseInt(qtyInput.value);
-            if (isNaN(newQty) || newQty <= 0) { alert('Masukkan Qty yang valid (minimal 1)'); return; }
+            if (isNaN(newQty) || newQty <= 0) { showToast('Masukkan Qty yang valid (minimal 1)', 'error'); return; }
             const batch = batchList.find(b => b.id == id);
-            if (batch) { batch.qty_per_qr = newQty; updateBatchDisplay(); alert('✅ Qty berhasil diupdate!'); }
+            if (batch) { batch.qty_per_qr = newQty; updateBatchDisplay(); showToast('✅ Qty berhasil diupdate!', 'success'); }
         }
         
         function deleteBatch(id) {
@@ -606,7 +692,7 @@
         }
         
         function generateOld() {
-            if (batchList.length === 0) { alert('Tidak ada batch untuk dicetak!'); return; }
+            if (batchList.length === 0) { showToast('Tidak ada batch untuk dicetak!', 'error'); return; }
             const container = document.getElementById('qrContainerOld');
             container.innerHTML = '<div class="qr-grid" id="qrGridOld"></div>';
             const grid = document.getElementById('qrGridOld');
@@ -667,13 +753,14 @@
         async function reprintBatch(id) {
             if (!supabaseClient) await initSupabase();
             const { data } = await supabaseClient.from('qr_generate_history').select('barcodes').eq('id', id).single();
-            if (data && data.barcodes) { displayBarcodes(data.barcodes); alert(`✅ Memuat ${data.barcodes.length} QR Code untuk dicetak ulang`); }
+            if (data && data.barcodes) { displayBarcodes(data.barcodes); showToast(`✅ Memuat ${data.barcodes.length} QR Code`, 'success'); }
         }
         
         async function deleteBatchHistory(id) {
             if (!confirm('Hapus riwayat ini?')) return;
             await supabaseClient.from('qr_generate_history').delete().eq('id', id);
             loadHistory();
+            showToast('✅ Riwayat dihapus', 'success');
         }
         
         function switchTab(tabId) {
@@ -763,7 +850,8 @@
                         </div>
                         <div class="summary-card no-print">
                             💡 <strong>Untuk stock yang tidak terdaftar di PI:</strong> Isi manual semua field, gunakan kode PI internal (contoh: STOCK-001).<br>
-                            ✅ Setiap QR Code memiliki <strong>Serial Number UNIK</strong> (BC001, BC002, dst).
+                            ✅ Setiap QR Code memiliki <strong>Serial Number UNIK</strong> (BC001, BC002, dst).<br>
+                            ✅ <strong>Otomatis terdaftar</strong> di database dan siap discan!
                         </div>
                         <div id="qrContainer" class="print-area" style="display:none"></div>
                         
