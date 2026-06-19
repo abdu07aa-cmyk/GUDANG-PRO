@@ -295,18 +295,20 @@
         function filterData() {
             const searchText = searchInput.value.toLowerCase();
             
-            let filtered = [...allData];
-            
-            if (searchText) {
-                filtered = filtered.filter(function(item) {
-                    return (item.kode || '').toLowerCase().indexOf(searchText) !== -1 ||
-                           (item.nama || '').toLowerCase().indexOf(searchText) !== -1 ||
-                           (item.size || '').toLowerCase().indexOf(searchText) !== -1 ||
-                           (item.lokasi || '').toLowerCase().indexOf(searchText) !== -1;
-                });
+            let filtered = [];
+            for (let i = 0; i < allData.length; i++) {
+                const item = allData[i];
+                const match = (item.kode || '').toLowerCase().indexOf(searchText) !== -1 ||
+                              (item.nama || '').toLowerCase().indexOf(searchText) !== -1 ||
+                              (item.size || '').toLowerCase().indexOf(searchText) !== -1 ||
+                              (item.lokasi || '').toLowerCase().indexOf(searchText) !== -1;
+                if (match) {
+                    filtered.push(item);
+                }
             }
             
             currentFilteredData = filtered;
+            currentPage = 1;
             updateTableDisplay();
             updatePagination();
         }
@@ -316,32 +318,32 @@
             const pageData = currentFilteredData.slice(start, start + rowsPerPage);
             
             let rows = '';
-            for (let i = 0; i < pageData.length; i++) {
-                const item = pageData[i];
-                const stokRendah = item.stok <= item.stok_minimum && item.stok_minimum > 0 ? 'stok-rendah' : '';
-                const minWarning = (item.stok <= item.stok_minimum && item.stok_minimum > 0) ? '<span class="stok-minimum-badge">⚠️ Menipis</span>' : '';
-                
-                rows += '<tr>' +
-                    '<td><b>' + (item.kode || '-') + '</b><tr>' +
-                    '<td>' + (item.nama || '-') + ' ' + minWarning + '</td>' +
-                    '<td>' + (item.size || '-') + '</td>' +
-                    '<td class="' + stokRendah + '"><b>' + item.stok + '</b> ' + (item.stok <= item.stok_minimum && item.stok_minimum > 0 ? '⚠️' : '') + '</td>' +
-                    '<td>' + (item.stok_minimum || 0) + '</td>' +
-                    '<td>' + (item.lokasi || '-') + '</td>' +
-                    '<td>' +
-                        '<button class="btn-success" onclick="showTransaksi(\'masuk\', ' + item.id + ')">+ Masuk</button>' +
-                        '<button class="btn-warning" onclick="showTransaksi(\'keluar\', ' + item.id + ')">- Keluar</button>' +
-                        '<button class="btn-info" onclick="showHistori(' + item.id + ')">📜 Histori</button>' +
-                    '</td>' +
-                    '<td>' +
-                        '<button class="btn-edit" onclick="editItem(' + item.id + ')">✏️</button>' +
-                        '<button class="btn-hapus" onclick="hapusItem(' + item.id + ')">🗑️</button>' +
-                    '</td>' +
-                    '<tr>';
-            }
-            
             if (pageData.length === 0) {
-                rows = '<tr><td colspan="8">Belum ada data. Klik "Tambah Material"</td></table>';
+                rows = '<tr><td colspan="8" style="text-align:center;padding:20px;">Belum ada data. Klik "Tambah Material"</td></tr>';
+            } else {
+                for (let i = 0; i < pageData.length; i++) {
+                    const item = pageData[i];
+                    const stokRendah = (item.stok <= item.stok_minimum && item.stok_minimum > 0) ? 'stok-rendah' : '';
+                    const minWarning = (item.stok <= item.stok_minimum && item.stok_minimum > 0) ? '<span class="stok-minimum-badge">⚠️ Menipis</span>' : '';
+                    
+                    rows += '<tr>' +
+                        '<td><b>' + (item.kode || '-') + '</b></td>' +
+                        '<td>' + (item.nama || '-') + ' ' + minWarning + '</td>' +
+                        '<td>' + (item.size || '-') + '</td>' +
+                        '<td class="' + stokRendah + '"><b>' + item.stok + '</b> ' + (item.stok <= item.stok_minimum && item.stok_minimum > 0 ? '⚠️' : '') + '</td>' +
+                        '<td>' + (item.stok_minimum || 0) + '</td>' +
+                        '<td>' + (item.lokasi || '-') + '</td>' +
+                        '<td>' +
+                            '<button class="btn-success" onclick="showTransaksi(\'masuk\', ' + item.id + ')">+ Masuk</button>' +
+                            '<button class="btn-warning" onclick="showTransaksi(\'keluar\', ' + item.id + ')">- Keluar</button>' +
+                            '<button class="btn-info" onclick="showHistori(' + item.id + ')">📜 Histori</button>' +
+                        '</td>' +
+                        '<td>' +
+                            '<button class="btn-edit" onclick="editItem(' + item.id + ')">✏️</button>' +
+                            '<button class="btn-hapus" onclick="hapusItem(' + item.id + ')">🗑️</button>' +
+                        '</td>' +
+                    '</tr>';
+                }
             }
             
             tbodyElement.innerHTML = rows;
@@ -478,12 +480,12 @@
         async function simpanItem() {
             const id = document.getElementById('editId').value;
             const data = {
-                kode: document.getElementById('kode').value,
+                kode: document.getElementById('kode').value || null,
                 nama: document.getElementById('nama').value,
-                size: document.getElementById('size').value,
+                size: document.getElementById('size').value || null,
                 stok: parseInt(document.getElementById('stok_awal').value) || 0,
                 stok_minimum: parseInt(document.getElementById('stok_minimum').value) || 0,
-                lokasi: document.getElementById('lokasi').value
+                lokasi: document.getElementById('lokasi').value || null
             };
             
             if (!data.nama) {
@@ -491,17 +493,15 @@
                 return;
             }
             
-            let error;
+            let result;
             if (id) {
-                const result = await sb.from('stok_pendukung').update(data).eq('id', id);
-                error = result.error;
+                result = await sb.from('stok_pendukung').update(data).eq('id', id);
             } else {
-                const result = await sb.from('stok_pendukung').insert([data]);
-                error = result.error;
+                result = await sb.from('stok_pendukung').insert([data]);
             }
             
-            if (error) {
-                alert('Gagal: ' + error.message);
+            if (result.error) {
+                alert('Gagal: ' + result.error.message);
             } else {
                 alert(id ? '✅ Material berhasil diupdate' : '✅ Material berhasil ditambahkan');
                 closeModal();
@@ -537,13 +537,15 @@
             const id = parseInt(document.getElementById('transaksiId').value);
             const jenis = document.getElementById('transaksiJenis').value;
             const qty = parseInt(document.getElementById('transaksiQty').value);
-            const keterangan = document.getElementById('transaksiKeterangan').value;
-            const userEmail = (await sb.auth.getUser()).data.user?.email || '-';
+            const keterangan = document.getElementById('transaksiKeterangan').value || '-';
             
             if (!qty || qty <= 0) {
                 alert('Masukkan jumlah yang valid!');
                 return;
             }
+            
+            const userResult = await sb.auth.getUser();
+            const userEmail = userResult.data?.user?.email || '-';
             
             const item = allData.find(i => i.id === id);
             if (!item) return;
@@ -572,7 +574,7 @@
                     stok_pendukung_id: id,
                     jenis: jenisHistori,
                     qty: qty,
-                    keterangan: keterangan || '-',
+                    keterangan: keterangan,
                     created_by: userEmail
                 }]);
                 
