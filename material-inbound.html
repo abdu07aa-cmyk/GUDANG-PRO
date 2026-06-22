@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        /* ====== STYLE SAMA SEPERTI SEBELUMNYA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -274,9 +273,9 @@
             <div class="menu-divider"></div>
 
             <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
-            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item active" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
             <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
-            <div class="menu-item active" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
             <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
             <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
 
@@ -449,7 +448,6 @@
         // Set today's date
         document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
 
-        // ========== SAVE INBOUND ==========
         async function saveInbound() {
             if (isSubmitting) return;
             
@@ -466,7 +464,6 @@
             const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value);
             const notes = document.getElementById('notes').value.trim();
 
-            // Validasi
             if (!no_po) { showMessage('❌ No PO wajib diisi!', 'error'); return; }
             if (!surat_jalan) { showMessage('❌ Surat Jalan wajib diisi!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
@@ -475,7 +472,6 @@
             if (!qty_sheet || qty_sheet < 1) { showMessage('❌ Qty Sheet harus lebih dari 0!', 'error'); return; }
             if (!up_per_sheet || up_per_sheet < 1) { showMessage('❌ Up per Sheet harus lebih dari 0!', 'error'); return; }
 
-            // Cek duplikat
             const { data: existing } = await sb
                 .from('material_inbound')
                 .select('id')
@@ -539,7 +535,6 @@
             document.getElementById('no_po').focus();
         }
 
-        // ========== LOAD DATA ==========
         async function loadData() {
             const container = document.getElementById('materialList');
             container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
@@ -605,15 +600,12 @@
                         <td><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
                         <td style="font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
                         <td style="min-width:200px;">
-                            <!-- Tombol Detail -->
                             <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
                             
-                            <!-- ✅ TOMBOL BERDASARKAN STATUS (DIPERBAIKI) -->
                             ${item.status === 'DITERIMA' ? 
                                 `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬 QC</button>` : ''}
                             
                             ${item.status === 'QC1' ? `
-                                <!-- ✅ HANYA DIECUT (QC2 DIHAPUS) -->
                                 <button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>
                             ` : ''}
                             
@@ -625,7 +617,6 @@
                                 <button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭 Kirim</button>
                             ` : ''}
                             
-                            <!-- Tombol Hapus -->
                             <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')">🗑️</button>
                         </td>
                     </tr>
@@ -636,7 +627,7 @@
             container.innerHTML = html;
         }
 
-        // ========== TOMBOL AKSI ==========
+        // ========== ✅ FUNGSI AKSI DENGAN PARAMETER ==========
         function goToQC(id) {
             window.location.href = `qc-inspection.html?material_id=${id}&qc=1`;
         }
@@ -653,7 +644,6 @@
             window.location.href = `production-send.html?material_id=${id}`;
         }
 
-        // ========== DETAIL ==========
         async function showDetail(id) {
             const { data: item } = await sb
                 .from('material_inbound')
@@ -703,7 +693,6 @@
             document.getElementById('detailModal').style.display = 'flex';
         }
 
-        // ========== DELETE ==========
         async function deleteMaterial(id) {
             if (!confirm('Yakin ingin menghapus material ini?')) return;
             const { error } = await sb.from('material_inbound').delete().eq('id', id);
@@ -719,7 +708,6 @@
             document.getElementById(id).style.display = 'none';
         }
 
-        // ========== NAVIGASI ==========
         function goToMenu(menu) {
             const files = {
                 dashboard: 'dashboard.html',
