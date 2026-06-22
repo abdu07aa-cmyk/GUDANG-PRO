@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
+        /* ====== STYLE SAMA SEPERTI SEBELUMNYA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -255,107 +256,42 @@
     </style>
 </head>
 <body>
-     <div class="sidebar" id="sidebar">
+        <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
         <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard">
-                <span class="icon">📊</span>
-                <span class="text">Dashboard</span>
-            </div>
-            <div class="menu-item" data-menu="pi-input">
-                <span class="icon">📝</span>
-                <span class="text">Input PI</span>
-            </div>
-            <div class="menu-item" data-menu="stock-in">
-                <span class="icon">📥</span>
-                <span class="text">Barang Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="stock-out">
-                <span class="icon">📤</span>
-                <span class="text">Barang Keluar</span>
-            </div>
-            <div class="menu-item" data-menu="stock-report">
-                <span class="icon">📋</span>
-                <span class="text">Stok Gudang</span>
-            </div>
-            <div class="menu-item" data-menu="stok-pendukung">
-                <span class="icon">📦</span>
-                <span class="text">Stok Pendukung</span>
-            </div>
-            <div class="menu-item" data-menu="barcode-generator">
-                <span class="icon">🏷️</span>
-                <span class="text">QR Code</span>
-            </div>
-            <div class="menu-item" data-menu="scan-barcode">
-                <span class="icon">📷</span>
-                <span class="text">Scan QR</span>
-            </div>
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
             <div class="menu-divider"></div>
 
-            <!-- ✅ MENU TRACKING MATERIAL (TAMBAHAN) -->
-            <div class="menu-item" data-menu="material-tracking">
-                <span class="icon">📊</span>
-                <span class="text">Tracking Material</span>
-            </div>
-
-            <div class="menu-item" data-menu="material-inbound">
-                <span class="icon">📥</span>
-                <span class="text">Material Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="qc-inspection">
-                <span class="icon">🔬</span>
-                <span class="text">QC Inspection</span>
-            </div>
-            <div class="menu-item active" data-menu="diecut-process">
-                <span class="icon">⚙️</span>
-                <span class="text">Proses Diecut</span>
-            </div>
-            <div class="menu-item" data-menu="production-send">
-                <span class="icon">🏭</span>
-                <span class="text">Kirim Produksi</span>
-            </div>
-            <div class="menu-item" data-menu="ng-report">
-                <span class="icon">📋</span>
-                <span class="text">Laporan NG</span>
-            </div>
+            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item active" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
 
             <div class="menu-divider"></div>
-
-            <div class="menu-item" data-menu="executive">
-                <span class="icon">📈</span>
-                <span class="text">Laporan Eksekutif</span>
-            </div>
-
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item menu-admin-only" data-menu="manage-users">
-                <span class="icon">👥</span>
-                <span class="text">Kelola User</span>
-            </div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
-                <span class="icon">📜</span>
-                <span class="text">Log Aktivitas</span>
-            </div>
-
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item" data-menu="export">
-                <span class="icon">📎</span>
-                <span class="text">Export Data</span>
-            </div>
-
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item" id="logoutMenu">
-                <span class="icon">🚪</span>
-                <span class="text">Logout</span>
-            </div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
     </div>
+
     <div class="overlay" id="overlay"></div>
 
     <div class="header">
@@ -473,7 +409,8 @@
     </div>
 
     <div id="toast" class="toast"></div>
-        <script>
+
+    <script>
         let allData = [];
         let isSubmitting = false;
 
@@ -671,13 +608,13 @@
                             <!-- Tombol Detail -->
                             <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
                             
-                            <!-- Tombol berdasarkan status -->
+                            <!-- ✅ TOMBOL BERDASARKAN STATUS (DIPERBAIKI) -->
                             ${item.status === 'DITERIMA' ? 
                                 `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬 QC</button>` : ''}
                             
                             ${item.status === 'QC1' ? `
+                                <!-- ✅ HANYA DIECUT (QC2 DIHAPUS) -->
                                 <button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>
-                                <button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬 QC2</button>
                             ` : ''}
                             
                             ${item.status === 'DIECUT' ? `
@@ -783,29 +720,29 @@
         }
 
         // ========== NAVIGASI ==========
- function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        'material-tracking': 'material-tracking.html',
-        'material-inbound': 'material-inbound.html',
-        'qc-inspection': 'qc-inspection.html',
-        'diecut-process': 'diecut-process.html',
-        'production-send': 'production-send.html',
-        'ng-report': 'ng-report.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
 
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
