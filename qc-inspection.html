@@ -117,8 +117,6 @@
         .btn-secondary:hover { background: #cbd5e1; }
         .btn-back { background: #64748b; color: white; }
         .btn-back:hover { background: #475569; }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
 
         .alert {
             padding: 12px 16px;
@@ -188,6 +186,8 @@
         .material-info-grid .label { color: #64748b; }
         .material-info-grid .value { font-weight: 500; color: #1e293b; }
 
+        .small-text { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
+
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr; }
@@ -196,103 +196,39 @@
     </style>
 </head>
 <body>
-      <div class="sidebar" id="sidebar">
+        <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
         <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard">
-                <span class="icon">📊</span>
-                <span class="text">Dashboard</span>
-            </div>
-            <div class="menu-item" data-menu="pi-input">
-                <span class="icon">📝</span>
-                <span class="text">Input PI</span>
-            </div>
-            <div class="menu-item" data-menu="stock-in">
-                <span class="icon">📥</span>
-                <span class="text">Barang Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="stock-out">
-                <span class="icon">📤</span>
-                <span class="text">Barang Keluar</span>
-            </div>
-            <div class="menu-item" data-menu="stock-report">
-                <span class="icon">📋</span>
-                <span class="text">Stok Gudang</span>
-            </div>
-            <div class="menu-item" data-menu="stok-pendukung">
-                <span class="icon">📦</span>
-                <span class="text">Stok Pendukung</span>
-            </div>
-            <div class="menu-item" data-menu="barcode-generator">
-                <span class="icon">🏷️</span>
-                <span class="text">QR Code</span>
-            </div>
-            <div class="menu-item" data-menu="scan-barcode">
-                <span class="icon">📷</span>
-                <span class="text">Scan QR</span>
-            </div>
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
             <div class="menu-divider"></div>
 
-            <div class="menu-item" data-menu="material-tracking">
-                <span class="icon">📊</span>
-                <span class="text">Tracking Material</span>
-            </div>
-            <div class="menu-item" data-menu="material-inbound">
-                <span class="icon">📥</span>
-                <span class="text">Material Masuk</span>
-            </div>
-            <div class="menu-item active" data-menu="qc-inspection">
-                <span class="icon">🔬</span>
-                <span class="text">QC Inspection</span>
-            </div>
-            <div class="menu-item" data-menu="diecut-process">
-                <span class="icon">⚙️</span>
-                <span class="text">Proses Diecut</span>
-            </div>
-            <div class="menu-item" data-menu="production-send">
-                <span class="icon">🏭</span>
-                <span class="text">Kirim Produksi</span>
-            </div>
-            <div class="menu-item" data-menu="ng-report">
-                <span class="icon">📋</span>
-                <span class="text">Laporan NG</span>
-            </div>
+            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item active" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
 
             <div class="menu-divider"></div>
-
-            <div class="menu-item" data-menu="executive">
-                <span class="icon">📈</span>
-                <span class="text">Laporan Eksekutif</span>
-            </div>
-
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item menu-admin-only" data-menu="manage-users">
-                <span class="icon">👥</span>
-                <span class="text">Kelola User</span>
-            </div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
-                <span class="icon">📜</span>
-                <span class="text">Log Aktivitas</span>
-            </div>
-
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item" data-menu="export">
-                <span class="icon">📎</span>
-                <span class="text">Export Data</span>
-            </div>
-
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item" id="logoutMenu">
-                <span class="icon">🚪</span>
-                <span class="text">Logout</span>
-            </div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
     </div>
 
@@ -322,6 +258,7 @@
                     <div><span class="label">Qty Sheet:</span> <span class="value" id="infoSheet">-</span></div>
                     <div><span class="label">Up/Sheet:</span> <span class="value" id="infoUp">-</span></div>
                     <div><span class="label">Total Pcs:</span> <span class="value" id="infoPcs">-</span></div>
+                    <div><span class="label">Status:</span> <span class="value" id="infoStatus">-</span></div>
                 </div>
             </div>
 
@@ -344,6 +281,7 @@
                     <div class="form-group">
                         <label>Qty OK <span class="required">*</span></label>
                         <input type="number" id="qty_ok" placeholder="Jumlah OK" min="0" required>
+                        <span class="small-text">📌 Maksimal: <span id="maxQtyOk">-</span></span>
                     </div>
                     <div class="form-group">
                         <label>Qty NG <span class="required">*</span></label>
@@ -411,6 +349,7 @@
         let currentMaterialId = null;
         let currentQcNumber = 1;
         let isSubmitting = false;
+        let materialData = null;
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -456,6 +395,9 @@
             };
         }
 
+        // ============================================================
+        // ✅ LOAD MATERIAL DENGAN VALIDASI LENGKAP
+        // ============================================================
         async function loadMaterial() {
             const params = getUrlParams();
             if (!params.material_id) {
@@ -490,6 +432,46 @@
                 return;
             }
 
+            materialData = material;
+
+            // ✅ VALIDASI 1: Status material harus sesuai
+            const statusMap = {
+                'DITERIMA': '📥 Diterima',
+                'QC1': '🔬 QC #1',
+                'DIECUT': '⚙️ Diecut',
+                'QC2': '🔬 QC #2',
+                'KIRIM': '🏭 Kirim Produksi'
+            };
+
+            if (currentQcNumber === 1 && material.status !== 'DITERIMA') {
+                showMessage(`⚠️ Material status: ${statusMap[material.status] || material.status}. QC #1 hanya untuk status DITERIMA!`, 'warning');
+                document.getElementById('qcBadge').innerText = `⚠️ Status: ${material.status}`;
+                document.getElementById('qcBadge').style.background = '#fee2e2';
+                return;
+            }
+
+            if (currentQcNumber === 2 && material.status !== 'DIECUT') {
+                showMessage(`⚠️ Material status: ${statusMap[material.status] || material.status}. QC #2 hanya untuk status DIECUT!`, 'warning');
+                document.getElementById('qcBadge').innerText = `⚠️ Status: ${material.status}`;
+                document.getElementById('qcBadge').style.background = '#fee2e2';
+                return;
+            }
+
+            // ✅ VALIDASI 2: QC #1 harus sudah ada sebelum QC #2
+            if (currentQcNumber === 2) {
+                const { data: qc1Exists } = await sb
+                    .from('qc_inspection')
+                    .select('id')
+                    .eq('material_inbound_id', currentMaterialId)
+                    .eq('qc_number', 1)
+                    .limit(1);
+
+                if (!qc1Exists || qc1Exists.length === 0) {
+                    showMessage('❌ Harus melakukan QC #1 terlebih dahulu sebelum QC #2!', 'error');
+                    return;
+                }
+            }
+
             // Tampilkan info material
             document.getElementById('materialInfo').style.display = 'block';
             document.getElementById('infoNoPo').innerText = material.no_po || '-';
@@ -498,6 +480,14 @@
             document.getElementById('infoSheet').innerText = material.qty_sheet || 0;
             document.getElementById('infoUp').innerText = material.up_per_sheet || 0;
             document.getElementById('infoPcs').innerText = (material.qty_sheet * material.up_per_sheet).toLocaleString();
+            document.getElementById('infoStatus').innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[material.status] || material.status}</span>`;
+
+            // ✅ Set max qty_ok
+            const maxOk = material.qty_sheet * material.up_per_sheet;
+            document.getElementById('maxQtyOk').innerText = maxOk.toLocaleString();
+
+            document.getElementById('qcBadge').innerText = `✅ ${material.no_po} - ${material.brand}`;
+            document.getElementById('qcBadge').style.background = '#d1fae5';
 
             // Load history QC
             loadHistory(currentMaterialId);
@@ -555,6 +545,9 @@
             container.innerHTML = html;
         }
 
+        // ============================================================
+        // ✅ SAVE QC DENGAN VALIDASI LENGKAP
+        // ============================================================
         async function saveQC() {
             if (isSubmitting) return;
 
@@ -569,7 +562,7 @@
             const alasan_ng = document.getElementById('alasan_ng').value;
             const notes = document.getElementById('notes').value.trim();
 
-            // Validasi
+            // Validasi dasar
             if (!materialId) { showMessage('❌ Material tidak valid!', 'error'); return; }
             if (!tanggal_qc) { showMessage('❌ Tanggal QC wajib diisi!', 'error'); return; }
             if (!inspector) { showMessage('❌ Nama Inspector wajib diisi!', 'error'); return; }
@@ -577,6 +570,28 @@
             if (isNaN(qty_ng) || qty_ng < 0) { showMessage('❌ Qty NG harus lebih dari 0!', 'error'); return; }
             if (!hasil) { showMessage('❌ Hasil QC wajib dipilih!', 'error'); return; }
             if (hasil === 'NG' && !alasan_ng) { showMessage('❌ Alasan NG wajib diisi!', 'error'); return; }
+
+            // ✅ VALIDASI 3: Qty OK tidak boleh melebihi target
+            if (!materialData) {
+                const { data: material } = await sb
+                    .from('material_inbound')
+                    .select('qty_sheet, up_per_sheet')
+                    .eq('id', materialId)
+                    .single();
+                materialData = material;
+            }
+
+            const targetPcs = materialData.qty_sheet * materialData.up_per_sheet;
+            if (qty_ok > targetPcs) {
+                showMessage(`❌ Qty OK (${qty_ok}) melebihi target (${targetPcs})!`, 'error');
+                return;
+            }
+
+            // ✅ VALIDASI 4: OK + NG + Rework tidak boleh melebihi target
+            if ((qty_ok + qty_ng + qty_rework) > targetPcs) {
+                showMessage(`❌ Total OK + NG + Rework (${qty_ok + qty_ng + qty_rework}) melebihi target (${targetPcs})!`, 'error');
+                return;
+            }
 
             isSubmitting = true;
 
@@ -601,18 +616,19 @@
 
                 if (error) throw error;
 
-                // Jika QC #1 dan hasil OK/REWORK, update status ke QC1
-                // Jika QC #2 dan hasil OK, update status ke KIRIM atau QC2
+                // ✅ UPDATE STATUS YANG TEPAT
                 let newStatus = '';
                 if (qcNumber === 1) {
                     if (hasil === 'OK' || hasil === 'REWORK') {
-                        newStatus = 'QC1';
+                        newStatus = 'QC1';  // Lanjut ke Diecut
+                    } else if (hasil === 'NG') {
+                        newStatus = 'DITERIMA';  // Kembali ke awal
                     }
                 } else if (qcNumber === 2) {
                     if (hasil === 'OK') {
-                        newStatus = 'KIRIM';
-                    } else if (hasil === 'NG') {
-                        newStatus = 'QC2';
+                        newStatus = 'KIRIM';  // Siap kirim produksi
+                    } else if (hasil === 'NG' || hasil === 'REWORK') {
+                        newStatus = 'QC2';  // Tetap di QC2
                     }
                 }
 
@@ -633,16 +649,13 @@
                     });
                 }
 
-                showMessage(`✅ QC #${qcNumber} berhasil disimpan! Status: ${newStatus || 'Tetap'}`, 'success');
+                const statusText = newStatus ? `Status: ${newStatus}` : 'Status Tetap';
+                showMessage(`✅ QC #${qcNumber} berhasil disimpan! ${statusText}`, 'success');
                 showToast(`✅ QC #${qcNumber} berhasil!`, 'success');
 
-                // Reset form
                 resetForm();
-
-                // Reload history
                 loadHistory(materialId);
 
-                // Log aktivitas
                 try {
                     await addLog('QC INSPECTION', `${user?.email} melakukan QC #${qcNumber} untuk material ID ${materialId}`);
                 } catch(e) { console.log('Log error:', e); }
