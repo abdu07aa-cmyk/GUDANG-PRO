@@ -574,87 +574,80 @@
             container.innerHTML = html;
         }
 
-        async function saveDiecut() {
-            if (isSubmitting) return;
+       async function saveDiecut() {
+    if (isSubmitting) return;
 
-            const materialId = document.getElementById('materialId').value;
-            const tanggal_diecut = document.getElementById('tanggal_diecut').value;
-            const mesin = document.getElementById('mesin').value.trim();
-            const operator = document.getElementById('operator').value.trim();
-            const qty_sheet_in = parseInt(document.getElementById('qty_sheet_in').value);
-            const qty_pcs_out = parseInt(document.getElementById('qty_pcs_out').value);
-            const qty_ng_diecut = parseInt(document.getElementById('qty_ng_diecut').value) || 0;
-            const notes = document.getElementById('notes').value.trim();
+    const materialId = document.getElementById('materialId').value;
+    const tanggal_diecut = document.getElementById('tanggal_diecut').value;
+    const mesin = document.getElementById('mesin').value.trim();
+    const operator = document.getElementById('operator').value.trim();
+    const qty_sheet_in = parseInt(document.getElementById('qty_sheet_in').value);
+    const qty_pcs_out = parseInt(document.getElementById('qty_pcs_out').value);
+    const qty_ng_diecut = parseInt(document.getElementById('qty_ng_diecut').value) || 0;
+    const notes = document.getElementById('notes').value.trim();
 
-            // Validasi
-            if (!materialId) { showMessage('❌ Material tidak valid!', 'error'); return; }
-            if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
-            if (!operator) { showMessage('❌ Nama Operator wajib diisi!', 'error'); return; }
-            if (!qty_sheet_in || qty_sheet_in < 1) { showMessage('❌ Qty Sheet In harus lebih dari 0!', 'error'); return; }
-            if (!qty_pcs_out || qty_pcs_out < 1) { showMessage('❌ Qty Pcs Out harus lebih dari 0!', 'error'); return; }
-            if (qty_ng_diecut > qty_pcs_out) { showMessage('❌ NG tidak boleh lebih dari Pcs Out!', 'error'); return; }
+    if (!materialId) { showMessage('❌ Material tidak valid!', 'error'); return; }
+    if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
+    if (!operator) { showMessage('❌ Nama Operator wajib diisi!', 'error'); return; }
+    if (!qty_sheet_in || qty_sheet_in < 1) { showMessage('❌ Qty Sheet In harus lebih dari 0!', 'error'); return; }
+    if (!qty_pcs_out || qty_pcs_out < 1) { showMessage('❌ Qty Pcs Out harus lebih dari 0!', 'error'); return; }
+    if (qty_ng_diecut > qty_pcs_out) { showMessage('❌ NG tidak boleh lebih dari Pcs Out!', 'error'); return; }
 
-            const { pcsOk, yieldPercent } = calculateYield();
+    const { pcsOk, yieldPercent } = calculateYield();
 
-            isSubmitting = true;
+    isSubmitting = true;
 
-            try {
-                const { data: { user } } = await sb.auth.getUser();
+    try {
+        const { data: { user } } = await sb.auth.getUser();
 
-                const data = {
-                    material_inbound_id: materialId,
-                    tanggal_diecut,
-                    mesin: mesin || null,
-                    operator,
-                    qty_sheet_in,
-                    qty_pcs_out,
-                    qty_ng_diecut,
-                    qty_pcs_ok: pcsOk,
-                    yield_percent: yieldPercent,
-                    notes: notes || null,
-                    created_by: user?.email || 'Unknown'
-                };
+        // ✅ TIDAK ADA qty_pcs_ok (database akan generate otomatis)
+        const data = {
+            material_inbound_id: materialId,
+            tanggal_diecut,
+            mesin: mesin || null,
+            operator,
+            qty_sheet_in,
+            qty_pcs_out,
+            qty_ng_diecut,
+            yield_percent: yieldPercent,
+            notes: notes || null,
+            created_by: user?.email || 'Unknown'
+        };
 
-                const { error } = await sb.from('diecut_process').insert([data]);
+        const { error } = await sb.from('diecut_process').insert([data]);
 
-                if (error) throw error;
+        if (error) throw error;
 
-                // Update status material ke DIECUT
-                await sb.from('material_inbound').update({ status: 'DIECUT' }).eq('id', materialId);
+        await sb.from('material_inbound').update({ status: 'DIECUT' }).eq('id', materialId);
 
-                // Jika ada NG diecut, simpan ke ng_tracking
-                if (qty_ng_diecut > 0) {
-                    await sb.from('ng_tracking').insert({
-                        material_inbound_id: materialId,
-                        proses: 'DIECUT',
-                        qty_ng: qty_ng_diecut,
-                        jenis_ng: 'LAINNYA',
-                        deskripsi: notes || 'NG dari proses diecut',
-                        created_by: user?.email || 'Unknown'
-                    });
-                }
-
-                showMessage(`✅ Proses Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
-                showToast(`✅ Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
-
-                // Reset form
-                resetForm();
-
-                // Reload history
-                loadHistory(materialId);
-
-                // Log aktivitas
-                try {
-                    await addLog('DIECUT', `${user?.email} melakukan diecut untuk material ID ${materialId}`);
-                } catch(e) {}
-
-            } catch (err) {
-                showMessage('❌ Gagal menyimpan: ' + err.message, 'error');
-                showToast('❌ Gagal: ' + err.message, 'error');
-            } finally {
-                isSubmitting = false;
-            }
+        if (qty_ng_diecut > 0) {
+            await sb.from('ng_tracking').insert({
+                material_inbound_id: materialId,
+                proses: 'DIECUT',
+                qty_ng: qty_ng_diecut,
+                jenis_ng: 'LAINNYA',
+                deskripsi: notes || 'NG dari proses diecut',
+                created_by: user?.email || 'Unknown'
+            });
         }
+
+        showMessage(`✅ Proses Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
+        showToast(`✅ Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
+
+        resetForm();
+        loadHistory(materialId);
+
+        try {
+            await addLog('DIECUT', `${user?.email} melakukan diecut untuk material ID ${materialId}`);
+        } catch(e) {}
+
+    } catch (err) {
+        showMessage('❌ Gagal menyimpan: ' + err.message, 'error');
+        showToast('❌ Gagal: ' + err.message, 'error');
+    } finally {
+        isSubmitting = false;
+    }
+}
 
         function resetForm() {
             document.getElementById('tanggal_diecut').value = new Date().toISOString().split('T')[0];
