@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
+        /* ====== STYLE SAMA SEPERTI SEBELUMNYA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -100,7 +101,6 @@
         .form-group textarea { min-height: 60px; resize: vertical; }
         .form-group input:read-only { background: #f1f5f9; cursor: not-allowed; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
         .btn {
             padding: 10px 20px;
@@ -199,111 +199,44 @@
 
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
-            .form-row-3 { grid-template-columns: 1fr; }
             .material-info-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="sidebar" id="sidebar">
+        <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 GUDANG PRO</h3>
             <p>Manajemen Inventory</p>
         </div>
         <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard">
-                <span class="icon">📊</span>
-                <span class="text">Dashboard</span>
-            </div>
-            <div class="menu-item" data-menu="pi-input">
-                <span class="icon">📝</span>
-                <span class="text">Input PI</span>
-            </div>
-            <div class="menu-item" data-menu="stock-in">
-                <span class="icon">📥</span>
-                <span class="text">Barang Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="stock-out">
-                <span class="icon">📤</span>
-                <span class="text">Barang Keluar</span>
-            </div>
-            <div class="menu-item" data-menu="stock-report">
-                <span class="icon">📋</span>
-                <span class="text">Stok Gudang</span>
-            </div>
-            <div class="menu-item" data-menu="stok-pendukung">
-                <span class="icon">📦</span>
-                <span class="text">Stok Pendukung</span>
-            </div>
-            <div class="menu-item" data-menu="barcode-generator">
-                <span class="icon">🏷️</span>
-                <span class="text">QR Code</span>
-            </div>
-            <div class="menu-item" data-menu="scan-barcode">
-                <span class="icon">📷</span>
-                <span class="text">Scan QR</span>
-            </div>
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
             <div class="menu-divider"></div>
 
-            <!-- ✅ MENU TRACKING MATERIAL (TAMBAHAN) -->
-            <div class="menu-item" data-menu="material-tracking">
-                <span class="icon">📊</span>
-                <span class="text">Tracking Material</span>
-            </div>
-
-            <div class="menu-item" data-menu="material-inbound">
-                <span class="icon">📥</span>
-                <span class="text">Material Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="qc-inspection">
-                <span class="icon">🔬</span>
-                <span class="text">QC Inspection</span>
-            </div>
-            <div class="menu-item active" data-menu="diecut-process">
-                <span class="icon">⚙️</span>
-                <span class="text">Proses Diecut</span>
-            </div>
-            <div class="menu-item" data-menu="production-send">
-                <span class="icon">🏭</span>
-                <span class="text">Kirim Produksi</span>
-            </div>
-            <div class="menu-item" data-menu="ng-report">
-                <span class="icon">📋</span>
-                <span class="text">Laporan NG</span>
-            </div>
+            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item active" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
 
             <div class="menu-divider"></div>
-
-            <div class="menu-item" data-menu="executive">
-                <span class="icon">📈</span>
-                <span class="text">Laporan Eksekutif</span>
-            </div>
-
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item menu-admin-only" data-menu="manage-users">
-                <span class="icon">👥</span>
-                <span class="text">Kelola User</span>
-            </div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
-                <span class="icon">📜</span>
-                <span class="text">Log Aktivitas</span>
-            </div>
-
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item" data-menu="export">
-                <span class="icon">📎</span>
-                <span class="text">Export Data</span>
-            </div>
-
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
             <div class="menu-divider"></div>
-
-            <div class="menu-item" id="logoutMenu">
-                <span class="icon">🚪</span>
-                <span class="text">Logout</span>
-            </div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
         </div>
     </div>
 
@@ -330,9 +263,13 @@
                     <div><span class="label">No PO:</span> <span class="value" id="infoNoPo">-</span></div>
                     <div><span class="label">Brand:</span> <span class="value" id="infoBrand">-</span></div>
                     <div><span class="label">Jenis:</span> <span class="value" id="infoJenis">-</span></div>
-                    <div><span class="label">Qty Sheet:</span> <span class="value" id="infoSheet">-</span></div>
+                    <div><span class="label">Qty Sheet (Masuk):</span> <span class="value" id="infoSheet">-</span></div>
                     <div><span class="label">Up/Sheet:</span> <span class="value" id="infoUp">-</span></div>
                     <div><span class="label">Target Pcs:</span> <span class="value" id="infoTarget">-</span></div>
+                    <!-- ✅ INFO QC #1 -->
+                    <div><span class="label">QC #1 OK (Sheet):</span> <span class="value" id="infoQc1Ok" style="color:#10b981;font-weight:bold;">-</span></div>
+                    <div><span class="label">QC #1 NG (Sheet):</span> <span class="value" id="infoQc1Ng" style="color:#ef4444;font-weight:bold;">-</span></div>
+                    <div><span class="label">Sheet Diecut:</span> <span class="value" id="infoSheetDiecut" style="color:#3b82f6;font-weight:bold;">-</span></div>
                 </div>
             </div>
 
@@ -355,17 +292,17 @@
                     <input type="text" id="operator" placeholder="Nama Operator" required>
                 </div>
 
-                <!-- AUTO CALCULATE - READONLY -->
+                <!-- ✅ AUTO DARI QC #1 OK -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Qty Sheet In <span class="required">*</span></label>
-                        <input type="number" id="qty_sheet_in" readonly style="background:#f1f5f9; font-weight:bold;">
-                        <span class="small-text">📌 Otomatis dari data material</span>
+                        <label>Qty Sheet In (Dari QC #1 OK) <span class="required">*</span></label>
+                        <input type="number" id="qty_sheet_in" readonly style="background:#f1f5f9; font-weight:bold; color:#3b82f6;">
+                        <span class="small-text">📌 Otomatis dari hasil QC #1 (Qty OK)</span>
                     </div>
                     <div class="form-group">
                         <label>Qty Pcs Out (Target) <span class="required">*</span></label>
                         <input type="number" id="qty_pcs_out" readonly style="background:#f1f5f9; font-weight:bold; color:#10b981;">
-                        <span class="small-text">📌 Otomatis: Sheet × Up per Sheet</span>
+                        <span class="small-text">📌 Otomatis: Sheet OK × Up per Sheet</span>
                     </div>
                 </div>
 
@@ -498,6 +435,24 @@
                 return;
             }
 
+            // ✅ AMBIL DATA QC #1 (untuk dapat qty_ok)
+            const { data: qc1Data, error: qc1Error } = await sb
+                .from('qc_inspection')
+                .select('*')
+                .eq('material_inbound_id', currentMaterialId)
+                .eq('qc_number', 1)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (qc1Error || !qc1Data || qc1Data.length === 0) {
+                showMessage('❌ Data QC #1 tidak ditemukan! Material harus melalui QC #1 dulu.', 'error');
+                return;
+            }
+
+            const qc1 = qc1Data[0];
+            const qtySheetOk = qc1.qty_ok;  // ← INI YANG DIPAKAI UNTUK DIECUT
+            const totalPcs = qtySheetOk * material.up_per_sheet;
+
             // Tampilkan info material
             document.getElementById('materialInfo').style.display = 'block';
             document.getElementById('infoNoPo').innerText = material.no_po || '-';
@@ -506,14 +461,18 @@
             document.getElementById('infoSheet').innerText = material.qty_sheet || 0;
             document.getElementById('infoUp').innerText = material.up_per_sheet || 0;
             document.getElementById('infoTarget').innerText = (material.qty_sheet * material.up_per_sheet).toLocaleString();
+            
+            // ✅ TAMPILKAN INFO QC #1
+            document.getElementById('infoQc1Ok').innerText = qtySheetOk;
+            document.getElementById('infoQc1Ng').innerText = qc1.qty_ng || 0;
+            document.getElementById('infoSheetDiecut').innerText = qtySheetOk;
 
             document.getElementById('statusBadge').innerText = `✅ ${material.no_po} - ${material.brand}`;
             document.getElementById('statusBadge').style.background = '#d1fae5';
 
-            // ✅ AUTO FILL qty_sheet_in dan qty_pcs_out
-            const totalPcs = material.qty_sheet * material.up_per_sheet;
-            document.getElementById('qty_sheet_in').value = material.qty_sheet || 0;
-            document.getElementById('qty_pcs_out').value = totalPcs || 0;
+            // ✅ AUTO FILL dari QC #1 OK (bukan dari material_inbound)
+            document.getElementById('qty_sheet_in').value = qtySheetOk;
+            document.getElementById('qty_pcs_out').value = totalPcs;
 
             // Load history diecut
             loadHistory(currentMaterialId);
@@ -666,32 +625,29 @@
         }
 
         // ============ NAVIGASI ============
-function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        
-        // ✅ TAMBAHKAN INI
-        'material-tracking': 'material-tracking.html',
-        
-        'material-inbound': 'material-inbound.html',
-        'qc-inspection': 'qc-inspection.html',
-        'diecut-process': 'diecut-process.html',
-        'production-send': 'production-send.html',
-        'ng-report': 'ng-report.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
 
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
