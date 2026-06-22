@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Proses Produksi - Gudang Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .form-grid input, .form-grid select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 100%;
+        }
+        .form-grid label {
+            font-weight: 600;
+            font-size: 11px;
+            color: #64748b;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .form-group-full { grid-column: 1 / -1; }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-info { background: #8b5cf6; color: white; }
+        .btn-info:hover { background: #7c3aed; }
+        .btn-sm { padding: 4px 8px; font-size: 11px; }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; font-weight: 600; color: #64748b; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+        td { white-space: nowrap; }
+
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-masuk { background: #dbeafe; color: #1e40af; }
+        .status-qc-lembar { background: #fef3c7; color: #92400e; }
+        .status-diecut { background: #d1fae5; color: #065f46; }
+        .status-qc-pcs { background: #fce4ec; color: #c62828; }
+        .status-produksi { background: #e8f5e9; color: #2e7d32; }
+        .status-selesai { background: #a5d6a7; color: #1b5e20; }
+
+        .step-indicator {
+            display: flex;
+            gap: 6px;
+            margin: 10px 0 20px 0;
+            flex-wrap: wrap;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #64748b;
+        }
+        .step.active { background: #3b82f6; color: white; }
+        .step.done { background: #10b981; color: white; }
+        .step .num {
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 700px;
+            width: 100%;
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-bottom: 15px; }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 8px 10px;
+            margin: 3px 0 12px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .filter-bar input, .filter-bar select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .filter-bar input { flex: 1; min-width: 120px; }
+
+        .stat-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-item {
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-item .number { font-size: 20px; font-weight: 700; color: #1e293b; }
+        .stat-item .label { font-size: 10px; color: #64748b; }
+
+        @media (max-width: 600px) {
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .stat-box { grid-template-columns: 1fr 1fr; }
+            .step { font-size: 9px; padding: 2px 8px; }
+            th, td { font-size: 10px; padding: 4px 6px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h3>📦 GUDANG PRO</h3><p>Manajemen Inventory</p></div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item active" data-menu="proses-produksi"><span class="icon">⚙️</span><span class="text">Proses Produksi</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 GUDANG PRO</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="container" id="mainContent">
+        <div class="card">
+            <div class="card-title">
+                <span>⚙️ PROSES PRODUKSI</span>
+                <div>
+                    <button class="btn btn-primary" onclick="showTambahModal()">+ Tambah Batch</button>
+                    <button class="btn btn-success" onclick="exportExcel()">📎 Export</button>
+                </div>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator" id="stepIndicator">
+                <div class="step"><span class="num">1</span> Masuk</div>
+                <div class="step"><span class="num">2</span> QC Lembar</div>
+                <div class="step"><span class="num">3</span> Diecut</div>
+                <div class="step"><span class="num">4</span> QC Pcs</div>
+                <div class="step"><span class="num">5</span> Produksi</div>
+            </div>
+
+            <!-- Filter -->
+            <div class="filter-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Cari kode, supplier, jenis..." oninput="filterData()">
+                <select id="statusFilter" onchange="filterData()">
+                    <option value="">Semua Status</option>
+                    <option value="MASUK">Masuk</option>
+                    <option value="QC_LEMBAR">QC Lembar</option>
+                    <option value="DIECUT">Diecut</option>
+                    <option value="QC_PCS">QC Pcs</option>
+                    <option value="PRODUKSI">Produksi</option>
+                    <option value="SELESAI">Selesai</option>
+                </select>
+                <button class="btn btn-warning btn-sm" onclick="resetFilter()">Reset</button>
+            </div>
+
+            <!-- Statistik -->
+            <div class="stat-box" id="statBox"></div>
+
+            <!-- Table -->
+            <div class="table-wrapper" style="max-height:500px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Supplier</th>
+                            <th>Jenis</th>
+                            <th>Size</th>
+                            <th>Up</th>
+                            <th>Masuk</th>
+                            <th>QC Lembar</th>
+                            <th>Diecut</th>
+                            <th>QC Pcs</th>
+                            <th>Produksi</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah/Edit -->
+    <div id="tambahModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">📦 Tambah Batch Baru</h3>
+            <input type="hidden" id="editId">
+
+            <div class="form-grid">
+                <div>
+                    <label>Kode Batch *</label>
+                    <input type="text" id="kodeBatch" placeholder="Otomatis">
+                </div>
+                <div>
+                    <label>Supplier *</label>
+                    <input type="text" id="supplier" placeholder="Nama supplier">
+                </div>
+                <div>
+                    <label>Jenis *</label>
+                    <input type="text" id="jenis" placeholder="Jenis material">
+                </div>
+                <div>
+                    <label>Size Lembar</label>
+                    <input type="text" id="sizeLembar" placeholder="70x100 cm">
+                </div>
+                <div>
+                    <label>Up per Lembar *</label>
+                    <select id="upPerLembar">
+                        <option value="1">1 Up (1 pcs/lembar)</option>
+                        <option value="2">2 Up (2 pcs/lembar)</option>
+                        <option value="4" selected>4 Up (4 pcs/lembar)</option>
+                        <option value="6">6 Up (6 pcs/lembar)</option>
+                        <option value="8">8 Up (8 pcs/lembar)</option>
+                        <option value="12">12 Up (12 pcs/lembar)</option>
+                        <option value="16">16 Up (16 pcs/lembar)</option>
+                        <option value="24">24 Up (24 pcs/lembar)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Qty Masuk (Lembar) *</label>
+                    <input type="number" id="qtyMasuk" placeholder="Jumlah lembar" min="0" oninput="hitungOtomatis()">
+                </div>
+            </div>
+
+            <hr style="margin:10px 0;">
+
+            <div class="form-grid">
+                <div>
+                    <label>✅ QC OK (Lembar)</label>
+                    <input type="number" id="qcOkLembar" placeholder="Lembar lolos QC" min="0" oninput="hitungOtomatis()">
+                </div>
+                <div>
+                    <label>❌ QC NG (Lembar)</label>
+                    <input type="number" id="qcNgLembar" placeholder="Lembar rusak" min="0" oninput="hitungOtomatis()">
+                </div>
+                <div>
+                    <label>⚙️ Kirim Diecut (Lembar)</label>
+                    <input type="number" id="qtyDiecut" placeholder="Lembar ke diecut" min="0" oninput="hitungOtomatis()">
+                </div>
+            </div>
+
+            <hr style="margin:10px 0;">
+
+            <div class="form-grid">
+                <div>
+                    <label>📦 Hasil Diecut (Pcs)</label>
+                    <input type="number" id="hasilDiecutPcs" placeholder="Otomatis" min="0" readonly style="background:#f1f5f9;">
+                </div>
+                <div>
+                    <label>✅ QC Pcs OK</label>
+                    <input type="number" id="qcPcsOk" placeholder="Pcs lolos QC" min="0" oninput="hitungOtomatis()">
+                </div>
+                <div>
+                    <label>❌ QC Pcs NG</label>
+                    <input type="number" id="qcPcsNg" placeholder="Pcs rusak" min="0" oninput="hitungOtomatis()">
+                </div>
+                <div>
+                    <label>📦 Kirim Produksi (Pcs)</label>
+                    <input type="number" id="qtyProduksi" placeholder="Pcs ke produksi" min="0" readonly style="background:#f1f5f9;">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group-full">
+                    <label>Keterangan</label>
+                    <input type="text" id="keterangan" placeholder="Catatan tambahan">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn btn-success" onclick="simpanBatch()">💾 Simpan</button>
+                <button class="btn btn-danger" onclick="closeModal()">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let currentFilteredData = [];
+
+        async function cekSession() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+        }
+
+        async function loadData() {
+            const { data, error } = await sb.from('proses_produksi').select('*').order('created_at', { ascending: false });
+            if (error) {
+                console.error('Load error:', error);
+                return;
+            }
+            allData = data || [];
+            currentFilteredData = [...allData];
+            renderTable();
+            updateStats();
+        }
+
+        function hitungOtomatis() {
+            const qtyMasuk = parseInt(document.getElementById('qtyMasuk').value) || 0;
+            const up = parseInt(document.getElementById('upPerLembar').value) || 0;
+            const qcOk = parseInt(document.getElementById('qcOkLembar').value) || 0;
+            const qcNg = parseInt(document.getElementById('qcNgLembar').value) || 0;
+            const qtyDiecut = parseInt(document.getElementById('qtyDiecut').value) || 0;
+            const qcPcsOk = parseInt(document.getElementById('qcPcsOk').value) || 0;
+            const qcPcsNg = parseInt(document.getElementById('qcPcsNg').value) || 0;
+
+            // Hasil Diecut = qtyDiecut × up
+            const hasilDiecut = qtyDiecut * up;
+            document.getElementById('hasilDiecutPcs').value = hasilDiecut;
+
+            // Kirim Produksi = qcPcsOk (hasil QC Pcs yang lolos)
+            const qtyProduksi = qcPcsOk;
+            document.getElementById('qtyProduksi').value = qtyProduksi;
+
+            // Auto set QC jika kosong
+            if (qcOk === 0 && qtyMasuk > 0) {
+                document.getElementById('qcOkLembar').value = qtyMasuk;
+            }
+            if (qtyDiecut === 0 && qcOk > 0) {
+                document.getElementById('qtyDiecut').value = qcOk;
+            }
+            if (qcPcsOk === 0 && hasilDiecut > 0) {
+                document.getElementById('qcPcsOk').value = hasilDiecut;
+            }
+        }
+
+        function renderTable() {
+            const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const status = document.getElementById('statusFilter')?.value || '';
+
+            let filtered = allData.filter(item => {
+                const matchSearch = (item.kode_batch || '').toLowerCase().includes(searchText) ||
+                                   (item.supplier || '').toLowerCase().includes(searchText) ||
+                                   (item.jenis || '').toLowerCase().includes(searchText);
+                const matchStatus = status === '' || item.status === status;
+                return matchSearch && matchStatus;
+            });
+
+            currentFilteredData = filtered;
+            const tbody = document.getElementById('tableBody');
+
+            let rows = '';
+            for (const item of filtered) {
+                const statusMap = {
+                    'MASUK': 'status-masuk',
+                    'QC_LEMBAR': 'status-qc-lembar',
+                    'DIECUT': 'status-diecut',
+                    'QC_PCS': 'status-qc-pcs',
+                    'PRODUKSI': 'status-produksi',
+                    'SELESAI': 'status-selesai'
+                };
+                const statusClass = statusMap[item.status] || 'status-masuk';
+                const statusLabel = item.status || 'MASUK';
+
+                rows += `<tr>
+                    <td><strong>${item.kode_batch || '-'}</strong></td>
+                    <td>${item.supplier || '-'}</td>
+                    <td>${item.jenis || '-'}</td>
+                    <td>${item.size_lembar || '-'}</td>
+                    <td>${item.up_per_lembar || 0} Up</td>
+                    <td>${item.qty_masuk_lembar || 0} L</td>
+                    <td>${item.qc_ok_lembar || 0} / ${item.qc_ng_lembar || 0} L</td>
+                    <td>${item.qty_diecut_lembar || 0} L → ${item.hasil_diecut_pcs || 0} P</td>
+                    <td>${item.qc_pcs_ok || 0} / ${item.qc_pcs_ng || 0} P</td>
+                    <td>${item.qty_produksi_pcs || 0} P</td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="editItem('${item.id}')">✏️</button>
+                        <button class="btn btn-success btn-sm" onclick="nextStatus('${item.id}', '${item.status}')">➡️</button>
+                        <button class="btn btn-danger btn-sm" onclick="hapusItem('${item.id}')">🗑️</button>
+                    </td>
+                </tr>`;
+            }
+
+            if (filtered.length === 0) {
+                rows = `<tr><td colspan="12" style="text-align:center;padding:30px;color:#94a3b8;">Belum ada data. Klik "Tambah Batch"</td></tr>`;
+            }
+
+            tbody.innerHTML = rows;
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = allData.length;
+            const totalLembar = allData.reduce((sum, i) => sum + (i.qty_masuk_lembar || 0), 0);
+            const totalPcsOk = allData.reduce((sum, i) => sum + (i.qc_pcs_ok || 0), 0);
+            const totalPcsNg = allData.reduce((sum, i) => sum + (i.qc_pcs_ng || 0), 0);
+            const totalProduksi = allData.reduce((sum, i) => sum + (i.qty_produksi_pcs || 0), 0);
+
+            document.getElementById('statBox').innerHTML = `
+                <div class="stat-item"><div class="number">${total}</div><div class="label">Total Batch</div></div>
+                <div class="stat-item"><div class="number">${totalLembar.toLocaleString()}</div><div class="label">Total Lembar Masuk</div></div>
+                <div class="stat-item"><div class="number">${totalPcsOk.toLocaleString()}</div><div class="label">Total Pcs OK</div></div>
+                <div class="stat-item"><div class="number">${totalPcsNg.toLocaleString()}</div><div class="label">Total Pcs NG</div></div>
+                <div class="stat-item"><div class="number">${totalProduksi.toLocaleString()}</div><div class="label">Total Pcs Ke Produksi</div></div>
+            `;
+        }
+
+        function filterData() { renderTable(); }
+        function resetFilter() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            renderTable();
+        }
+
+        function showTambahModal() {
+            document.getElementById('modalTitle').innerText = '📦 Tambah Batch Baru';
+            document.getElementById('editId').value = '';
+            document.getElementById('kodeBatch').value = 'BATCH-' + Date.now().toString().slice(-6);
+            document.getElementById('supplier').value = '';
+            document.getElementById('jenis').value = '';
+            document.getElementById('sizeLembar').value = '';
+            document.getElementById('upPerLembar').value = '4';
+            document.getElementById('qtyMasuk').value = '';
+            document.getElementById('qcOkLembar').value = '';
+            document.getElementById('qcNgLembar').value = '';
+            document.getElementById('qtyDiecut').value = '';
+            document.getElementById('hasilDiecutPcs').value = '';
+            document.getElementById('qcPcsOk').value = '';
+            document.getElementById('qcPcsNg').value = '';
+            document.getElementById('qtyProduksi').value = '';
+            document.getElementById('keterangan').value = '';
+            document.getElementById('tambahModal').style.display = 'flex';
+            hitungOtomatis();
+        }
+
+        async function editItem(id) {
+            const item = allData.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('modalTitle').innerText = '✏️ Edit Batch';
+            document.getElementById('editId').value = item.id;
+            document.getElementById('kodeBatch').value = item.kode_batch || '';
+            document.getElementById('supplier').value = item.supplier || '';
+            document.getElementById('jenis').value = item.jenis || '';
+            document.getElementById('sizeLembar').value = item.size_lembar || '';
+            document.getElementById('upPerLembar').value = item.up_per_lembar || 4;
+            document.getElementById('qtyMasuk').value = item.qty_masuk_lembar || 0;
+            document.getElementById('qcOkLembar').value = item.qc_ok_lembar || 0;
+            document.getElementById('qcNgLembar').value = item.qc_ng_lembar || 0;
+            document.getElementById('qtyDiecut').value = item.qty_diecut_lembar || 0;
+            document.getElementById('hasilDiecutPcs').value = item.hasil_diecut_pcs || 0;
+            document.getElementById('qcPcsOk').value = item.qc_pcs_ok || 0;
+            document.getElementById('qcPcsNg').value = item.qc_pcs_ng || 0;
+            document.getElementById('qtyProduksi').value = item.qty_produksi_pcs || 0;
+            document.getElementById('keterangan').value = item.keterangan || '';
+            document.getElementById('tambahModal').style.display = 'flex';
+            hitungOtomatis();
+        }
+
+        async function simpanBatch() {
+            const id = document.getElementById('editId').value;
+            const data = {
+                kode_batch: document.getElementById('kodeBatch').value,
+                supplier: document.getElementById('supplier').value,
+                jenis: document.getElementById('jenis').value,
+                size_lembar: document.getElementById('sizeLembar').value || null,
+                up_per_lembar: parseInt(document.getElementById('upPerLembar').value) || 0,
+                qty_masuk_lembar: parseInt(document.getElementById('qtyMasuk').value) || 0,
+                qc_ok_lembar: parseInt(document.getElementById('qcOkLembar').value) || 0,
+                qc_ng_lembar: parseInt(document.getElementById('qcNgLembar').value) || 0,
+                qty_diecut_lembar: parseInt(document.getElementById('qtyDiecut').value) || 0,
+                hasil_diecut_pcs: parseInt(document.getElementById('hasilDiecutPcs').value) || 0,
+                qc_pcs_ok: parseInt(document.getElementById('qcPcsOk').value) || 0,
+                qc_pcs_ng: parseInt(document.getElementById('qcPcsNg').value) || 0,
+                qty_produksi_pcs: parseInt(document.getElementById('qtyProduksi').value) || 0,
+                keterangan: document.getElementById('keterangan').value || '',
+                status: 'MASUK'
+            };
+
+            if (!data.kode_batch || !data.supplier || !data.jenis) {
+                alert('Kode Batch, Supplier, dan Jenis wajib diisi!');
+                return;
+            }
+
+            let result;
+            if (id) {
+                result = await sb.from('proses_produksi').update(data).eq('id', id);
+            } else {
+                result = await sb.from('proses_produksi').insert([data]);
+            }
+
+            if (result.error) {
+                alert('Gagal: ' + result.error.message);
+            } else {
+                alert(id ? '✅ Batch berhasil diupdate' : '✅ Batch berhasil ditambahkan');
+                closeModal();
+                await loadData();
+            }
+        }
+
+        async function nextStatus(id, currentStatus) {
+            const statusMap = {
+                'MASUK': 'QC_LEMBAR',
+                'QC_LEMBAR': 'DIECUT',
+                'DIECUT': 'QC_PCS',
+                'QC_PCS': 'PRODUKSI',
+                'PRODUKSI': 'SELESAI',
+                'SELESAI': 'SELESAI'
+            };
+            const nextStatus = statusMap[currentStatus] || 'SELESAI';
+
+            if (currentStatus === 'SELESAI') {
+                alert('✅ Proses sudah selesai!');
+                return;
+            }
+
+            const statusLabel = {
+                'MASUK': 'Masuk',
+                'QC_LEMBAR': 'QC Lembar',
+                'DIECUT': 'Diecut',
+                'QC_PCS': 'QC Pcs',
+                'PRODUKSI': 'Kirim Produksi',
+                'SELESAI': 'Selesai'
+            };
+
+            if (!confirm(`Ubah status dari "${statusLabel[currentStatus]}" menjadi "${statusLabel[nextStatus]}"?`)) return;
+
+            const { error } = await sb.from('proses_produksi').update({ status: nextStatus }).eq('id', id);
+            if (error) {
+                alert('Gagal: ' + error.message);
+            } else {
+                alert(`✅ Status berhasil diubah ke "${statusLabel[nextStatus]}"`);
+                await loadData();
+            }
+        }
+
+        async function hapusItem(id) {
+            if (!confirm('Yakin ingin menghapus batch ini?')) return;
+            const { error } = await sb.from('proses_produksi').delete().eq('id', id);
+            if (error) {
+                alert('Gagal: ' + error.message);
+            } else {
+                alert('✅ Batch berhasil dihapus');
+                await loadData();
+            }
+        }
+
+        function exportExcel() {
+            if (currentFilteredData.length === 0) {
+                alert('Tidak ada data');
+                return;
+            }
+            const wsData = [
+                ['Kode Batch', 'Supplier', 'Jenis', 'Size', 'Up', 'Qty Masuk (L)', 'QC OK (L)', 'QC NG (L)', 'Kirim Diecut (L)', 'Hasil Diecut (P)', 'QC Pcs OK', 'QC Pcs NG', 'Kirim Produksi (P)', 'Status', 'Keterangan']
+            ];
+            for (const item of currentFilteredData) {
+                wsData.push([
+                    item.kode_batch || '-',
+                    item.supplier || '-',
+                    item.jenis || '-',
+                    item.size_lembar || '-',
+                    (item.up_per_lembar || 0) + ' Up',
+                    item.qty_masuk_lembar || 0,
+                    item.qc_ok_lembar || 0,
+                    item.qc_ng_lembar || 0,
+                    item.qty_diecut_lembar || 0,
+                    item.hasil_diecut_pcs || 0,
+                    item.qc_pcs_ok || 0,
+                    item.qc_pcs_ng || 0,
+                    item.qty_produksi_pcs || 0,
+                    item.status || '-',
+                    item.keterangan || '-'
+                ]);
+            }
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Proses Produksi');
+            XLSX.writeFile(wb, 'Proses_Produksi_' + new Date().toISOString().slice(0,10) + '.xlsx');
+            alert('✅ Export berhasil!');
+        }
+
+        function closeModal() {
+            document.getElementById('tambahModal').style.display = 'none';
+        }
+
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'proses-produksi': 'proses-produksi.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+
+        async function init() {
+            await cekSession();
+            setupEventListeners();
+            await loadData();
+        }
+
+        window.showTambahModal = showTambahModal;
+        window.editItem = editItem;
+        window.simpanBatch = simpanBatch;
+        window.nextStatus = nextStatus;
+        window.hapusItem = hapusItem;
+        window.exportExcel = exportExcel;
+        window.filterData = filterData;
+        window.resetFilter = resetFilter;
+        window.closeModal = closeModal;
+        window.hitungOtomatis = hitungOtomatis;
+
+        init();
+    </script>
+</body>
+</html>
