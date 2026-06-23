@@ -487,52 +487,77 @@
         // SET QC NUMBER (TOGGLE)
         // ============================================================
         function setQcNumber(qc) {
-            currentQcNumber = qc;
-            document.getElementById('qcNumber').value = qc;
-            
-            const btnQc1 = document.getElementById('btnQc1');
-            const btnQc2 = document.getElementById('btnQc2');
-            
-            if (qc === 1) {
-                btnQc1.className = 'btn btn-qc1';
-                btnQc2.className = 'btn btn-qc2';
-            } else {
-                btnQc1.className = 'btn btn-qc2';
-                btnQc2.className = 'btn btn-qc1 active';
-            }
-            
-            document.getElementById('pageTitle').innerText = `🔬 QC #${qc}`;
-            document.getElementById('qcBadge').innerText = `QC #${qc}`;
-            
-            document.getElementById('materialInfo').style.display = 'none';
-            document.getElementById('unitInfo').style.display = 'none';
-            document.getElementById('historyList').innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
-            
-            if (qc === 1) {
-                document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
-                document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
-                document.getElementById('labelQtyRework').innerHTML = 'Qty Rework (Sheet)';
-                document.getElementById('maxUnitOk').innerText = 'Sheet';
-            } else {
-                document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
-                document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
-                document.getElementById('labelQtyRework').innerHTML = 'Qty Rework (Pcs)';
-                document.getElementById('maxUnitOk').innerText = 'Pcs';
-            }
-            
-            isEditMode = false;
-            document.getElementById('editId').value = '';
-            document.getElementById('editBadge').style.display = 'none';
-            document.getElementById('btnSubmit').innerHTML = '💾 Simpan QC';
-            
-            const select = document.getElementById('selectNoPi');
-            select.value = '';
-            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
-            
-            loadPiList();
-            showToast(`📌 Beralih ke QC #${qc}`, 'info');
+    currentQcNumber = qc;
+    
+    const elQcNumber = document.getElementById('qcNumber');
+    if (elQcNumber) elQcNumber.value = qc;
+    
+    const btnQc1 = document.getElementById('btnQc1');
+    const btnQc2 = document.getElementById('btnQc2');
+    
+    if (btnQc1 && btnQc2) {
+        if (qc === 1) {
+            btnQc1.className = 'btn btn-qc1';
+            btnQc2.className = 'btn btn-qc2';
+        } else {
+            btnQc1.className = 'btn btn-qc2';
+            btnQc2.className = 'btn btn-qc1 active';
         }
-
+    }
+    
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) pageTitle.innerText = `🔬 QC #${qc}`;
+    
+    const qcBadge = document.getElementById('qcBadge');
+    if (qcBadge) qcBadge.innerText = `QC #${qc}`;
+    
+    const materialInfo = document.getElementById('materialInfo');
+    if (materialInfo) materialInfo.style.display = 'none';
+    
+    const unitInfo = document.getElementById('unitInfo');
+    if (unitInfo) unitInfo.style.display = 'none';
+    
+    const historyList = document.getElementById('historyList');
+    if (historyList) {
+        historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
+    }
+    
+    const labelQtyOk = document.getElementById('labelQtyOk');
+    const labelQtyNg = document.getElementById('labelQtyNg');
+    const labelQtyRework = document.getElementById('labelQtyRework');
+    const maxUnitOk = document.getElementById('maxUnitOk');
+    
+    if (qc === 1) {
+        if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
+        if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
+        if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
+        if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
+    } else {
+        if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
+        if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
+        if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
+        if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
+    }
+    
+    isEditMode = false;
+    const editId = document.getElementById('editId');
+    if (editId) editId.value = '';
+    
+    const editBadge = document.getElementById('editBadge');
+    if (editBadge) editBadge.style.display = 'none';
+    
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) btnSubmit.innerHTML = '💾 Simpan QC';
+    
+    const select = document.getElementById('selectNoPi');
+    if (select) {
+        select.value = '';
+        select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+    }
+    
+    loadPiList();
+    showToast(`📌 Beralih ke QC #${qc}`, 'info');
+}
         // ============================================================
         // LOAD DAFTAR NO PI
         // ============================================================
