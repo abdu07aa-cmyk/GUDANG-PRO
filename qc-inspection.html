@@ -446,8 +446,13 @@
         let selectedNoPi = null;
         let isEditMode = false;
 
+        function getEl(id) {
+            return document.getElementById(id);
+        }
+
         function showToast(msg, type = 'success') {
-            const t = document.getElementById('toast');
+            const t = getEl('toast');
+            if (!t) return;
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
@@ -455,7 +460,8 @@
         }
 
         function showMessage(msg, type = 'info') {
-            const container = document.getElementById('msgContainer');
+            const container = getEl('msgContainer');
+            if (!container) return;
             const map = {
                 success: 'alert-success',
                 error: 'alert-error',
@@ -467,101 +473,110 @@
         }
 
         // Toggle alasan NG
-        document.getElementById('hasil').addEventListener('change', function() {
-            const alasanGroup = document.getElementById('alasanNgGroup');
-            if (this.value === 'NG') {
-                alasanGroup.style.display = 'block';
-                document.getElementById('alasan_ng').setAttribute('required', 'required');
-            } else {
-                alasanGroup.style.display = 'none';
-                document.getElementById('alasan_ng').removeAttribute('required');
-            }
-        });
+        const hasilEl = getEl('hasil');
+        if (hasilEl) {
+            hasilEl.addEventListener('change', function() {
+                const alasanGroup = getEl('alasanNgGroup');
+                const alasanNg = getEl('alasan_ng');
+                if (this.value === 'NG') {
+                    if (alasanGroup) alasanGroup.style.display = 'block';
+                    if (alasanNg) alasanNg.setAttribute('required', 'required');
+                } else {
+                    if (alasanGroup) alasanGroup.style.display = 'none';
+                    if (alasanNg) alasanNg.removeAttribute('required');
+                }
+            });
+        }
 
         // Set today's date
-        const today = new Date().toISOString().split('T')[0];
-        const tanggalQc = document.getElementById('tanggal_qc');
-        if (tanggalQc) tanggalQc.value = today;
+        const tanggalQc = getEl('tanggal_qc');
+        if (tanggalQc) {
+            tanggalQc.value = new Date().toISOString().split('T')[0];
+        }
 
         // ============================================================
-        // SET QC NUMBER (TOGGLE)
+        // SET QC NUMBER (TOGGLE) - DENGAN NULL CHECK
         // ============================================================
         function setQcNumber(qc) {
-    currentQcNumber = qc;
-    
-    const elQcNumber = document.getElementById('qcNumber');
-    if (elQcNumber) elQcNumber.value = qc;
-    
-    const btnQc1 = document.getElementById('btnQc1');
-    const btnQc2 = document.getElementById('btnQc2');
-    
-    if (btnQc1 && btnQc2) {
-        if (qc === 1) {
-            btnQc1.className = 'btn btn-qc1';
-            btnQc2.className = 'btn btn-qc2';
-        } else {
-            btnQc1.className = 'btn btn-qc2';
-            btnQc2.className = 'btn btn-qc1 active';
+            currentQcNumber = qc;
+            
+            const elQcNumber = getEl('qcNumber');
+            if (elQcNumber) elQcNumber.value = qc;
+            
+            const btnQc1 = getEl('btnQc1');
+            const btnQc2 = getEl('btnQc2');
+            
+            if (btnQc1 && btnQc2) {
+                if (qc === 1) {
+                    btnQc1.className = 'btn btn-qc1';
+                    btnQc2.className = 'btn btn-qc2';
+                } else {
+                    btnQc1.className = 'btn btn-qc2';
+                    btnQc2.className = 'btn btn-qc1 active';
+                }
+            }
+            
+            const pageTitle = getEl('pageTitle');
+            if (pageTitle) pageTitle.innerText = `🔬 QC #${qc}`;
+            
+            const qcBadge = getEl('qcBadge');
+            if (qcBadge) qcBadge.innerText = `QC #${qc}`;
+            
+            const materialInfo = getEl('materialInfo');
+            if (materialInfo) materialInfo.style.display = 'none';
+            
+            const unitInfo = getEl('unitInfo');
+            if (unitInfo) unitInfo.style.display = 'none';
+            
+            const historyList = getEl('historyList');
+            if (historyList) {
+                historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
+            }
+            
+            const labelQtyOk = getEl('labelQtyOk');
+            const labelQtyNg = getEl('labelQtyNg');
+            const labelQtyRework = getEl('labelQtyRework');
+            const maxUnitOk = getEl('maxUnitOk');
+            
+            if (qc === 1) {
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
+            } else {
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
+            }
+            
+            isEditMode = false;
+            const editId = getEl('editId');
+            if (editId) editId.value = '';
+            
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'none';
+            
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) btnSubmit.innerHTML = '💾 Simpan QC';
+            
+            const select = getEl('selectNoPi');
+            if (select) {
+                select.value = '';
+                select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+            }
+            
+            loadPiList();
+            showToast(`📌 Beralih ke QC #${qc}`, 'info');
         }
-    }
-    
-    const pageTitle = document.getElementById('pageTitle');
-    if (pageTitle) pageTitle.innerText = `🔬 QC #${qc}`;
-    
-    const qcBadge = document.getElementById('qcBadge');
-    if (qcBadge) qcBadge.innerText = `QC #${qc}`;
-    
-    const materialInfo = document.getElementById('materialInfo');
-    if (materialInfo) materialInfo.style.display = 'none';
-    
-    const unitInfo = document.getElementById('unitInfo');
-    if (unitInfo) unitInfo.style.display = 'none';
-    
-    const historyList = document.getElementById('historyList');
-    if (historyList) {
-        historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
-    }
-    
-    const labelQtyOk = document.getElementById('labelQtyOk');
-    const labelQtyNg = document.getElementById('labelQtyNg');
-    const labelQtyRework = document.getElementById('labelQtyRework');
-    const maxUnitOk = document.getElementById('maxUnitOk');
-    
-    if (qc === 1) {
-        if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
-        if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
-        if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
-        if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
-    } else {
-        if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
-        if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
-        if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
-        if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
-    }
-    
-    isEditMode = false;
-    const editId = document.getElementById('editId');
-    if (editId) editId.value = '';
-    
-    const editBadge = document.getElementById('editBadge');
-    if (editBadge) editBadge.style.display = 'none';
-    
-    const btnSubmit = document.getElementById('btnSubmit');
-    if (btnSubmit) btnSubmit.innerHTML = '💾 Simpan QC';
-    
-    const select = document.getElementById('selectNoPi');
-    if (select) {
-        select.value = '';
-        select.innerHTML = '<option value="">-- Pilih No PI --</option>';
-    }
-    
-    loadPiList();
-    showToast(`📌 Beralih ke QC #${qc}`, 'info');
-}
+
         // ============================================================
         // LOAD DAFTAR NO PI
         // ============================================================
         async function loadPiList() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
             const { data, error } = await sb
                 .from('material_inbound')
                 .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
@@ -572,9 +587,7 @@
                 return;
             }
 
-            const select = document.getElementById('selectNoPi');
             const currentValue = select.value;
-            
             select.innerHTML = '<option value="">-- Pilih No PI --</option>';
 
             if (!data || data.length === 0) {
@@ -632,16 +645,29 @@
         // LOAD MATERIAL BERDASARKAN NO PI
         // ============================================================
         async function loadMaterialByPi() {
-            const select = document.getElementById('selectNoPi');
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
             const selectedOption = select.options[select.selectedIndex];
             const noPi = select.value;
 
             if (!noPi) {
-                document.getElementById('materialInfo').style.display = 'none';
-                document.getElementById('unitInfo').style.display = 'none';
-                document.getElementById('qcBadge').innerText = 'Pilih No PI';
-                document.getElementById('qcBadge').style.background = '#fef3c7';
-                document.getElementById('historyList').innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                const materialInfo = getEl('materialInfo');
+                if (materialInfo) materialInfo.style.display = 'none';
+                
+                const unitInfo = getEl('unitInfo');
+                if (unitInfo) unitInfo.style.display = 'none';
+                
+                const qcBadge = getEl('qcBadge');
+                if (qcBadge) {
+                    qcBadge.innerText = 'Pilih No PI';
+                    qcBadge.style.background = '#fef3c7';
+                }
+                
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                }
                 return;
             }
 
@@ -655,7 +681,9 @@
 
             currentMaterialId = materialId;
             selectedNoPi = noPi;
-            document.getElementById('materialId').value = materialId;
+            
+            const elMaterialId = getEl('materialId');
+            if (elMaterialId) elMaterialId.value = materialId;
 
             const statusMap = {
                 'DITERIMA': '📥 Diterima',
@@ -667,10 +695,15 @@
 
             if (currentQcNumber === 1 && status !== 'DITERIMA') {
                 showMessage(`⚠️ QC #1 hanya untuk status DITERIMA! Status saat ini: ${statusMap[status] || status}`, 'warning');
-                document.getElementById('qcBadge').innerText = `⚠️ Status: ${status}`;
-                document.getElementById('qcBadge').style.background = '#fee2e2';
-                document.getElementById('materialInfo').style.display = 'none';
-                document.getElementById('unitInfo').style.display = 'none';
+                const qcBadge = getEl('qcBadge');
+                if (qcBadge) {
+                    qcBadge.innerText = `⚠️ Status: ${status}`;
+                    qcBadge.style.background = '#fee2e2';
+                }
+                const materialInfo = getEl('materialInfo');
+                if (materialInfo) materialInfo.style.display = 'none';
+                const unitInfo = getEl('unitInfo');
+                if (unitInfo) unitInfo.style.display = 'none';
                 return;
             }
 
@@ -684,10 +717,15 @@
 
                 if (!qc1Exists || qc1Exists.length === 0) {
                     showMessage('❌ Harus melakukan QC #1 terlebih dahulu sebelum QC #2!', 'error');
-                    document.getElementById('qcBadge').innerText = '⚠️ Belum QC #1';
-                    document.getElementById('qcBadge').style.background = '#fee2e2';
-                    document.getElementById('materialInfo').style.display = 'none';
-                    document.getElementById('unitInfo').style.display = 'none';
+                    const qcBadge = getEl('qcBadge');
+                    if (qcBadge) {
+                        qcBadge.innerText = '⚠️ Belum QC #1';
+                        qcBadge.style.background = '#fee2e2';
+                    }
+                    const materialInfo = getEl('materialInfo');
+                    if (materialInfo) materialInfo.style.display = 'none';
+                    const unitInfo = getEl('unitInfo');
+                    if (unitInfo) unitInfo.style.display = 'none';
                     return;
                 }
 
@@ -714,51 +752,91 @@
                 targetValue = qtySheet || 0;
                 targetLabel = `${targetValue} Sheet`;
                 
-                document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
-                document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
-                document.getElementById('labelQtyRework').innerHTML = 'Qty Rework (Sheet)';
-                document.getElementById('maxUnitOk').innerText = 'Sheet';
+                const labelQtyOk = getEl('labelQtyOk');
+                const labelQtyNg = getEl('labelQtyNg');
+                const labelQtyRework = getEl('labelQtyRework');
+                const maxUnitOk = getEl('maxUnitOk');
                 
-                document.getElementById('unitInfoText').innerHTML = `
-                    🔬 <strong>QC #1 - Inspeksi Material dalam satuan SHEET</strong><br>
-                    📦 Target QC: <strong>${targetValue} Sheet</strong> (dari qty sheet material masuk)<br>
-                    ✅ Cek setiap lembar material yang masuk
-                `;
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
+                
+                const unitInfoText = getEl('unitInfoText');
+                if (unitInfoText) {
+                    unitInfoText.innerHTML = `
+                        🔬 <strong>QC #1 - Inspeksi Material dalam satuan SHEET</strong><br>
+                        📦 Target QC: <strong>${targetValue} Sheet</strong> (dari qty sheet material masuk)<br>
+                        ✅ Cek setiap lembar material yang masuk
+                    `;
+                }
 
             } else if (currentQcNumber === 2) {
                 unit = 'Pcs';
                 targetValue = diecutData ? diecutData.qty_pcs_ok : 0;
                 targetLabel = `${targetValue} Pcs`;
                 
-                document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
-                document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
-                document.getElementById('labelQtyRework').innerHTML = 'Qty Rework (Pcs)';
-                document.getElementById('maxUnitOk').innerText = 'Pcs';
+                const labelQtyOk = getEl('labelQtyOk');
+                const labelQtyNg = getEl('labelQtyNg');
+                const labelQtyRework = getEl('labelQtyRework');
+                const maxUnitOk = getEl('maxUnitOk');
                 
-                document.getElementById('unitInfoText').innerHTML = `
-                    🔬 <strong>QC #2 - Inspeksi Hasil Diecut dalam satuan PCS</strong><br>
-                    📦 Target QC: <strong>${targetValue} Pcs</strong> (dari hasil diecut)<br>
-                    ✅ Cek setiap pcs hasil diecut sebelum dikirim ke produksi
-                `;
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
+                
+                const unitInfoText = getEl('unitInfoText');
+                if (unitInfoText) {
+                    unitInfoText.innerHTML = `
+                        🔬 <strong>QC #2 - Inspeksi Hasil Diecut dalam satuan PCS</strong><br>
+                        📦 Target QC: <strong>${targetValue} Pcs</strong> (dari hasil diecut)<br>
+                        ✅ Cek setiap pcs hasil diecut sebelum dikirim ke produksi
+                    `;
+                }
             }
 
-            document.getElementById('materialInfo').style.display = 'block';
-            document.getElementById('infoNoPo').innerText = noPo || '-';
-            document.getElementById('infoNoPi').innerText = noPi || '-';
-            document.getElementById('infoBrand').innerText = brand || '-';
-            document.getElementById('infoJenis').innerText = jenis || '-';
-            document.getElementById('infoQtySheet').innerText = qtySheet || 0;
-            document.getElementById('infoUp').innerText = upPerSheet || 0;
-            document.getElementById('infoTarget').innerHTML = `<span style="color:#3b82f6;font-weight:bold;">${targetLabel}</span>`;
-            document.getElementById('infoUnit').innerHTML = `<span class="unit-badge">${unit}</span>`;
-            document.getElementById('infoStatus').innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[status] || status}</span>`;
+            const materialInfo = getEl('materialInfo');
+            if (materialInfo) materialInfo.style.display = 'block';
+            
+            const infoNoPo = getEl('infoNoPo');
+            if (infoNoPo) infoNoPo.innerText = noPo || '-';
+            
+            const infoNoPi = getEl('infoNoPi');
+            if (infoNoPi) infoNoPi.innerText = noPi || '-';
+            
+            const infoBrand = getEl('infoBrand');
+            if (infoBrand) infoBrand.innerText = brand || '-';
+            
+            const infoJenis = getEl('infoJenis');
+            if (infoJenis) infoJenis.innerText = jenis || '-';
+            
+            const infoQtySheet = getEl('infoQtySheet');
+            if (infoQtySheet) infoQtySheet.innerText = qtySheet || 0;
+            
+            const infoUp = getEl('infoUp');
+            if (infoUp) infoUp.innerText = upPerSheet || 0;
+            
+            const infoTarget = getEl('infoTarget');
+            if (infoTarget) infoTarget.innerHTML = `<span style="color:#3b82f6;font-weight:bold;">${targetLabel}</span>`;
+            
+            const infoUnit = getEl('infoUnit');
+            if (infoUnit) infoUnit.innerHTML = `<span class="unit-badge">${unit}</span>`;
+            
+            const infoStatus = getEl('infoStatus');
+            if (infoStatus) infoStatus.innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[status] || status}</span>`;
 
-            document.getElementById('maxQtyOk').innerText = targetValue;
+            const maxQtyOk = getEl('maxQtyOk');
+            if (maxQtyOk) maxQtyOk.innerText = targetValue;
 
-            document.getElementById('qcBadge').innerText = `✅ ${noPo} - ${brand}`;
-            document.getElementById('qcBadge').style.background = '#d1fae5';
+            const qcBadge = getEl('qcBadge');
+            if (qcBadge) {
+                qcBadge.innerText = `✅ ${noPo} - ${brand}`;
+                qcBadge.style.background = '#d1fae5';
+            }
 
-            document.getElementById('unitInfo').style.display = 'block';
+            const unitInfo = getEl('unitInfo');
+            if (unitInfo) unitInfo.style.display = 'block';
 
             await loadHistory(materialId);
         }
@@ -767,7 +845,8 @@
         // LOAD HISTORY QC
         // ============================================================
         async function loadHistory(materialId) {
-            const container = document.getElementById('historyList');
+            const container = getEl('historyList');
+            if (!container) return;
             
             if (!materialId) {
                 container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
@@ -857,27 +936,51 @@
             }
 
             isEditMode = true;
-            document.getElementById('editId').value = id;
-            document.getElementById('editBadge').style.display = 'inline';
-            document.getElementById('btnSubmit').innerHTML = '✏️ Update QC';
+            const editId = getEl('editId');
+            if (editId) editId.value = id;
             
-            document.getElementById('tanggal_qc').value = qc.tanggal_qc || '';
-            document.getElementById('inspector').value = qc.inspector || '';
-            document.getElementById('qty_ok').value = qc.qty_ok || '';
-            document.getElementById('qty_ng').value = qc.qty_ng || '';
-            document.getElementById('qty_rework').value = qc.qty_rework || 0;
-            document.getElementById('hasil').value = qc.hasil || '';
-            document.getElementById('alasan_ng').value = qc.alasan_ng || '';
-            document.getElementById('notes').value = qc.notes || '';
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'inline';
             
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) btnSubmit.innerHTML = '✏️ Update QC';
+            
+            const tanggalQc = getEl('tanggal_qc');
+            if (tanggalQc) tanggalQc.value = qc.tanggal_qc || '';
+            
+            const inspector = getEl('inspector');
+            if (inspector) inspector.value = qc.inspector || '';
+            
+            const qtyOk = getEl('qty_ok');
+            if (qtyOk) qtyOk.value = qc.qty_ok || '';
+            
+            const qtyNg = getEl('qty_ng');
+            if (qtyNg) qtyNg.value = qc.qty_ng || '';
+            
+            const qtyRework = getEl('qty_rework');
+            if (qtyRework) qtyRework.value = qc.qty_rework || 0;
+            
+            const hasil = getEl('hasil');
+            if (hasil) hasil.value = qc.hasil || '';
+            
+            const alasanNg = getEl('alasan_ng');
+            if (alasanNg) alasanNg.value = qc.alasan_ng || '';
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = qc.notes || '';
+            
+            const alasanGroup = getEl('alasanNgGroup');
             if (qc.hasil === 'NG') {
-                document.getElementById('alasanNgGroup').style.display = 'block';
-                document.getElementById('alasan_ng').setAttribute('required', 'required');
+                if (alasanGroup) alasanGroup.style.display = 'block';
+                if (alasanNg) alasanNg.setAttribute('required', 'required');
             } else {
-                document.getElementById('alasanNgGroup').style.display = 'none';
+                if (alasanGroup) alasanGroup.style.display = 'none';
+                if (alasanNg) alasanNg.removeAttribute('required');
             }
             
-            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+            const card = document.querySelector('.card');
+            if (card) card.scrollIntoView({ behavior: 'smooth' });
+            
             showToast('📝 Mode Edit: silakan ubah data QC', 'info');
         }
 
@@ -908,17 +1011,17 @@
         async function saveQC() {
             if (isSubmitting) return;
 
-            const materialId = document.getElementById('materialId').value;
-            const qcNumber = parseInt(document.getElementById('qcNumber').value) || 1;
-            const editId = document.getElementById('editId').value;
-            const tanggal_qc = document.getElementById('tanggal_qc').value;
-            const inspector = document.getElementById('inspector').value.trim();
-            const qty_ok = parseInt(document.getElementById('qty_ok').value);
-            const qty_ng = parseInt(document.getElementById('qty_ng').value);
-            const qty_rework = parseInt(document.getElementById('qty_rework').value) || 0;
-            const hasil = document.getElementById('hasil').value;
-            const alasan_ng = document.getElementById('alasan_ng').value;
-            const notes = document.getElementById('notes').value.trim();
+            const materialId = getEl('materialId')?.value;
+            const qcNumber = parseInt(getEl('qcNumber')?.value) || 1;
+            const editId = getEl('editId')?.value;
+            const tanggal_qc = getEl('tanggal_qc')?.value;
+            const inspector = getEl('inspector')?.value?.trim();
+            const qty_ok = parseInt(getEl('qty_ok')?.value);
+            const qty_ng = parseInt(getEl('qty_ng')?.value);
+            const qty_rework = parseInt(getEl('qty_rework')?.value) || 0;
+            const hasil = getEl('hasil')?.value;
+            const alasan_ng = getEl('alasan_ng')?.value;
+            const notes = getEl('notes')?.value?.trim();
 
             if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!tanggal_qc) { showMessage('❌ Tanggal QC wajib diisi!', 'error'); return; }
@@ -928,7 +1031,9 @@
             if (!hasil) { showMessage('❌ Hasil QC wajib dipilih!', 'error'); return; }
             if (hasil === 'NG' && !alasan_ng) { showMessage('❌ Alasan NG wajib diisi!', 'error'); return; }
 
-            const select = document.getElementById('selectNoPi');
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
             const selectedOption = select.options[select.selectedIndex];
             let targetValue = 0;
             let unitLabel = '';
@@ -960,7 +1065,9 @@
                 return;
             }
 
-            const btn = document.getElementById('btnSubmit');
+            const btn = getEl('btnSubmit');
+            if (!btn) return;
+            
             const originalText = btn.innerHTML;
             btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
             btn.disabled = true;
@@ -1039,14 +1146,21 @@
                 resetForm();
                 
                 isEditMode = false;
-                document.getElementById('editId').value = '';
-                document.getElementById('editBadge').style.display = 'none';
-                document.getElementById('btnSubmit').innerHTML = '💾 Simpan QC';
+                const editIdEl = getEl('editId');
+                if (editIdEl) editIdEl.value = '';
+                
+                const editBadge = getEl('editBadge');
+                if (editBadge) editBadge.style.display = 'none';
+                
+                if (btn) btn.innerHTML = '💾 Simpan QC';
                 
                 await loadPiList();
                 if (selectedNoPi) {
-                    document.getElementById('selectNoPi').value = selectedNoPi;
-                    await loadMaterialByPi();
+                    const selectEl = getEl('selectNoPi');
+                    if (selectEl) {
+                        selectEl.value = selectedNoPi;
+                        await loadMaterialByPi();
+                    }
                 }
 
                 try {
@@ -1058,22 +1172,43 @@
                 showToast('❌ Gagal: ' + err.message, 'error');
             } finally {
                 isSubmitting = false;
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
             }
         }
 
         function resetForm() {
-            document.getElementById('tanggal_qc').value = new Date().toISOString().split('T')[0];
-            document.getElementById('inspector').value = '';
-            document.getElementById('qty_ok').value = '';
-            document.getElementById('qty_ng').value = '';
-            document.getElementById('qty_rework').value = '0';
-            document.getElementById('hasil').value = '';
-            document.getElementById('alasan_ng').value = '';
-            document.getElementById('notes').value = '';
-            document.getElementById('alasanNgGroup').style.display = 'none';
-            document.getElementById('msgContainer').innerHTML = '';
+            const tanggalQc = getEl('tanggal_qc');
+            if (tanggalQc) tanggalQc.value = new Date().toISOString().split('T')[0];
+            
+            const inspector = getEl('inspector');
+            if (inspector) inspector.value = '';
+            
+            const qtyOk = getEl('qty_ok');
+            if (qtyOk) qtyOk.value = '';
+            
+            const qtyNg = getEl('qty_ng');
+            if (qtyNg) qtyNg.value = '';
+            
+            const qtyRework = getEl('qty_rework');
+            if (qtyRework) qtyRework.value = '0';
+            
+            const hasil = getEl('hasil');
+            if (hasil) hasil.value = '';
+            
+            const alasanNg = getEl('alasan_ng');
+            if (alasanNg) alasanNg.value = '';
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = '';
+            
+            const alasanGroup = getEl('alasanNgGroup');
+            if (alasanGroup) alasanGroup.style.display = 'none';
+            
+            const msgContainer = getEl('msgContainer');
+            if (msgContainer) msgContainer.innerHTML = '';
         }
 
         // ============ NAVIGASI ============
@@ -1101,17 +1236,47 @@
             window.location.href = files[menu] || 'dashboard.html';
         }
 
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        function openSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+        }
+        
+        function closeSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+        }
+        
+        function toggleSidebar() { 
+            const sidebar = getEl('sidebar');
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
 
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        async function logout() { 
+            await sb.auth.signOut(); 
+            window.location.href = 'login.html'; 
+        }
 
         function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
+            const menuToggle = getEl('menuToggle');
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            
+            const overlay = getEl('overlay');
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            
+            const logoutBtn = getEl('logoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            
+            const logoutMenu = getEl('logoutMenu');
+            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            
             document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
