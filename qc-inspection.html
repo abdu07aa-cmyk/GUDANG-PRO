@@ -256,10 +256,23 @@
         <div class="card">
             <div class="card-title">
                 <span id="pageTitle">🔬 QC Inspection</span>
-                <span id="qcBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">QC #1</span>
+                <span id="qcBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih No PI</span>
             </div>
             
             <div id="msgContainer"></div>
+
+            <!-- ✅ PILIH NO PI (CARA BARU) -->
+            <div class="form-group">
+                <label>Pilih No PI <span class="required">*</span></label>
+                <select id="selectNoPi" onchange="loadMaterialByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Pilih No PI dari daftar material yang sudah masuk</span>
+            </div>
+
+            <!-- Hidden field untuk menyimpan ID material -->
+            <input type="hidden" id="materialId">
+            <input type="hidden" id="qcNumber" value="1">
 
             <!-- Material Info -->
             <div id="materialInfo" class="material-info" style="display:none;">
@@ -298,7 +311,6 @@
                     </div>
                 </div>
 
-                <!-- ✅ UNIT SHEET atau PCS otomatis berubah -->
                 <div class="form-row-3">
                     <div class="form-group">
                         <label id="labelQtyOk">Qty OK (Sheet) <span class="required">*</span></label>
@@ -373,6 +385,7 @@
         let isSubmitting = false;
         let materialData = null;
         let diecutData = null;
+        let selectedNoPi = null;
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -409,55 +422,90 @@
         // Set today's date
         document.getElementById('tanggal_qc').value = new Date().toISOString().split('T')[0];
 
-        // Load material dari URL parameter
-        function getUrlParams() {
-            const params = new URLSearchParams(window.location.search);
-            return {
-                material_id: params.get('material_id'),
-                qc: parseInt(params.get('qc')) || 1
-            };
-        }
+        // ============================================================
+        // ✅ LOAD DAFTAR NO PI
+        // ============================================================
+        async function loadPiList() {
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .order('created_at', { ascending: false });
 
-        // ============================================================
-        // ✅ LOAD MATERIAL DENGAN VALIDASI LENGKAP + UNIT
-        // ============================================================
-        async function loadMaterial() {
-            const params = getUrlParams();
-            if (!params.material_id) {
-                document.getElementById('materialInfo').style.display = 'none';
-                document.getElementById('pageTitle').innerText = '🔬 QC Inspection';
-                document.getElementById('qcBadge').innerText = 'Pilih Material dari Tracking';
-                document.getElementById('qcBadge').style.background = '#fef3c7';
-                showMessage('⚠️ Silakan pilih material dari halaman Tracking Material', 'warning');
+            if (error) {
+                showMessage('❌ Gagal memuat daftar No PI: ' + error.message, 'error');
                 return;
             }
 
-            currentMaterialId = params.material_id;
-            currentQcNumber = params.qc || 1;
+            const select = document.getElementById('selectNoPi');
+            // Kosongkan kecuali option pertama
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
 
-            document.getElementById('materialId').value = currentMaterialId;
-            document.getElementById('qcNumber').value = currentQcNumber;
+            if (!data || data.length === 0) {
+                select.innerHTML += '<option value="" disabled>Belum ada material masuk</option>';
+                return;
+            }
+
+            for (const item of data) {
+                // Hanya tampilkan No PI yang tidak kosong
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.no_pi;
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} (${item.status})`;
+                    option.dataset.id = item.id;
+                    option.dataset.qtySheet = item.qty_sheet;
+                    option.dataset.upPerSheet = item.up_per_sheet;
+                    option.dataset.status = item.status;
+                    option.dataset.noPo = item.no_po;
+                    option.dataset.brand = item.brand;
+                    option.dataset.jenis = item.jenis;
+                    select.appendChild(option);
+                }
+            }
+
+            // Jika ada parameter qc di URL, set ke mode yang sesuai
+            const params = new URLSearchParams(window.location.search);
+            const qcParam = parseInt(params.get('qc')) || 1;
+            document.getElementById('qcNumber').value = qcParam;
+            currentQcNumber = qcParam;
 
             // Update title
             document.getElementById('pageTitle').innerText = `🔬 QC #${currentQcNumber}`;
             document.getElementById('qcBadge').innerText = `QC #${currentQcNumber}`;
             document.getElementById('qcBadge').style.background = '#dbeafe';
+        }
 
-            // Ambil data material
-            const { data: material, error } = await sb
-                .from('material_inbound')
-                .select('*')
-                .eq('id', currentMaterialId)
-                .single();
+        // ============================================================
+        // ✅ LOAD MATERIAL BERDASARKAN NO PI
+        // ============================================================
+        async function loadMaterialByPi() {
+            const select = document.getElementById('selectNoPi');
+            const selectedOption = select.options[select.selectedIndex];
+            const noPi = select.value;
 
-            if (error || !material) {
-                showMessage('❌ Material tidak ditemukan!', 'error');
+            if (!noPi) {
+                document.getElementById('materialInfo').style.display = 'none';
+                document.getElementById('unitInfo').style.display = 'none';
+                document.getElementById('qcBadge').innerText = 'Pilih No PI';
+                document.getElementById('qcBadge').style.background = '#fef3c7';
                 return;
             }
 
-            materialData = material;
+            // Ambil data dari option yang dipilih
+            const materialId = selectedOption.dataset.id;
+            const qtySheet = parseInt(selectedOption.dataset.qtySheet) || 0;
+            const upPerSheet = parseInt(selectedOption.dataset.upPerSheet) || 0;
+            const status = selectedOption.dataset.status;
+            const noPo = selectedOption.dataset.noPo;
+            const brand = selectedOption.dataset.brand;
+            const jenis = selectedOption.dataset.jenis;
 
-            // ✅ VALIDASI 1: Status material harus sesuai
+            // Simpan ke variabel global
+            currentMaterialId = materialId;
+            selectedNoPi = noPi;
+
+            document.getElementById('materialId').value = materialId;
+
+            // ✅ VALIDASI STATUS
             const statusMap = {
                 'DITERIMA': '📥 Diterima',
                 'QC1': '🔬 QC #1',
@@ -466,31 +514,39 @@
                 'KIRIM': '🏭 Kirim Produksi'
             };
 
-            if (currentQcNumber === 1 && material.status !== 'DITERIMA') {
-                showMessage(`⚠️ QC #1 hanya untuk status DITERIMA! Status saat ini: ${statusMap[material.status] || material.status}`, 'warning');
-                document.getElementById('qcBadge').innerText = `⚠️ Status: ${material.status}`;
+            if (currentQcNumber === 1 && status !== 'DITERIMA') {
+                showMessage(`⚠️ QC #1 hanya untuk status DITERIMA! Status saat ini: ${statusMap[status] || status}`, 'warning');
+                document.getElementById('qcBadge').innerText = `⚠️ Status: ${status}`;
                 document.getElementById('qcBadge').style.background = '#fee2e2';
+                document.getElementById('materialInfo').style.display = 'none';
+                document.getElementById('unitInfo').style.display = 'none';
                 return;
             }
 
-            if (currentQcNumber === 2 && material.status !== 'DIECUT') {
-                showMessage(`⚠️ QC #2 hanya untuk status DIECUT! Status saat ini: ${statusMap[material.status] || material.status}`, 'warning');
-                document.getElementById('qcBadge').innerText = `⚠️ Status: ${material.status}`;
+            if (currentQcNumber === 2 && status !== 'DIECUT') {
+                showMessage(`⚠️ QC #2 hanya untuk status DIECUT! Status saat ini: ${statusMap[status] || status}`, 'warning');
+                document.getElementById('qcBadge').innerText = `⚠️ Status: ${status}`;
                 document.getElementById('qcBadge').style.background = '#fee2e2';
+                document.getElementById('materialInfo').style.display = 'none';
+                document.getElementById('unitInfo').style.display = 'none';
                 return;
             }
 
-            // ✅ VALIDASI 2: QC #1 harus sudah ada sebelum QC #2
+            // ✅ VALIDASI QC #1 harus sudah ada sebelum QC #2
             if (currentQcNumber === 2) {
                 const { data: qc1Exists } = await sb
                     .from('qc_inspection')
                     .select('id')
-                    .eq('material_inbound_id', currentMaterialId)
+                    .eq('material_inbound_id', materialId)
                     .eq('qc_number', 1)
                     .limit(1);
 
                 if (!qc1Exists || qc1Exists.length === 0) {
                     showMessage('❌ Harus melakukan QC #1 terlebih dahulu sebelum QC #2!', 'error');
+                    document.getElementById('qcBadge').innerText = '⚠️ Belum QC #1';
+                    document.getElementById('qcBadge').style.background = '#fee2e2';
+                    document.getElementById('materialInfo').style.display = 'none';
+                    document.getElementById('unitInfo').style.display = 'none';
                     return;
                 }
 
@@ -498,7 +554,7 @@
                 const { data: diecut } = await sb
                     .from('diecut_process')
                     .select('qty_pcs_ok')
-                    .eq('material_inbound_id', currentMaterialId)
+                    .eq('material_inbound_id', materialId)
                     .order('created_at', { ascending: false })
                     .limit(1);
 
@@ -515,18 +571,15 @@
             let targetLabel = '';
 
             if (currentQcNumber === 1) {
-                // QC #1: Cek dalam SHEET
                 unit = 'Sheet';
-                targetValue = material.qty_sheet || 0;
+                targetValue = qtySheet || 0;
                 targetLabel = `${targetValue} Sheet`;
                 
-                // Update label form
                 document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
                 document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
                 document.getElementById('labelQtyRework').innerHTML = 'Qty Rework (Sheet)';
                 document.getElementById('maxUnitOk').innerText = 'Sheet';
                 
-                // Update info box
                 document.getElementById('unitInfoText').innerHTML = `
                     🔬 <strong>QC #1 - Inspeksi Material dalam satuan SHEET</strong><br>
                     📦 Target QC: <strong>${targetValue} Sheet</strong> (dari qty sheet material masuk)<br>
@@ -534,18 +587,15 @@
                 `;
 
             } else if (currentQcNumber === 2) {
-                // QC #2: Cek dalam PCS
                 unit = 'Pcs';
                 targetValue = diecutData ? diecutData.qty_pcs_ok : 0;
                 targetLabel = `${targetValue} Pcs`;
                 
-                // Update label form
                 document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
                 document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
                 document.getElementById('labelQtyRework').innerHTML = 'Qty Rework (Pcs)';
                 document.getElementById('maxUnitOk').innerText = 'Pcs';
                 
-                // Update info box
                 document.getElementById('unitInfoText').innerHTML = `
                     🔬 <strong>QC #2 - Inspeksi Hasil Diecut dalam satuan PCS</strong><br>
                     📦 Target QC: <strong>${targetValue} Pcs</strong> (dari hasil diecut)<br>
@@ -555,19 +605,19 @@
 
             // Tampilkan info material
             document.getElementById('materialInfo').style.display = 'block';
-            document.getElementById('infoNoPo').innerText = material.no_po || '-';
-            document.getElementById('infoNoPi').innerText = material.no_pi || '-';
-            document.getElementById('infoBrand').innerText = material.brand || '-';
-            document.getElementById('infoJenis').innerText = material.jenis || '-';
+            document.getElementById('infoNoPo').innerText = noPo || '-';
+            document.getElementById('infoNoPi').innerText = noPi || '-';
+            document.getElementById('infoBrand').innerText = brand || '-';
+            document.getElementById('infoJenis').innerText = jenis || '-';
             document.getElementById('infoTarget').innerHTML = `<span style="color:#3b82f6;font-weight:bold;">${targetLabel}</span>`;
             document.getElementById('infoUnit').innerHTML = `<span class="unit-badge">${unit}</span>`;
-            document.getElementById('infoStatus').innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[material.status] || material.status}</span>`;
+            document.getElementById('infoStatus').innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[status] || status}</span>`;
 
             // ✅ Cek apakah sudah pernah QC sebelumnya
             const { data: existingQC } = await sb
                 .from('qc_inspection')
                 .select('qty_ok, qty_ng')
-                .eq('material_inbound_id', currentMaterialId)
+                .eq('material_inbound_id', materialId)
                 .eq('qc_number', currentQcNumber)
                 .order('created_at', { ascending: false })
                 .limit(1);
@@ -583,14 +633,14 @@
             // ✅ Set max qty_ok sesuai unit
             document.getElementById('maxQtyOk').innerText = targetValue;
 
-            document.getElementById('qcBadge').innerText = `✅ ${material.no_po} - ${material.brand}`;
+            document.getElementById('qcBadge').innerText = `✅ ${noPo} - ${brand}`;
             document.getElementById('qcBadge').style.background = '#d1fae5';
 
             // Tampilkan unit info
             document.getElementById('unitInfo').style.display = 'block';
 
             // Load history QC
-            loadHistory(currentMaterialId);
+            loadHistory(materialId);
         }
 
         async function loadHistory(materialId) {
@@ -647,7 +697,7 @@
         }
 
         // ============================================================
-        // ✅ SAVE QC DENGAN VALIDASI LENGKAP + UNIT
+        // ✅ SAVE QC
         // ============================================================
         async function saveQC() {
             if (isSubmitting) return;
@@ -663,8 +713,8 @@
             const alasan_ng = document.getElementById('alasan_ng').value;
             const notes = document.getElementById('notes').value.trim();
 
-            // Validasi dasar
-            if (!materialId) { showMessage('❌ Material tidak valid!', 'error'); return; }
+            // Validasi
+            if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!tanggal_qc) { showMessage('❌ Tanggal QC wajib diisi!', 'error'); return; }
             if (!inspector) { showMessage('❌ Nama Inspector wajib diisi!', 'error'); return; }
             if (isNaN(qty_ok) || qty_ok < 0) { showMessage('❌ Qty OK harus lebih dari 0!', 'error'); return; }
@@ -672,12 +722,14 @@
             if (!hasil) { showMessage('❌ Hasil QC wajib dipilih!', 'error'); return; }
             if (hasil === 'NG' && !alasan_ng) { showMessage('❌ Alasan NG wajib diisi!', 'error'); return; }
 
-            // ✅ Tentukan target berdasarkan QC Number
+            // ✅ Ambil target dari material
+            const select = document.getElementById('selectNoPi');
+            const selectedOption = select.options[select.selectedIndex];
             let targetValue = 0;
             let unitLabel = '';
 
             if (qcNumber === 1) {
-                targetValue = materialData.qty_sheet || 0;
+                targetValue = parseInt(selectedOption.dataset.qtySheet) || 0;
                 unitLabel = 'Sheet';
             } else if (qcNumber === 2) {
                 if (!diecutData) {
@@ -693,13 +745,12 @@
                 unitLabel = 'Pcs';
             }
 
-            // ✅ VALIDASI 3: Qty OK tidak boleh melebihi target
+            // ✅ Validasi Qty OK
             if (qty_ok > targetValue) {
                 showMessage(`❌ Qty OK (${qty_ok} ${unitLabel}) melebihi target (${targetValue} ${unitLabel})!`, 'error');
                 return;
             }
 
-            // ✅ VALIDASI 4: OK + NG + Rework tidak boleh melebihi target
             if ((qty_ok + qty_ng + qty_rework) > targetValue) {
                 showMessage(`❌ Total OK + NG + Rework (${qty_ok + qty_ng + qty_rework} ${unitLabel}) melebihi target (${targetValue} ${unitLabel})!`, 'error');
                 return;
@@ -731,24 +782,21 @@
                 };
 
                 const { error } = await sb.from('qc_inspection').insert([data]);
-
                 if (error) throw error;
 
-                // ✅ UPDATE STATUS YANG TEPAT
+                // ✅ Update status
                 let newStatus = '';
                 if (qcNumber === 1) {
-                    if (hasil === 'OK') {
-                        newStatus = 'QC1';  // Lanjut ke Diecut
+                    if (hasil === 'OK' || hasil === 'REWORK') {
+                        newStatus = 'QC1';
                     } else if (hasil === 'NG') {
-                        newStatus = 'DITERIMA';  // Kembali ke awal
-                    } else if (hasil === 'REWORK') {
-                        newStatus = 'QC1';  // Lanjut ke Diecut dengan catatan
+                        newStatus = 'DITERIMA';
                     }
                 } else if (qcNumber === 2) {
                     if (hasil === 'OK') {
-                        newStatus = 'KIRIM';  // Siap kirim produksi
+                        newStatus = 'KIRIM';
                     } else if (hasil === 'NG' || hasil === 'REWORK') {
-                        newStatus = 'QC2';  // Tetap di QC2
+                        newStatus = 'QC2';
                     }
                 }
 
@@ -756,7 +804,7 @@
                     await sb.from('material_inbound').update({ status: newStatus }).eq('id', materialId);
                 }
 
-                // Jika ada NG, simpan ke ng_tracking
+                // ✅ Simpan NG jika ada
                 if (qty_ng > 0 && hasil === 'NG') {
                     const proses = qcNumber === 1 ? 'QC1' : 'QC2';
                     await sb.from('ng_tracking').insert({
@@ -764,30 +812,31 @@
                         proses: proses,
                         qty_ng: qty_ng,
                         jenis_ng: alasan_ng || 'LAINNYA',
-                        deskripsi: notes || `NG dari QC #${qcNumber} (${unitLabel})`,
+                        deskripsi: notes || `NG dari QC #${qcNumber}`,
                         created_by: user?.email || 'Unknown'
                     });
                 }
 
                 const statusText = newStatus ? `Status: ${newStatus}` : 'Status Tetap';
-                showMessage(`✅ QC #${qcNumber} berhasil disimpan! ${statusText} (${unitLabel})`, 'success');
-                showToast(`✅ QC #${qcNumber} berhasil! (${unitLabel})`, 'success');
+                showMessage(`✅ QC #${qcNumber} berhasil disimpan! ${statusText}`, 'success');
+                showToast(`✅ QC #${qcNumber} berhasil!`, 'success');
 
                 resetForm();
-                loadHistory(materialId);
-
-                // Update info qty ok/ng
-                document.getElementById('infoQtyOk').innerText = qty_ok;
-                document.getElementById('infoQtyNg').innerText = qty_ng;
+                
+                // Refresh data
+                await loadPiList();
+                if (selectedNoPi) {
+                    document.getElementById('selectNoPi').value = selectedNoPi;
+                    await loadMaterialByPi();
+                }
 
                 try {
-                    await addLog('QC INSPECTION', `${user?.email} melakukan QC #${qcNumber} (${unitLabel}) untuk material ID ${materialId}`);
-                } catch(e) { console.log('Log error:', e); }
+                    await addLog('QC INSPECTION', `${user?.email} melakukan QC #${qcNumber} untuk No PI ${selectedNoPi}`);
+                } catch(e) {}
 
             } catch (err) {
                 showMessage('❌ Gagal menyimpan: ' + err.message, 'error');
                 showToast('❌ Gagal: ' + err.message, 'error');
-                console.error('Save error:', err);
             } finally {
                 isSubmitting = false;
                 btn.innerHTML = originalText;
@@ -854,9 +903,17 @@
             if (!session) window.location.href = 'login.html';
             
             setupEventListeners();
-            await loadMaterial();
+            await loadPiList();
+            
+            // Cek apakah ada parameter qc di URL
+            const params = new URLSearchParams(window.location.search);
+            const qcParam = parseInt(params.get('qc')) || 1;
+            document.getElementById('qcNumber').value = qcParam;
+            currentQcNumber = qcParam;
         }
 
+        window.loadPiList = loadPiList;
+        window.loadMaterialByPi = loadMaterialByPi;
         window.saveQC = saveQC;
         window.resetForm = resetForm;
 
