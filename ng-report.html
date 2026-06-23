@@ -111,7 +111,6 @@
             cursor: pointer;
         }
         .btn-export { background: #10b981 !important; }
-        .btn-add { background: #8b5cf6 !important; }
 
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 900px; }
@@ -173,7 +172,7 @@
     </style>
 </head>
 <body>
-      <div class="sidebar" id="sidebar">
+        <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 SUPPLY MATERIAL</h3>
             <p>Manajemen Inventory</p>
@@ -265,11 +264,13 @@
 
         async function loadData() {
             const container = getEl('mainContent');
-            if (!container) return;
+            if (!container) {
+                console.error('Element mainContent tidak ditemukan!');
+                return;
+            }
             container.innerHTML = '<div class="loading">📡 Mengambil data NG...</div>';
 
             try {
-                // Ambil semua data NG dari ng_tracking dengan join ke material_inbound
                 const { data: ngData, error } = await sb
                     .from('ng_tracking')
                     .select(`
@@ -295,12 +296,17 @@
                 renderPage();
 
             } catch (err) {
-                container.innerHTML = `<div class="card">❌ Error: ${err.message}</div>`;
+                if (container) {
+                    container.innerHTML = `<div class="card">❌ Error: ${err.message}</div>';
+                }
                 showToast('❌ Gagal memuat data: ' + err.message, 'error');
             }
         }
 
         function renderPage() {
+            const container = getEl('mainContent');
+            if (!container) return;
+
             const searchText = getEl('searchInput')?.value?.toLowerCase() || '';
             const prosesFilter = getEl('filterProses')?.value || 'all';
             const jenisFilter = getEl('filterJenisNg')?.value || 'all';
