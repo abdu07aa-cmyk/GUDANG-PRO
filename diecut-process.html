@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        /* ====== STYLE SAMA SEPERTI SEBELUMNYA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -261,12 +260,12 @@
                 <div style="font-weight:600;margin-bottom:8px;">📋 Informasi Material</div>
                 <div class="material-info-grid" id="materialInfoGrid">
                     <div><span class="label">No PO:</span> <span class="value" id="infoNoPo">-</span></div>
+                    <div><span class="label">No PI:</span> <span class="value" id="infoNoPi">-</span></div>
                     <div><span class="label">Brand:</span> <span class="value" id="infoBrand">-</span></div>
                     <div><span class="label">Jenis:</span> <span class="value" id="infoJenis">-</span></div>
                     <div><span class="label">Qty Sheet (Masuk):</span> <span class="value" id="infoSheet">-</span></div>
                     <div><span class="label">Up/Sheet:</span> <span class="value" id="infoUp">-</span></div>
                     <div><span class="label">Target Pcs:</span> <span class="value" id="infoTarget">-</span></div>
-                    <!-- ✅ INFO QC #1 -->
                     <div><span class="label">QC #1 OK (Sheet):</span> <span class="value" id="infoQc1Ok" style="color:#10b981;font-weight:bold;">-</span></div>
                     <div><span class="label">QC #1 NG (Sheet):</span> <span class="value" id="infoQc1Ng" style="color:#ef4444;font-weight:bold;">-</span></div>
                     <div><span class="label">Sheet Diecut:</span> <span class="value" id="infoSheetDiecut" style="color:#3b82f6;font-weight:bold;">-</span></div>
@@ -333,8 +332,8 @@
                     <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
                         🔄 Reset
                     </button>
-                    <button type="button" class="btn btn-back" onclick="window.location.href='material-inbound.html'" style="flex:1; min-width:100px;">
-                        ⬅ Kembali
+                    <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
+                        ⬅ Kembali ke Tracking
                     </button>
                 </div>
             </form>
@@ -354,8 +353,13 @@
         let currentMaterialId = null;
         let isSubmitting = false;
 
+        function getEl(id) {
+            return document.getElementById(id);
+        }
+
         function showToast(msg, type = 'success') {
-            const t = document.getElementById('toast');
+            const t = getEl('toast');
+            if (!t) return;
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
@@ -363,7 +367,8 @@
         }
 
         function showMessage(msg, type = 'info') {
-            const container = document.getElementById('msgContainer');
+            const container = getEl('msgContainer');
+            if (!container) return;
             const map = {
                 success: 'alert-success',
                 error: 'alert-error',
@@ -376,23 +381,28 @@
 
         // Auto calculate yield
         function calculateYield() {
-            const pcsOut = parseInt(document.getElementById('qty_pcs_out').value) || 0;
-            const ng = parseInt(document.getElementById('qty_ng_diecut').value) || 0;
+            const pcsOut = parseInt(getEl('qty_pcs_out')?.value) || 0;
+            const ng = parseInt(getEl('qty_ng_diecut')?.value) || 0;
             const pcsOk = pcsOut - ng;
             const yieldPercent = pcsOut > 0 ? Math.round((pcsOk / pcsOut) * 100) : 0;
 
             const yieldColor = yieldPercent >= 90 ? '#10b981' : (yieldPercent >= 70 ? '#f59e0b' : '#ef4444');
             
-            document.getElementById('calcResult').innerHTML = 
-                `Pcs Out: ${pcsOut} - NG: ${ng} = <strong style="color:#10b981;">${pcsOk} Pcs OK</strong> | Yield: <strong style="color:${yieldColor};">${yieldPercent}%</strong>`;
+            const calcResult = getEl('calcResult');
+            if (calcResult) {
+                calcResult.innerHTML = 
+                    `Pcs Out: ${pcsOut} - NG: ${ng} = <strong style="color:#10b981;">${pcsOk} Pcs OK</strong> | Yield: <strong style="color:${yieldColor};">${yieldPercent}%</strong>`;
+            }
             
             return { pcsOk, yieldPercent };
         }
 
-        document.getElementById('qty_ng_diecut').addEventListener('input', calculateYield);
+        const ngInput = getEl('qty_ng_diecut');
+        if (ngInput) ngInput.addEventListener('input', calculateYield);
 
         // Set today's date
-        document.getElementById('tanggal_diecut').value = new Date().toISOString().split('T')[0];
+        const tanggalDiecut = getEl('tanggal_diecut');
+        if (tanggalDiecut) tanggalDiecut.value = new Date().toISOString().split('T')[0];
 
         // Load material dari URL parameter
         function getUrlParams() {
@@ -405,15 +415,21 @@
         async function loadMaterial() {
             const params = getUrlParams();
             if (!params.material_id) {
-                document.getElementById('materialInfo').style.display = 'none';
-                document.getElementById('statusBadge').innerText = '⚠️ Pilih Material dari Tracking';
-                document.getElementById('statusBadge').style.background = '#fef3c7';
+                const materialInfo = getEl('materialInfo');
+                if (materialInfo) materialInfo.style.display = 'none';
+                
+                const statusBadge = getEl('statusBadge');
+                if (statusBadge) {
+                    statusBadge.innerText = '⚠️ Pilih Material dari Tracking';
+                    statusBadge.style.background = '#fef3c7';
+                }
                 showMessage('⚠️ Silakan pilih material dari halaman Material Masuk', 'warning');
                 return;
             }
 
             currentMaterialId = params.material_id;
-            document.getElementById('materialId').value = currentMaterialId;
+            const materialIdEl = getEl('materialId');
+            if (materialIdEl) materialIdEl.value = currentMaterialId;
 
             // Ambil data material
             const { data: material, error } = await sb
@@ -430,8 +446,11 @@
             // Cek status harus QC1
             if (material.status !== 'QC1') {
                 showMessage(`⚠️ Material status: ${material.status}. Harus QC1 untuk diecut!`, 'warning');
-                document.getElementById('statusBadge').innerText = `⚠️ Status: ${material.status} (harus QC1)`;
-                document.getElementById('statusBadge').style.background = '#fee2e2';
+                const statusBadge = getEl('statusBadge');
+                if (statusBadge) {
+                    statusBadge.innerText = `⚠️ Status: ${material.status} (harus QC1)`;
+                    statusBadge.style.background = '#fee2e2';
+                }
                 return;
             }
 
@@ -450,29 +469,55 @@
             }
 
             const qc1 = qc1Data[0];
-            const qtySheetOk = qc1.qty_ok;  // ← INI YANG DIPAKAI UNTUK DIECUT
+            const qtySheetOk = qc1.qty_ok;
             const totalPcs = qtySheetOk * material.up_per_sheet;
 
             // Tampilkan info material
-            document.getElementById('materialInfo').style.display = 'block';
-            document.getElementById('infoNoPo').innerText = material.no_po || '-';
-            document.getElementById('infoBrand').innerText = material.brand || '-';
-            document.getElementById('infoJenis').innerText = material.jenis || '-';
-            document.getElementById('infoSheet').innerText = material.qty_sheet || 0;
-            document.getElementById('infoUp').innerText = material.up_per_sheet || 0;
-            document.getElementById('infoTarget').innerText = (material.qty_sheet * material.up_per_sheet).toLocaleString();
+            const materialInfo = getEl('materialInfo');
+            if (materialInfo) materialInfo.style.display = 'block';
             
-            // ✅ TAMPILKAN INFO QC #1
-            document.getElementById('infoQc1Ok').innerText = qtySheetOk;
-            document.getElementById('infoQc1Ng').innerText = qc1.qty_ng || 0;
-            document.getElementById('infoSheetDiecut').innerText = qtySheetOk;
+            const infoNoPo = getEl('infoNoPo');
+            if (infoNoPo) infoNoPo.innerText = material.no_po || '-';
+            
+            const infoNoPi = getEl('infoNoPi');
+            if (infoNoPi) infoNoPi.innerText = material.no_pi || '-';
+            
+            const infoBrand = getEl('infoBrand');
+            if (infoBrand) infoBrand.innerText = material.brand || '-';
+            
+            const infoJenis = getEl('infoJenis');
+            if (infoJenis) infoJenis.innerText = material.jenis || '-';
+            
+            const infoSheet = getEl('infoSheet');
+            if (infoSheet) infoSheet.innerText = material.qty_sheet || 0;
+            
+            const infoUp = getEl('infoUp');
+            if (infoUp) infoUp.innerText = material.up_per_sheet || 0;
+            
+            const infoTarget = getEl('infoTarget');
+            if (infoTarget) infoTarget.innerText = (material.qty_sheet * material.up_per_sheet).toLocaleString();
+            
+            const infoQc1Ok = getEl('infoQc1Ok');
+            if (infoQc1Ok) infoQc1Ok.innerText = qtySheetOk;
+            
+            const infoQc1Ng = getEl('infoQc1Ng');
+            if (infoQc1Ng) infoQc1Ng.innerText = qc1.qty_ng || 0;
+            
+            const infoSheetDiecut = getEl('infoSheetDiecut');
+            if (infoSheetDiecut) infoSheetDiecut.innerText = qtySheetOk;
 
-            document.getElementById('statusBadge').innerText = `✅ ${material.no_po} - ${material.brand}`;
-            document.getElementById('statusBadge').style.background = '#d1fae5';
+            const statusBadge = getEl('statusBadge');
+            if (statusBadge) {
+                statusBadge.innerText = `✅ ${material.no_po} - ${material.brand}`;
+                statusBadge.style.background = '#d1fae5';
+            }
 
-            // ✅ AUTO FILL dari QC #1 OK (bukan dari material_inbound)
-            document.getElementById('qty_sheet_in').value = qtySheetOk;
-            document.getElementById('qty_pcs_out').value = totalPcs;
+            // ✅ AUTO FILL dari QC #1 OK
+            const qtySheetIn = getEl('qty_sheet_in');
+            if (qtySheetIn) qtySheetIn.value = qtySheetOk;
+            
+            const qtyPcsOut = getEl('qty_pcs_out');
+            if (qtyPcsOut) qtyPcsOut.value = totalPcs;
 
             // Load history diecut
             loadHistory(currentMaterialId);
@@ -482,7 +527,8 @@
         }
 
         async function loadHistory(materialId) {
-            const container = document.getElementById('historyList');
+            const container = getEl('historyList');
+            if (!container) return;
             
             const { data, error } = await sb
                 .from('diecut_process')
@@ -540,14 +586,14 @@
         async function saveDiecut() {
             if (isSubmitting) return;
 
-            const materialId = document.getElementById('materialId').value;
-            const tanggal_diecut = document.getElementById('tanggal_diecut').value;
-            const mesin = document.getElementById('mesin').value.trim();
-            const operator = document.getElementById('operator').value.trim();
-            const qty_sheet_in = parseInt(document.getElementById('qty_sheet_in').value) || 0;
-            const qty_pcs_out = parseInt(document.getElementById('qty_pcs_out').value) || 0;
-            const qty_ng_diecut = parseInt(document.getElementById('qty_ng_diecut').value) || 0;
-            const notes = document.getElementById('notes').value.trim();
+            const materialId = getEl('materialId')?.value;
+            const tanggal_diecut = getEl('tanggal_diecut')?.value;
+            const mesin = getEl('mesin')?.value?.trim() || '';
+            const operator = getEl('operator')?.value?.trim() || '';
+            const qty_sheet_in = parseInt(getEl('qty_sheet_in')?.value) || 0;
+            const qty_pcs_out = parseInt(getEl('qty_pcs_out')?.value) || 0;
+            const qty_ng_diecut = parseInt(getEl('qty_ng_diecut')?.value) || 0;
+            const notes = getEl('notes')?.value?.trim() || '';
 
             // Validasi
             if (!materialId) { showMessage('❌ Material tidak valid!', 'error'); return; }
@@ -560,6 +606,13 @@
             const { pcsOk, yieldPercent } = calculateYield();
 
             isSubmitting = true;
+
+            const btn = getEl('btnSubmit');
+            const originalText = btn ? btn.innerHTML : 'Loading...';
+            if (btn) {
+                btn.innerHTML = '⏳ Menyimpan...';
+                btn.disabled = true;
+            }
 
             try {
                 const { data: { user } } = await sb.auth.getUser();
@@ -611,16 +664,32 @@
                 showToast('❌ Gagal: ' + err.message, 'error');
             } finally {
                 isSubmitting = false;
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
             }
         }
 
         function resetForm() {
-            document.getElementById('tanggal_diecut').value = new Date().toISOString().split('T')[0];
-            document.getElementById('mesin').value = '';
-            document.getElementById('operator').value = '';
-            document.getElementById('qty_ng_diecut').value = '0';
-            document.getElementById('notes').value = '';
-            document.getElementById('msgContainer').innerHTML = '';
+            const tanggalDiecut = getEl('tanggal_diecut');
+            if (tanggalDiecut) tanggalDiecut.value = new Date().toISOString().split('T')[0];
+            
+            const mesin = getEl('mesin');
+            if (mesin) mesin.value = '';
+            
+            const operator = getEl('operator');
+            if (operator) operator.value = '';
+            
+            const qtyNgDiecut = getEl('qty_ng_diecut');
+            if (qtyNgDiecut) qtyNgDiecut.value = '0';
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = '';
+            
+            const msgContainer = getEl('msgContainer');
+            if (msgContainer) msgContainer.innerHTML = '';
+            
             calculateYield();
         }
 
@@ -649,17 +718,47 @@
             window.location.href = files[menu] || 'dashboard.html';
         }
 
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+        function openSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+        }
+        
+        function closeSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+        }
+        
+        function toggleSidebar() { 
+            const sidebar = getEl('sidebar');
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
 
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+        async function logout() { 
+            await sb.auth.signOut(); 
+            window.location.href = 'login.html'; 
+        }
 
         function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
+            const menuToggle = getEl('menuToggle');
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            
+            const overlay = getEl('overlay');
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            
+            const logoutBtn = getEl('logoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            
+            const logoutMenu = getEl('logoutMenu');
+            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            
             document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
                 el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
             });
