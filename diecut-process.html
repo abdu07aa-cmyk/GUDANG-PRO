@@ -117,6 +117,8 @@
         .btn-secondary:hover { background: #cbd5e1; }
         .btn-back { background: #64748b; color: white; }
         .btn-back:hover { background: #475569; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
 
         .alert {
             padding: 12px 16px;
@@ -250,10 +252,21 @@
         <div class="card">
             <div class="card-title">
                 <span>⚙️ PROSES DIECUT</span>
-                <span id="statusBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">QC #1 → Diecut</span>
+                <span id="statusBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih No PI</span>
             </div>
             
             <div id="msgContainer"></div>
+
+            <!-- ✅ PILIH NO PI (DROPDOWN) -->
+            <div class="form-group">
+                <label>Pilih No PI <span class="required">*</span></label>
+                <select id="selectNoPi" onchange="loadMaterialByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Hanya menampilkan material dengan status QC1 (siap diecut)</span>
+            </div>
+
+            <input type="hidden" id="materialId">
 
             <!-- Material Info -->
             <div id="materialInfo" class="material-info" style="display:none;">
@@ -352,6 +365,7 @@
         <script>
         let currentMaterialId = null;
         let isSubmitting = false;
+        let selectedNoPi = null;
 
         function getEl(id) {
             return document.getElementById(id);
@@ -404,98 +418,147 @@
         const tanggalDiecut = getEl('tanggal_diecut');
         if (tanggalDiecut) tanggalDiecut.value = new Date().toISOString().split('T')[0];
 
-        // Load material dari URL parameter
-        function getUrlParams() {
-            const params = new URLSearchParams(window.location.search);
-            return {
-                material_id: params.get('material_id')
-            };
+        // ============================================================
+        // LOAD DAFTAR NO PI (STATUS QC1)
+        // ============================================================
+        async function loadPiList() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .eq('status', 'QC1')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                showMessage('❌ Gagal memuat daftar No PI: ' + error.message, 'error');
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+
+            if (!data || data.length === 0) {
+                select.innerHTML += '<option value="" disabled>Belum ada material dengan status QC1</option>';
+                return;
+            }
+
+            for (const item of data) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.no_pi;
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ✅ Siap Diecut`;
+                    option.dataset.id = item.id;
+                    option.dataset.qtySheet = item.qty_sheet;
+                    option.dataset.upPerSheet = item.up_per_sheet;
+                    option.dataset.status = item.status;
+                    option.dataset.noPo = item.no_po;
+                    option.dataset.brand = item.brand;
+                    option.dataset.jenis = item.jenis;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
         }
 
-        async function loadMaterial() {
-            const params = getUrlParams();
-            if (!params.material_id) {
+        // ============================================================
+        // LOAD MATERIAL BERDASARKAN NO PI
+        // ============================================================
+        async function loadMaterialByPi() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const noPi = select.value;
+
+            if (!noPi) {
                 const materialInfo = getEl('materialInfo');
                 if (materialInfo) materialInfo.style.display = 'none';
                 
                 const statusBadge = getEl('statusBadge');
                 if (statusBadge) {
-                    statusBadge.innerText = '⚠️ Pilih Material dari Tracking';
+                    statusBadge.innerText = 'Pilih No PI';
                     statusBadge.style.background = '#fef3c7';
                 }
-                showMessage('⚠️ Silakan pilih material dari halaman Material Masuk', 'warning');
+                
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                }
                 return;
             }
 
-            currentMaterialId = params.material_id;
+            const materialId = selectedOption.dataset.id;
+            const qtySheet = parseInt(selectedOption.dataset.qtySheet) || 0;
+            const upPerSheet = parseInt(selectedOption.dataset.upPerSheet) || 0;
+            const status = selectedOption.dataset.status;
+            const noPo = selectedOption.dataset.noPo;
+            const brand = selectedOption.dataset.brand;
+            const jenis = selectedOption.dataset.jenis;
+
+            currentMaterialId = materialId;
+            selectedNoPi = noPi;
+            
             const materialIdEl = getEl('materialId');
-            if (materialIdEl) materialIdEl.value = currentMaterialId;
+            if (materialIdEl) materialIdEl.value = materialId;
 
-            // Ambil data material
-            const { data: material, error } = await sb
-                .from('material_inbound')
-                .select('*')
-                .eq('id', currentMaterialId)
-                .single();
-
-            if (error || !material) {
-                showMessage('❌ Material tidak ditemukan!', 'error');
-                return;
-            }
-
-            // Cek status harus QC1
-            if (material.status !== 'QC1') {
-                showMessage(`⚠️ Material status: ${material.status}. Harus QC1 untuk diecut!`, 'warning');
+            // ✅ Validasi status harus QC1
+            if (status !== 'QC1') {
+                showMessage(`⚠️ Status material: ${status}. Harus QC1 untuk diecut!`, 'warning');
                 const statusBadge = getEl('statusBadge');
                 if (statusBadge) {
-                    statusBadge.innerText = `⚠️ Status: ${material.status} (harus QC1)`;
+                    statusBadge.innerText = `⚠️ Status: ${status} (harus QC1)`;
                     statusBadge.style.background = '#fee2e2';
                 }
                 return;
             }
 
-            // ✅ AMBIL DATA QC #1 (untuk dapat qty_ok)
+            // ✅ AMBIL DATA QC #1
             const { data: qc1Data, error: qc1Error } = await sb
                 .from('qc_inspection')
                 .select('*')
-                .eq('material_inbound_id', currentMaterialId)
+                .eq('material_inbound_id', materialId)
                 .eq('qc_number', 1)
                 .order('created_at', { ascending: false })
                 .limit(1);
 
             if (qc1Error || !qc1Data || qc1Data.length === 0) {
-                showMessage('❌ Data QC #1 tidak ditemukan! Material harus melalui QC #1 dulu.', 'error');
+                showMessage('❌ Data QC #1 tidak ditemukan!', 'error');
                 return;
             }
 
             const qc1 = qc1Data[0];
             const qtySheetOk = qc1.qty_ok;
-            const totalPcs = qtySheetOk * material.up_per_sheet;
+            const totalPcs = qtySheetOk * upPerSheet;
 
             // Tampilkan info material
             const materialInfo = getEl('materialInfo');
             if (materialInfo) materialInfo.style.display = 'block';
             
             const infoNoPo = getEl('infoNoPo');
-            if (infoNoPo) infoNoPo.innerText = material.no_po || '-';
+            if (infoNoPo) infoNoPo.innerText = noPo || '-';
             
             const infoNoPi = getEl('infoNoPi');
-            if (infoNoPi) infoNoPi.innerText = material.no_pi || '-';
+            if (infoNoPi) infoNoPi.innerText = noPi || '-';
             
             const infoBrand = getEl('infoBrand');
-            if (infoBrand) infoBrand.innerText = material.brand || '-';
+            if (infoBrand) infoBrand.innerText = brand || '-';
             
             const infoJenis = getEl('infoJenis');
-            if (infoJenis) infoJenis.innerText = material.jenis || '-';
+            if (infoJenis) infoJenis.innerText = jenis || '-';
             
             const infoSheet = getEl('infoSheet');
-            if (infoSheet) infoSheet.innerText = material.qty_sheet || 0;
+            if (infoSheet) infoSheet.innerText = qtySheet || 0;
             
             const infoUp = getEl('infoUp');
-            if (infoUp) infoUp.innerText = material.up_per_sheet || 0;
+            if (infoUp) infoUp.innerText = upPerSheet || 0;
             
             const infoTarget = getEl('infoTarget');
-            if (infoTarget) infoTarget.innerText = (material.qty_sheet * material.up_per_sheet).toLocaleString();
+            if (infoTarget) infoTarget.innerText = (qtySheet * upPerSheet).toLocaleString();
             
             const infoQc1Ok = getEl('infoQc1Ok');
             if (infoQc1Ok) infoQc1Ok.innerText = qtySheetOk;
@@ -508,11 +571,11 @@
 
             const statusBadge = getEl('statusBadge');
             if (statusBadge) {
-                statusBadge.innerText = `✅ ${material.no_po} - ${material.brand}`;
+                statusBadge.innerText = `✅ ${noPo} - ${brand}`;
                 statusBadge.style.background = '#d1fae5';
             }
 
-            // ✅ AUTO FILL dari QC #1 OK
+            // ✅ AUTO FILL
             const qtySheetIn = getEl('qty_sheet_in');
             if (qtySheetIn) qtySheetIn.value = qtySheetOk;
             
@@ -520,7 +583,7 @@
             if (qtyPcsOut) qtyPcsOut.value = totalPcs;
 
             // Load history diecut
-            loadHistory(currentMaterialId);
+            loadHistory(materialId);
 
             // Hitung yield awal
             calculateYield();
@@ -596,7 +659,7 @@
             const notes = getEl('notes')?.value?.trim() || '';
 
             // Validasi
-            if (!materialId) { showMessage('❌ Material tidak valid!', 'error'); return; }
+            if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
             if (!operator) { showMessage('❌ Nama Operator wajib diisi!', 'error'); return; }
             if (qty_sheet_in < 1) { showMessage('❌ Qty Sheet In tidak valid!', 'error'); return; }
@@ -653,10 +716,19 @@
                 showToast(`✅ Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
 
                 resetForm();
-                loadHistory(materialId);
+                
+                // Refresh data
+                await loadPiList();
+                if (selectedNoPi) {
+                    const selectEl = getEl('selectNoPi');
+                    if (selectEl) {
+                        selectEl.value = selectedNoPi;
+                        await loadMaterialByPi();
+                    }
+                }
 
                 try {
-                    await addLog('DIECUT', `${user?.email} melakukan diecut untuk material ID ${materialId}`);
+                    await addLog('DIECUT', `${user?.email} melakukan diecut untuk No PI ${selectedNoPi}`);
                 } catch(e) {}
 
             } catch (err) {
@@ -769,10 +841,30 @@
             if (!session) window.location.href = 'login.html';
             
             setupEventListeners();
-            await loadMaterial();
+            await loadPiList();
+            
+            // Cek apakah ada parameter material_id di URL (dari tracking)
+            const params = new URLSearchParams(window.location.search);
+            const materialId = params.get('material_id');
+            if (materialId) {
+                // Cari di dropdown dan pilih
+                const select = getEl('selectNoPi');
+                if (select) {
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].dataset.id === materialId) {
+                            select.value = select.options[i].value;
+                            await loadMaterialByPi();
+                            break;
+                        }
+                    }
+                }
+            }
+            
             calculateYield();
         }
 
+        window.loadPiList = loadPiList;
+        window.loadMaterialByPi = loadMaterialByPi;
         window.saveDiecut = saveDiecut;
         window.resetForm = resetForm;
         window.calculateYield = calculateYield;
