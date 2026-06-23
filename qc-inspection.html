@@ -83,7 +83,7 @@
             cursor: pointer;
         }
 
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
 
@@ -121,6 +121,10 @@
         .btn-back:hover { background: #475569; }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
         .btn-qc1 { background: #3b82f6; color: white; }
         .btn-qc1:hover { background: #2563eb; }
         .btn-qc2 { background: #e2e8f0; color: #1e293b; }
@@ -222,6 +226,28 @@
             min-width: 100px;
         }
 
+        .btn-small {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 2px;
+        }
+        .btn-edit-small { background: #f59e0b; color: white; }
+        .btn-edit-small:hover { background: #d97706; }
+        .btn-delete-small { background: #ef4444; color: white; }
+        .btn-delete-small:hover { background: #dc2626; }
+
+        .edit-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr; }
@@ -277,7 +303,7 @@
         <div class="container" id="mainContent">
         <div class="card">
             <div class="card-title">
-                <span id="pageTitle">🔬 QC Inspection</span>
+                <span id="pageTitle">🔬 QC Inspection <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
                 <span id="qcBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih QC</span>
             </div>
             
@@ -304,6 +330,7 @@
 
             <input type="hidden" id="materialId">
             <input type="hidden" id="qcNumber" value="1">
+            <input type="hidden" id="editId" value="">
 
             <!-- Material Info -->
             <div id="materialInfo" class="material-info" style="display:none;">
@@ -313,11 +340,11 @@
                     <div><span class="label">No PI:</span> <span class="value" id="infoNoPi">-</span></div>
                     <div><span class="label">Brand:</span> <span class="value" id="infoBrand">-</span></div>
                     <div><span class="label">Jenis:</span> <span class="value" id="infoJenis">-</span></div>
+                    <div><span class="label">Qty Sheet Masuk:</span> <span class="value" id="infoQtySheet">-</span></div>
+                    <div><span class="label">Up/Sheet:</span> <span class="value" id="infoUp">-</span></div>
                     <div><span class="label">Target QC:</span> <span class="value" id="infoTarget" style="font-weight:bold;color:#3b82f6;">-</span></div>
                     <div><span class="label">Satuan:</span> <span class="value" id="infoUnit">-</span></div>
                     <div><span class="label">Status:</span> <span class="value" id="infoStatus">-</span></div>
-                    <div><span class="label">Qty OK:</span> <span class="value" id="infoQtyOk" style="color:#10b981;font-weight:bold;">-</span></div>
-                    <div><span class="label">Qty NG:</span> <span class="value" id="infoQtyNg" style="color:#ef4444;font-weight:bold;">-</span></div>
                 </div>
             </div>
 
@@ -399,7 +426,10 @@
 
         <!-- History QC -->
         <div class="card">
-            <div class="card-title">📋 Riwayat QC</div>
+            <div class="card-title">
+                <span>📋 Riwayat QC</span>
+                <button class="btn btn-secondary" onclick="loadHistory(currentMaterialId)" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+            </div>
             <div id="historyList" style="overflow-x:auto;">
                 <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>
             </div>
@@ -414,6 +444,7 @@
         let materialData = null;
         let diecutData = null;
         let selectedNoPi = null;
+        let isEditMode = false;
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -457,7 +488,6 @@
             currentQcNumber = qc;
             document.getElementById('qcNumber').value = qc;
             
-            // Update button style
             if (qc === 1) {
                 document.getElementById('btnQc1').className = 'btn btn-qc1';
                 document.getElementById('btnQc2').className = 'btn btn-qc2';
@@ -466,16 +496,13 @@
                 document.getElementById('btnQc2').className = 'btn btn-qc1 active';
             }
             
-            // Update title
             document.getElementById('pageTitle').innerText = `🔬 QC #${qc}`;
             document.getElementById('qcBadge').innerText = `QC #${qc}`;
             
-            // Reset material info
             document.getElementById('materialInfo').style.display = 'none';
             document.getElementById('unitInfo').style.display = 'none';
             document.getElementById('historyList').innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
             
-            // Update label unit sesuai QC
             if (qc === 1) {
                 document.getElementById('labelQtyOk').innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
                 document.getElementById('labelQtyNg').innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
@@ -488,14 +515,17 @@
                 document.getElementById('maxUnitOk').innerText = 'Pcs';
             }
             
-            // Reset dropdown
+            // Reset edit mode
+            isEditMode = false;
+            document.getElementById('editId').value = '';
+            document.getElementById('editBadge').style.display = 'none';
+            document.getElementById('btnSubmit').innerHTML = '💾 Simpan QC';
+            
             const select = document.getElementById('selectNoPi');
             select.value = '';
             select.innerHTML = '<option value="">-- Pilih No PI --</option>';
             
-            // Reload daftar PI
             loadPiList();
-            
             showToast(`📌 Beralih ke QC #${qc}`, 'info');
         }
 
@@ -523,13 +553,10 @@
                 return;
             }
 
-            // Filter data berdasarkan QC
             let filteredData = data;
             if (currentQcNumber === 1) {
-                // QC #1: hanya DITERIMA
                 filteredData = data.filter(item => item.status === 'DITERIMA');
             } else if (currentQcNumber === 2) {
-                // QC #2: yang sudah lewat QC1 (QC1, DIECUT, QC2, KIRIM)
                 filteredData = data.filter(item => 
                     item.status === 'QC1' || 
                     item.status === 'DIECUT' || 
@@ -601,7 +628,6 @@
             selectedNoPi = noPi;
             document.getElementById('materialId').value = materialId;
 
-            // Status map
             const statusMap = {
                 'DITERIMA': '📥 Diterima',
                 'QC1': '🔬 QC #1',
@@ -610,7 +636,6 @@
                 'KIRIM': '🏭 Kirim Produksi'
             };
 
-            // VALIDASI untuk QC #1
             if (currentQcNumber === 1 && status !== 'DITERIMA') {
                 showMessage(`⚠️ QC #1 hanya untuk status DITERIMA! Status saat ini: ${statusMap[status] || status}`, 'warning');
                 document.getElementById('qcBadge').innerText = `⚠️ Status: ${status}`;
@@ -620,7 +645,6 @@
                 return;
             }
 
-            // VALIDASI QC #1 harus sudah ada sebelum QC #2
             if (currentQcNumber === 2) {
                 const { data: qc1Exists } = await sb
                     .from('qc_inspection')
@@ -638,7 +662,6 @@
                     return;
                 }
 
-                // Ambil data diecut untuk target QC #2
                 const { data: diecut } = await sb
                     .from('diecut_process')
                     .select('qty_pcs_ok')
@@ -653,7 +676,6 @@
                 diecutData = diecut[0];
             }
 
-            // Tentukan UNIT berdasarkan QC Number
             let unit = '';
             let targetValue = 0;
             let targetLabel = '';
@@ -691,17 +713,17 @@
                 `;
             }
 
-            // Tampilkan info material
             document.getElementById('materialInfo').style.display = 'block';
             document.getElementById('infoNoPo').innerText = noPo || '-';
             document.getElementById('infoNoPi').innerText = noPi || '-';
             document.getElementById('infoBrand').innerText = brand || '-';
             document.getElementById('infoJenis').innerText = jenis || '-';
+            document.getElementById('infoQtySheet').innerText = qtySheet || 0;
+            document.getElementById('infoUp').innerText = upPerSheet || 0;
             document.getElementById('infoTarget').innerHTML = `<span style="color:#3b82f6;font-weight:bold;">${targetLabel}</span>`;
             document.getElementById('infoUnit').innerHTML = `<span class="unit-badge">${unit}</span>`;
             document.getElementById('infoStatus').innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[status] || status}</span>`;
 
-            // Set max qty_ok
             document.getElementById('maxQtyOk').innerText = targetValue;
 
             document.getElementById('qcBadge').innerText = `✅ ${noPo} - ${brand}`;
@@ -714,10 +736,15 @@
         }
 
         // ============================================================
-        // LOAD HISTORY QC
+        // LOAD HISTORY QC (DENGAN QTY BARANG MASUK & TOMBOL EDIT)
         // ============================================================
         async function loadHistory(materialId) {
             const container = document.getElementById('historyList');
+            
+            if (!materialId) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                return;
+            }
             
             const { data, error } = await sb
                 .from('qc_inspection')
@@ -730,6 +757,13 @@
                 return;
             }
 
+            // ✅ Ambil data material untuk qty sheet
+            const { data: material } = await sb
+                .from('material_inbound')
+                .select('qty_sheet, up_per_sheet, qty_pcs')
+                .eq('id', materialId)
+                .single();
+
             if (!data || data.length === 0) {
                 container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat QC</div>`;
                 return;
@@ -741,10 +775,13 @@
                         <tr style="background:#f8fafc;">
                             <th style="padding:8px; text-align:left;">QC #</th>
                             <th style="padding:8px; text-align:left;">Tanggal</th>
+                            <th style="padding:8px; text-align:center;">Qty Masuk</th>
                             <th style="padding:8px; text-align:center;">OK</th>
                             <th style="padding:8px; text-align:center;">NG</th>
+                            <th style="padding:8px; text-align:center;">Rework</th>
                             <th style="padding:8px; text-align:center;">Hasil</th>
                             <th style="padding:8px; text-align:left;">Inspector</th>
+                            <th style="padding:8px; text-align:center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -752,16 +789,23 @@
 
             for (const item of data) {
                 const hasilClass = item.hasil === 'OK' ? 'status-ok' : (item.hasil === 'NG' ? 'status-ng' : 'status-rework');
-                // Unit berdasarkan qc_number
                 const unitLabel = item.qc_number === 1 ? 'Sheet' : 'Pcs';
+                const qtyMasuk = item.qc_number === 1 ? (material?.qty_sheet || 0) : (material?.qty_pcs || 0);
+                
                 html += `
                     <tr>
                         <td style="padding:8px; font-weight:500;">QC #${item.qc_number}</td>
                         <td style="padding:8px;">${item.tanggal_qc || '-'}</td>
+                        <td style="padding:8px; text-align:center; font-weight:bold;">${qtyMasuk} ${unitLabel}</td>
                         <td style="padding:8px; text-align:center; color:#10b981; font-weight:bold;">${item.qty_ok} ${unitLabel}</td>
                         <td style="padding:8px; text-align:center; color:#ef4444; font-weight:bold;">${item.qty_ng} ${unitLabel}</td>
+                        <td style="padding:8px; text-align:center; color:#f59e0b;">${item.qty_rework || 0} ${unitLabel}</td>
                         <td style="padding:8px; text-align:center;"><span class="status-badge ${hasilClass}">${item.hasil}</span></td>
                         <td style="padding:8px;">${item.inspector || '-'}</td>
+                        <td style="padding:8px; text-align:center;">
+                            <button class="btn-small btn-edit-small" onclick="editQC('${item.id}')">✏️</button>
+                            <button class="btn-small btn-delete-small" onclick="deleteQC('${item.id}')">🗑️</button>
+                        </td>
                     </tr>
                 `;
             }
@@ -771,13 +815,78 @@
         }
 
         // ============================================================
-        // SAVE QC
+        // EDIT QC
+        // ============================================================
+        async function editQC(id) {
+            const { data: qc, error } = await sb
+                .from('qc_inspection')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !qc) {
+                showToast('❌ Data tidak ditemukan!', 'error');
+                return;
+            }
+
+            isEditMode = true;
+            document.getElementById('editId').value = id;
+            document.getElementById('editBadge').style.display = 'inline';
+            document.getElementById('btnSubmit').innerHTML = '✏️ Update QC';
+            
+            // Isi form dengan data
+            document.getElementById('tanggal_qc').value = qc.tanggal_qc || '';
+            document.getElementById('inspector').value = qc.inspector || '';
+            document.getElementById('qty_ok').value = qc.qty_ok || '';
+            document.getElementById('qty_ng').value = qc.qty_ng || '';
+            document.getElementById('qty_rework').value = qc.qty_rework || 0;
+            document.getElementById('hasil').value = qc.hasil || '';
+            document.getElementById('alasan_ng').value = qc.alasan_ng || '';
+            document.getElementById('notes').value = qc.notes || '';
+            
+            // Tampilkan alasan NG jika hasil NG
+            if (qc.hasil === 'NG') {
+                document.getElementById('alasanNgGroup').style.display = 'block';
+                document.getElementById('alasan_ng').setAttribute('required', 'required');
+            } else {
+                document.getElementById('alasanNgGroup').style.display = 'none';
+            }
+            
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+            showToast('📝 Mode Edit: silakan ubah data QC', 'info');
+        }
+
+        // ============================================================
+        // DELETE QC
+        // ============================================================
+        async function deleteQC(id) {
+            if (!confirm('Yakin ingin menghapus data QC ini? Data tidak bisa dikembalikan!')) return;
+            
+            const { error } = await sb
+                .from('qc_inspection')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('❌ Gagal menghapus: ' + error.message, 'error');
+            } else {
+                showToast('✅ Data QC berhasil dihapus', 'success');
+                // Refresh history
+                if (currentMaterialId) {
+                    await loadHistory(currentMaterialId);
+                }
+            }
+        }
+
+        // ============================================================
+        // SAVE QC (TAMBAH + UPDATE)
         // ============================================================
         async function saveQC() {
             if (isSubmitting) return;
 
             const materialId = document.getElementById('materialId').value;
             const qcNumber = parseInt(document.getElementById('qcNumber').value) || 1;
+            const editId = document.getElementById('editId').value;
             const tanggal_qc = document.getElementById('tanggal_qc').value;
             const inspector = document.getElementById('inspector').value.trim();
             const qty_ok = parseInt(document.getElementById('qty_ok').value);
@@ -787,7 +896,6 @@
             const alasan_ng = document.getElementById('alasan_ng').value;
             const notes = document.getElementById('notes').value.trim();
 
-            // Validasi
             if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!tanggal_qc) { showMessage('❌ Tanggal QC wajib diisi!', 'error'); return; }
             if (!inspector) { showMessage('❌ Nama Inspector wajib diisi!', 'error'); return; }
@@ -819,7 +927,6 @@
                 unitLabel = 'Pcs';
             }
 
-            // Validasi Qty OK
             if (qty_ok > targetValue) {
                 showMessage(`❌ Qty OK (${qty_ok} ${unitLabel}) melebihi target (${targetValue} ${unitLabel})!`, 'error');
                 return;
@@ -830,10 +937,9 @@
                 return;
             }
 
-            // Loading
             const btn = document.getElementById('btnSubmit');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Menyimpan...';
+            btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
             btn.disabled = true;
 
             isSubmitting = true;
@@ -852,34 +958,49 @@
                     alasan_ng: hasil === 'NG' ? alasan_ng : null,
                     notes: notes || null,
                     inspector,
-                    created_by: user?.email || 'Unknown'
+                    updated_by: user?.email || 'Unknown',
+                    updated_at: new Date().toISOString()
                 };
 
-                const { error } = await sb.from('qc_inspection').insert([data]);
-                if (error) throw error;
+                let result;
+                if (editId) {
+                    // UPDATE
+                    result = await sb
+                        .from('qc_inspection')
+                        .update(data)
+                        .eq('id', editId);
+                } else {
+                    // INSERT
+                    data.created_by = user?.email || 'Unknown';
+                    result = await sb.from('qc_inspection').insert([data]);
+                }
 
-                // Update status
-                let newStatus = '';
-                if (qcNumber === 1) {
-                    if (hasil === 'OK' || hasil === 'REWORK') {
-                        newStatus = 'QC1';
-                    } else if (hasil === 'NG') {
-                        newStatus = 'DITERIMA';
+                if (result.error) throw result.error;
+
+                // Update status (hanya jika bukan edit)
+                if (!editId) {
+                    let newStatus = '';
+                    if (qcNumber === 1) {
+                        if (hasil === 'OK' || hasil === 'REWORK') {
+                            newStatus = 'QC1';
+                        } else if (hasil === 'NG') {
+                            newStatus = 'DITERIMA';
+                        }
+                    } else if (qcNumber === 2) {
+                        if (hasil === 'OK') {
+                            newStatus = 'KIRIM';
+                        } else if (hasil === 'NG' || hasil === 'REWORK') {
+                            newStatus = 'QC2';
+                        }
                     }
-                } else if (qcNumber === 2) {
-                    if (hasil === 'OK') {
-                        newStatus = 'KIRIM';
-                    } else if (hasil === 'NG' || hasil === 'REWORK') {
-                        newStatus = 'QC2';
+
+                    if (newStatus) {
+                        await sb.from('material_inbound').update({ status: newStatus }).eq('id', materialId);
                     }
                 }
 
-                if (newStatus) {
-                    await sb.from('material_inbound').update({ status: newStatus }).eq('id', materialId);
-                }
-
-                // Simpan NG
-                if (qty_ng > 0 && hasil === 'NG') {
+                // Simpan NG (hanya jika bukan edit)
+                if (!editId && qty_ng > 0 && hasil === 'NG') {
                     const proses = qcNumber === 1 ? 'QC1' : 'QC2';
                     await sb.from('ng_tracking').insert({
                         material_inbound_id: materialId,
@@ -891,13 +1012,19 @@
                     });
                 }
 
-                const statusText = newStatus ? `Status: ${newStatus}` : 'Status Tetap';
-                showMessage(`✅ QC #${qcNumber} berhasil disimpan! ${statusText}`, 'success');
-                showToast(`✅ QC #${qcNumber} berhasil!`, 'success');
+                const actionText = editId ? 'diupdate' : 'disimpan';
+                const statusText = editId ? '' : (newStatus ? `Status: ${newStatus}` : 'Status Tetap');
+                showMessage(`✅ QC #${qcNumber} berhasil ${actionText}! ${statusText}`, 'success');
+                showToast(`✅ QC #${qcNumber} berhasil ${actionText}!`, 'success');
 
                 resetForm();
                 
-                // Refresh data dan history
+                // Reset edit mode
+                isEditMode = false;
+                document.getElementById('editId').value = '';
+                document.getElementById('editBadge').style.display = 'none';
+                document.getElementById('btnSubmit').innerHTML = '💾 Simpan QC';
+                
                 await loadPiList();
                 if (selectedNoPi) {
                     document.getElementById('selectNoPi').value = selectedNoPi;
@@ -905,11 +1032,11 @@
                 }
 
                 try {
-                    await addLog('QC INSPECTION', `${user?.email} melakukan QC #${qcNumber} untuk No PI ${selectedNoPi}`);
+                    await addLog('QC INSPECTION', `${user?.email} ${actionText} QC #${qcNumber} untuk No PI ${selectedNoPi}`);
                 } catch(e) {}
 
             } catch (err) {
-                showMessage('❌ Gagal menyimpan: ' + err.message, 'error');
+                showMessage('❌ Gagal: ' + err.message, 'error');
                 showToast('❌ Gagal: ' + err.message, 'error');
             } finally {
                 isSubmitting = false;
@@ -978,11 +1105,9 @@
             
             setupEventListeners();
             
-            // Cek parameter qc dari URL
             const params = new URLSearchParams(window.location.search);
             const qcParam = parseInt(params.get('qc')) || 1;
             
-            // Set default QC
             if (qcParam === 2) {
                 setQcNumber(2);
             } else {
@@ -995,7 +1120,10 @@
         window.setQcNumber = setQcNumber;
         window.loadPiList = loadPiList;
         window.loadMaterialByPi = loadMaterialByPi;
+        window.loadHistory = loadHistory;
         window.saveQC = saveQC;
+        window.editQC = editQC;
+        window.deleteQC = deleteQC;
         window.resetForm = resetForm;
 
         init();
