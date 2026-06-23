@@ -257,9 +257,9 @@
             
             <div id="msgContainer"></div>
 
-            <!-- ✅ PILIH NO PI (DROPDOWN) -->
+            <!-- ✅ DROPDOWN 1: Untuk Proses Diecut (Hanya QC1) -->
             <div class="form-group">
-                <label>Pilih No PI <span class="required">*</span></label>
+                <label>Pilih No PI (Untuk Diecut) <span class="required">*</span></label>
                 <select id="selectNoPi" onchange="loadMaterialByPi()">
                     <option value="">-- Pilih No PI --</option>
                 </select>
@@ -339,7 +339,7 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-                    <button type="submit" class="btn btn-success" onclick="saveDiecut()" style="flex:2; min-width:150px;">
+                    <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveDiecut()" style="flex:2; min-width:150px;">
                         💾 Simpan Proses Diecut
                     </button>
                     <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
@@ -352,9 +352,22 @@
             </form>
         </div>
 
-        <!-- History Diecut -->
+        <!-- ✅ DROPDOWN 2 + HISTORY RIWAYAT -->
         <div class="card">
-            <div class="card-title">📋 Riwayat Diecut</div>
+            <div class="card-title">
+                <span>📋 Riwayat Diecut</span>
+                <button class="btn btn-secondary" onclick="refreshHistory()" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+            </div>
+            
+            <!-- Dropdown untuk riwayat (hanya status yang sudah diecut) -->
+            <div class="form-group">
+                <label>Pilih No PI yang Sudah Diecut</label>
+                <select id="selectHistoryPi" onchange="loadHistoryByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Menampilkan material dengan status DIECUT, QC2, KIRIM (sudah diproses diecut)</span>
+            </div>
+            
             <div id="historyList" style="overflow-x:auto;">
                 <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>
             </div>
@@ -419,7 +432,7 @@
         if (tanggalDiecut) tanggalDiecut.value = new Date().toISOString().split('T')[0];
 
         // ============================================================
-        // LOAD DAFTAR NO PI (STATUS QC1)
+        // DROPDOWN 1: LOAD DAFTAR NO PI (HANYA QC1)
         // ============================================================
         async function loadPiList() {
             const select = getEl('selectNoPi');
@@ -466,7 +479,7 @@
         }
 
         // ============================================================
-        // LOAD MATERIAL BERDASARKAN NO PI
+        // LOAD MATERIAL BERDASARKAN NO PI (DARI DROPDOWN 1)
         // ============================================================
         async function loadMaterialByPi() {
             const select = getEl('selectNoPi');
@@ -483,11 +496,6 @@
                 if (statusBadge) {
                     statusBadge.innerText = 'Pilih No PI';
                     statusBadge.style.background = '#fef3c7';
-                }
-                
-                const historyList = getEl('historyList');
-                if (historyList) {
-                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
                 }
                 return;
             }
@@ -582,16 +590,109 @@
             const qtyPcsOut = getEl('qty_pcs_out');
             if (qtyPcsOut) qtyPcsOut.value = totalPcs;
 
+            // Aktifkan tombol simpan
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '💾 Simpan Proses Diecut';
+                btnSubmit.style.background = '';
+            }
+
             // Load history diecut
-            loadHistory(materialId);
+            // Kosongkan history karena ini untuk proses baru
+            const historyList = getEl('historyList');
+            if (historyList) {
+                historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI yang sudah diecut di dropdown bawah untuk melihat riwayat</div>';
+            }
 
             // Hitung yield awal
             calculateYield();
+            
+            // Reset dropdown history agar tidak conflict
+            const selectHistory = getEl('selectHistoryPi');
+            if (selectHistory) {
+                selectHistory.value = '';
+            }
         }
 
+        // ============================================================
+        // DROPDOWN 2: LOAD DAFTAR NO PI UNTUK RIWAYAT (DIECUT, QC2, KIRIM)
+        // ============================================================
+        async function loadHistoryPiList() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, id')
+                .in('status', ['DIECUT', 'QC2', 'KIRIM'])
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading history PI list:', error);
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI yang Sudah Diecut --</option>';
+
+            if (!data || data.length === 0) {
+                select.innerHTML += '<option value="" disabled>Belum ada material yang sudah diecut</option>';
+                return;
+            }
+
+            for (const item of data) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    
+                    let statusText = '';
+                    if (item.status === 'DIECUT') statusText = '⚙️ Sudah Diecut';
+                    else if (item.status === 'QC2') statusText = '🔬 QC #2';
+                    else if (item.status === 'KIRIM') statusText = '🏭 Kirim Produksi';
+                    
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
+                    option.dataset.noPi = item.no_pi;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+                await loadHistoryByPi();
+            }
+        }
+
+        // ============================================================
+        // LOAD HISTORY BERDASARKAN PILIHAN DROPDOWN 2
+        // ============================================================
+        async function loadHistoryByPi() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            const materialId = select.value;
+            if (!materialId) {
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI yang sudah diecut untuk melihat riwayat</div>';
+                }
+                return;
+            }
+            
+            await loadHistory(materialId);
+        }
+
+        // ============================================================
+        // LOAD HISTORY (YANG SUDAH ADA)
+        // ============================================================
         async function loadHistory(materialId) {
             const container = getEl('historyList');
             if (!container) return;
+            
+            if (!materialId) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI yang sudah diecut untuk melihat riwayat</div>';
+                return;
+            }
             
             const { data, error } = await sb
                 .from('diecut_process')
@@ -605,7 +706,7 @@
             }
 
             if (!data || data.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat diecut</div>`;
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat diecut untuk No PI ini</div>`;
                 return;
             }
 
@@ -646,6 +747,21 @@
             container.innerHTML = html;
         }
 
+        // ============================================================
+        // REFRESH HISTORY
+        // ============================================================
+        async function refreshHistory() {
+            const select = getEl('selectHistoryPi');
+            if (select && select.value) {
+                await loadHistory(select.value);
+            } else {
+                await loadHistoryPiList();
+            }
+        }
+
+        // ============================================================
+        // SAVE DIECUT
+        // ============================================================
         async function saveDiecut() {
             if (isSubmitting) return;
 
@@ -717,15 +833,11 @@
 
                 resetForm();
                 
-                // Refresh data
+                // ✅ Refresh dropdown diecut (QC1) - material ini akan hilang karena statusnya sudah DIECUT
                 await loadPiList();
-                if (selectedNoPi) {
-                    const selectEl = getEl('selectNoPi');
-                    if (selectEl) {
-                        selectEl.value = selectedNoPi;
-                        await loadMaterialByPi();
-                    }
-                }
+                
+                // ✅ Refresh dropdown history (DIECUT, QC2, KIRIM) - material ini akan muncul
+                await loadHistoryPiList();
 
                 try {
                     await addLog('DIECUT', `${user?.email} melakukan diecut untuk No PI ${selectedNoPi}`);
@@ -841,21 +953,45 @@
             if (!session) window.location.href = 'login.html';
             
             setupEventListeners();
+            
+            // Load dropdown diecut (QC1)
             await loadPiList();
             
-            // Cek apakah ada parameter material_id di URL (dari tracking)
+            // Load dropdown history (DIECUT, QC2, KIRIM)
+            await loadHistoryPiList();
+            
+            // Cek parameter dari URL (dari tracking)
             const params = new URLSearchParams(window.location.search);
             const materialId = params.get('material_id');
             if (materialId) {
-                // Cari di dropdown dan pilih
-                const select = getEl('selectNoPi');
-                if (select) {
-                    for (let i = 0; i < select.options.length; i++) {
-                        if (select.options[i].dataset.id === materialId) {
-                            select.value = select.options[i].value;
+                // Cari di dropdown diecut dan pilih
+                const selectDiecut = getEl('selectNoPi');
+                if (selectDiecut) {
+                    for (let i = 0; i < selectDiecut.options.length; i++) {
+                        if (selectDiecut.options[i].dataset.id === materialId) {
+                            selectDiecut.value = selectDiecut.options[i].value;
                             await loadMaterialByPi();
                             break;
                         }
+                    }
+                }
+                
+                // Cari di dropdown history
+                const selectHistory = getEl('selectHistoryPi');
+                if (selectHistory) {
+                    // Cek apakah material ada di dropdown history
+                    let found = false;
+                    for (let i = 0; i < selectHistory.options.length; i++) {
+                        if (selectHistory.options[i].value === materialId) {
+                            selectHistory.value = materialId;
+                            await loadHistory(materialId);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        // Jika tidak ditemukan, mungkin masih QC1, kosongkan
+                        selectHistory.value = '';
                     }
                 }
             }
@@ -863,8 +999,13 @@
             calculateYield();
         }
 
+        // ============ EXPOSE FUNCTIONS ============
         window.loadPiList = loadPiList;
         window.loadMaterialByPi = loadMaterialByPi;
+        window.loadHistoryPiList = loadHistoryPiList;
+        window.loadHistoryByPi = loadHistoryByPi;
+        window.loadHistory = loadHistory;
+        window.refreshHistory = refreshHistory;
         window.saveDiecut = saveDiecut;
         window.resetForm = resetForm;
         window.calculateYield = calculateYield;
