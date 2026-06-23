@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Laporan NG - SUPPLY MATERIAL</title>
+    <title>QC Inspection - SUPPLY MATERIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -84,75 +83,75 @@
             cursor: pointer;
         }
 
-        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
 
-        .filter-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .filter-bar input, .filter-bar select {
-            padding: 8px 12px;
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
+        .form-group label .required { color: #ef4444; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 14px;
         }
-        .filter-bar input { flex: 2; }
-        .filter-bar button {
-            padding: 8px 16px;
-            background: #3b82f6;
-            color: white;
+        .form-group textarea { min-height: 60px; resize: vertical; }
+        .form-group input:read-only { background: #f1f5f9; cursor: not-allowed; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+        .btn {
+            padding: 10px 20px;
             border: none;
             border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .btn-export { background: #10b981 !important; }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-back { background: #64748b; color: white; }
+        .btn-back:hover { background: #475569; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-qc1 { background: #3b82f6; color: white; }
+        .btn-qc1:hover { background: #2563eb; }
+        .btn-qc2 { background: #e2e8f0; color: #1e293b; }
+        .btn-qc2:hover { background: #cbd5e1; }
+        .btn-qc2.active { background: #3b82f6; color: white; }
+        .btn-qc2.active:hover { background: #2563eb; }
 
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+        .info-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-left: 4px solid #3b82f6;
+            font-size: 13px;
         }
-        .kpi-card {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .kpi-value { font-size: 28px; font-weight: bold; color: #1e293b; }
-        .kpi-label { font-size: 12px; color: #64748b; margin-top: 4px; }
-
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        .status-qc1 { background: #fef3c7; color: #92400e; }
-        .status-diecut { background: #dbeafe; color: #1e40af; }
-        .status-qc2 { background: #fce7f3; color: #9d174d; }
-
-        .unit-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        .unit-sheet { background: #dbeafe; color: #1e40af; }
-        .unit-pcs { background: #d1fae5; color: #065f46; }
+        .info-box strong { color: #1e293b; }
 
         .toast {
             position: fixed;
@@ -166,18 +165,94 @@
             z-index: 9999;
             display: none;
             font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .toast.show { display: block; animation: fadeInUp 0.3s ease; }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
-        @media (max-width: 768px) {
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-            th, td { font-size: 10px; padding: 6px 4px; }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-ok { background: #d1fae5; color: #065f46; }
+        .status-ng { background: #fee2e2; color: #991b1b; }
+        .status-rework { background: #fef3c7; color: #92400e; }
+
+        .material-info {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .material-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .material-info-grid .label { color: #64748b; }
+        .material-info-grid .value { font-weight: 500; color: #1e293b; }
+
+        .small-text { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
+        .unit-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .toggle-buttons .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 13px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .btn-small {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 2px;
+        }
+        .btn-edit-small { background: #f59e0b; color: white; }
+        .btn-edit-small:hover { background: #d97706; }
+        .btn-delete-small { background: #ef4444; color: white; }
+        .btn-delete-small:hover { background: #dc2626; }
+
+        .edit-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .form-row-3 { grid-template-columns: 1fr; }
+            .material-info-grid { grid-template-columns: 1fr 1fr; }
+            .toggle-buttons .btn { flex: 1; min-width: 80px; font-size: 11px; padding: 6px 8px; }
         }
     </style>
 </head>
@@ -201,10 +276,10 @@
 
             <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
             <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
-            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item active" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
             <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
             <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
-            <div class="menu-item active" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
 
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
@@ -226,338 +301,1017 @@
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
         <div class="container" id="mainContent">
-        <div class="loading">⏳ Memuat data...</div>
+        <div class="card">
+            <div class="card-title">
+                <span id="pageTitle">🔬 QC Inspection <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
+                <span id="qcBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih QC</span>
+            </div>
+            
+            <div id="msgContainer"></div>
+
+            <!-- Toggle QC #1 / QC #2 -->
+            <div class="toggle-buttons">
+                <button class="btn btn-qc1" id="btnQc1" onclick="setQcNumber(1)">
+                    🔬 QC #1 (Sheet)
+                </button>
+                <button class="btn btn-qc2" id="btnQc2" onclick="setQcNumber(2)">
+                    🔬 QC #2 (Pcs)
+                </button>
+            </div>
+
+            <!-- DROPDOWN 1: Untuk Proses QC -->
+            <div class="form-group">
+                <label>Pilih No PI (Untuk QC) <span class="required">*</span></label>
+                <select id="selectNoPi" onchange="loadMaterialByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text" id="dropdownInfo">📌 Hanya menampilkan material dengan status yang sesuai</span>
+            </div>
+
+            <input type="hidden" id="materialId">
+            <input type="hidden" id="qcNumber" value="1">
+            <input type="hidden" id="editId" value="">
+
+            <!-- Material Info -->
+            <div id="materialInfo" class="material-info" style="display:none;">
+                <div style="font-weight:600;margin-bottom:8px;">📋 Informasi Material</div>
+                <div class="material-info-grid" id="materialInfoGrid">
+                    <div><span class="label">No PO:</span> <span class="value" id="infoNoPo">-</span></div>
+                    <div><span class="label">No PI:</span> <span class="value" id="infoNoPi">-</span></div>
+                    <div><span class="label">Brand:</span> <span class="value" id="infoBrand">-</span></div>
+                    <div><span class="label">Jenis:</span> <span class="value" id="infoJenis">-</span></div>
+                    <div><span class="label">Qty Sheet Masuk:</span> <span class="value" id="infoQtySheet">-</span></div>
+                    <div><span class="label">Up/Sheet:</span> <span class="value" id="infoUp">-</span></div>
+                    <div><span class="label">Target QC:</span> <span class="value" id="infoTarget" style="font-weight:bold;color:#3b82f6;">-</span></div>
+                    <div><span class="label">Satuan:</span> <span class="value" id="infoUnit">-</span></div>
+                    <div><span class="label">Status:</span> <span class="value" id="infoStatus">-</span></div>
+                </div>
+            </div>
+
+            <!-- Info Unit -->
+            <div class="info-box" id="unitInfo" style="display:none;">
+                <strong>📌 Informasi QC:</strong><br>
+                <span id="unitInfoText">-</span>
+            </div>
+
+            <form id="qcForm" onsubmit="return false;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tanggal QC <span class="required">*</span></label>
+                        <input type="date" id="tanggal_qc" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Inspector <span class="required">*</span></label>
+                        <input type="text" id="inspector" placeholder="Nama Inspector" required>
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label id="labelQtyOk">Qty OK (Sheet) <span class="required">*</span></label>
+                        <input type="number" id="qty_ok" placeholder="Jumlah OK" min="0" required>
+                        <span class="small-text">📌 Maksimal: <span id="maxQtyOk">-</span> <span id="maxUnitOk">Sheet</span></span>
+                    </div>
+                    <div class="form-group">
+                        <label id="labelQtyNg">Qty NG (Sheet) <span class="required">*</span></label>
+                        <input type="number" id="qty_ng" placeholder="Jumlah NG" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label id="labelQtyRework">Qty Rework (Sheet)</label>
+                        <input type="number" id="qty_rework" placeholder="Jumlah Rework" min="0" value="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Hasil QC <span class="required">*</span></label>
+                    <select id="hasil" required>
+                        <option value="">-- Pilih Hasil --</option>
+                        <option value="OK">✅ OK</option>
+                        <option value="NG">❌ NG</option>
+                        <option value="REWORK">🔄 REWORK</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="alasanNgGroup" style="display:none;">
+                    <label>Alasan NG <span class="required">*</span></label>
+                    <select id="alasan_ng">
+                        <option value="">-- Pilih Alasan --</option>
+                        <option value="CACAT PRINT">CACAT PRINT</option>
+                        <option value="SOBEK">SOBEK</option>
+                        <option value="DIMENSI SALAH">DIMENSI SALAH</option>
+                        <option value="KOTOR">KOTOR</option>
+                        <option value="CACAT BAHAN">CACAT BAHAN</option>
+                        <option value="LAINNYA">LAINNYA</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Catatan</label>
+                    <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveQC()" style="flex:2; min-width:150px;">
+                        💾 Simpan QC
+                    </button>
+                    <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
+                        🔄 Reset
+                    </button>
+                    <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
+                        ⬅ Kembali
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- DROPDOWN RIWAYAT QC -->
+        <!-- ============================================================ -->
+        <div class="card">
+            <div class="card-title">
+                <span>📋 Riwayat QC</span>
+                <button class="btn btn-secondary" onclick="refreshHistory()" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Pilih No PI untuk Lihat Riwayat QC</label>
+                <select id="selectHistoryPi" onchange="loadHistoryByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Menampilkan semua No PI yang sudah pernah di-QC (QC1, QC2, DIECUT, KIRIM)</span>
+            </div>
+            
+            <div id="historyList" style="overflow-x:auto;">
+                <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>
+            </div>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
-
-    <script>
-        var allData = [];
-        var currentFiltered = [];
+        <script>
+        let currentMaterialId = null;
+        let currentQcNumber = 1;
+        let isSubmitting = false;
+        let materialData = null;
+        let diecutData = null;
+        let selectedNoPi = null;
+        let isEditMode = false;
 
         function getEl(id) {
             return document.getElementById(id);
         }
 
-        function showToast(msg, type) {
-            if (typeof type === 'undefined') type = 'success';
-            var t = getEl('toast');
+        function showToast(msg, type = 'success') {
+            const t = getEl('toast');
             if (!t) return;
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() {
-                t.className = 'toast';
-            }, 3000);
+            t._timeout = setTimeout(() => t.className = 'toast', 3000);
         }
 
-        function getStatusLabel(proses) {
-            var map = {
+        function showMessage(msg, type = 'info') {
+            const container = getEl('msgContainer');
+            if (!container) return;
+            const map = {
+                success: 'alert-success',
+                error: 'alert-error',
+                info: 'alert-info',
+                warning: 'alert-warning'
+            };
+            container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // Toggle alasan NG
+        const hasilEl = getEl('hasil');
+        if (hasilEl) {
+            hasilEl.addEventListener('change', function() {
+                const alasanGroup = getEl('alasanNgGroup');
+                const alasanNg = getEl('alasan_ng');
+                if (this.value === 'NG') {
+                    if (alasanGroup) alasanGroup.style.display = 'block';
+                    if (alasanNg) alasanNg.setAttribute('required', 'required');
+                } else {
+                    if (alasanGroup) alasanGroup.style.display = 'none';
+                    if (alasanNg) alasanNg.removeAttribute('required');
+                }
+            });
+        }
+
+        // Set today's date
+        const tanggalQc = getEl('tanggal_qc');
+        if (tanggalQc) tanggalQc.value = new Date().toISOString().split('T')[0];
+
+        // ============================================================
+        // SET QC NUMBER (TOGGLE)
+        // ============================================================
+        function setQcNumber(qc) {
+            currentQcNumber = qc;
+            
+            const elQcNumber = getEl('qcNumber');
+            if (elQcNumber) elQcNumber.value = qc;
+            
+            const btnQc1 = getEl('btnQc1');
+            const btnQc2 = getEl('btnQc2');
+            
+            if (btnQc1 && btnQc2) {
+                if (qc === 1) {
+                    btnQc1.className = 'btn btn-qc1';
+                    btnQc2.className = 'btn btn-qc2';
+                } else {
+                    btnQc1.className = 'btn btn-qc2';
+                    btnQc2.className = 'btn btn-qc1 active';
+                }
+            }
+            
+            const pageTitle = getEl('pageTitle');
+            if (pageTitle) pageTitle.innerText = `🔬 QC #${qc}`;
+            
+            const qcBadge = getEl('qcBadge');
+            if (qcBadge) qcBadge.innerText = `QC #${qc}`;
+            
+            const materialInfo = getEl('materialInfo');
+            if (materialInfo) materialInfo.style.display = 'none';
+            
+            const unitInfo = getEl('unitInfo');
+            if (unitInfo) unitInfo.style.display = 'none';
+            
+            // Update label unit
+            const labelQtyOk = getEl('labelQtyOk');
+            const labelQtyNg = getEl('labelQtyNg');
+            const labelQtyRework = getEl('labelQtyRework');
+            const maxUnitOk = getEl('maxUnitOk');
+            
+            if (qc === 1) {
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
+                
+                const dropdownInfo = getEl('dropdownInfo');
+                if (dropdownInfo) dropdownInfo.innerHTML = '📌 Hanya menampilkan material dengan status DITERIMA (untuk QC #1)';
+            } else {
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
+                
+                const dropdownInfo = getEl('dropdownInfo');
+                if (dropdownInfo) dropdownInfo.innerHTML = '📌 Hanya menampilkan material dengan status DIECUT (untuk QC #2)';
+            }
+            
+            isEditMode = false;
+            const editId = getEl('editId');
+            if (editId) editId.value = '';
+            
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'none';
+            
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) btnSubmit.innerHTML = '💾 Simpan QC';
+            
+            const select = getEl('selectNoPi');
+            if (select) {
+                select.value = '';
+                select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+            }
+            
+            loadPiList();
+            showToast(`📌 Beralih ke QC #${qc}`, 'info');
+        }
+
+        // ============================================================
+        // DROPDOWN 1: LOAD DAFTAR NO PI (SESUAI QC)
+        // ============================================================
+        async function loadPiList() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            let statusFilter = [];
+            if (currentQcNumber === 1) {
+                statusFilter = ['DITERIMA'];
+            } else if (currentQcNumber === 2) {
+                statusFilter = ['DIECUT'];
+            }
+            
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .in('status', statusFilter)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                showMessage('❌ Gagal memuat daftar No PI: ' + error.message, 'error');
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+
+            if (!data || data.length === 0) {
+                select.innerHTML += `<option value="" disabled>${currentQcNumber === 1 ? 'Tidak ada material dengan status DITERIMA' : 'Tidak ada material dengan status DIECUT'}</option>`;
+                return;
+            }
+
+            for (const item of data) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.no_pi;
+                    
+                    let statusText = '';
+                    if (currentQcNumber === 1) {
+                        statusText = '✅ Siap QC #1';
+                    } else {
+                        statusText = '✅ Siap QC #2';
+                    }
+                    
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
+                    option.dataset.id = item.id;
+                    option.dataset.qtySheet = item.qty_sheet;
+                    option.dataset.upPerSheet = item.up_per_sheet;
+                    option.dataset.status = item.status;
+                    option.dataset.noPo = item.no_po;
+                    option.dataset.brand = item.brand;
+                    option.dataset.jenis = item.jenis;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        // ============================================================
+        // LOAD MATERIAL
+        // ============================================================
+        async function loadMaterialByPi() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const noPi = select.value;
+
+            if (!noPi) {
+                const materialInfo = getEl('materialInfo');
+                if (materialInfo) materialInfo.style.display = 'none';
+                
+                const unitInfo = getEl('unitInfo');
+                if (unitInfo) unitInfo.style.display = 'none';
+                
+                const qcBadge = getEl('qcBadge');
+                if (qcBadge) {
+                    qcBadge.innerText = 'Pilih No PI';
+                    qcBadge.style.background = '#fef3c7';
+                }
+                return;
+            }
+
+            const materialId = selectedOption.dataset.id;
+            const qtySheet = parseInt(selectedOption.dataset.qtySheet) || 0;
+            const upPerSheet = parseInt(selectedOption.dataset.upPerSheet) || 0;
+            const status = selectedOption.dataset.status;
+            const noPo = selectedOption.dataset.noPo;
+            const brand = selectedOption.dataset.brand;
+            const jenis = selectedOption.dataset.jenis;
+
+            currentMaterialId = materialId;
+            selectedNoPi = noPi;
+            
+            const materialIdEl = getEl('materialId');
+            if (materialIdEl) materialIdEl.value = materialId;
+
+            const statusMap = {
+                'DITERIMA': '📥 Diterima',
                 'QC1': '🔬 QC #1',
                 'DIECUT': '⚙️ Diecut',
-                'QC2': '🔬 QC #2'
+                'QC2': '🔬 QC #2',
+                'KIRIM': '🏭 Kirim Produksi'
             };
-            return map[proses] || proses;
-        }
 
-        function getStatusBadge(proses) {
-            var map = {
-                'QC1': 'status-qc1',
-                'DIECUT': 'status-diecut',
-                'QC2': 'status-qc2'
-            };
-            return map[proses] || '';
-        }
-
-        function getUnitByProses(proses) {
-            if (proses === 'QC1') return 'Sheet';
-            if (proses === 'DIECUT') return 'Pcs';
-            if (proses === 'QC2') return 'Pcs';
-            return '-';
-        }
-
-        function getUnitBadge(proses) {
-            var unit = getUnitByProses(proses);
-            var cls = unit === 'Sheet' ? 'unit-sheet' : 'unit-pcs';
-            return '<span class="unit-badge ' + cls + '">' + unit + '</span>';
-        }
-
-        async function cekSession() {
-            var sessionData = await sb.auth.getSession();
-            if (!sessionData.data.session) {
-                window.location.href = 'login.html';
-            }
-            return sessionData.data.session;
-        }
-
-        async function loadData() {
-            var container = getEl('mainContent');
-            if (!container) {
-                console.error('Element mainContent tidak ditemukan!');
+            // Validasi status
+            if (currentQcNumber === 1 && status !== 'DITERIMA') {
+                showMessage(`⚠️ QC #1 hanya untuk status DITERIMA! Status saat ini: ${statusMap[status] || status}`, 'warning');
+                const qcBadge = getEl('qcBadge');
+                if (qcBadge) {
+                    qcBadge.innerText = `⚠️ Status: ${status}`;
+                    qcBadge.style.background = '#fee2e2';
+                }
                 return;
             }
-            container.innerHTML = '<div class="loading">📡 Mengambil data NG...</div>';
+
+            if (currentQcNumber === 2) {
+                // Cek QC #1 sudah ada
+                const { data: qc1Exists } = await sb
+                    .from('qc_inspection')
+                    .select('id')
+                    .eq('material_inbound_id', materialId)
+                    .eq('qc_number', 1)
+                    .limit(1);
+
+                if (!qc1Exists || qc1Exists.length === 0) {
+                    showMessage('❌ Harus melakukan QC #1 terlebih dahulu sebelum QC #2!', 'error');
+                    return;
+                }
+
+                // Ambil data diecut
+                const { data: diecut } = await sb
+                    .from('diecut_process')
+                    .select('qty_pcs_ok')
+                    .eq('material_inbound_id', materialId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!diecut || diecut.length === 0) {
+                    showMessage('❌ Data Diecut tidak ditemukan! Harus diecut dulu sebelum QC #2.', 'error');
+                    return;
+                }
+                diecutData = diecut[0];
+            }
+
+            let unit = '';
+            let targetValue = 0;
+            let targetLabel = '';
+
+            if (currentQcNumber === 1) {
+                unit = 'Sheet';
+                targetValue = qtySheet || 0;
+                targetLabel = `${targetValue} Sheet`;
+                
+                const labelQtyOk = getEl('labelQtyOk');
+                const labelQtyNg = getEl('labelQtyNg');
+                const labelQtyRework = getEl('labelQtyRework');
+                const maxUnitOk = getEl('maxUnitOk');
+                
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Sheet) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
+                
+                const unitInfoText = getEl('unitInfoText');
+                if (unitInfoText) {
+                    unitInfoText.innerHTML = `
+                        🔬 <strong>QC #1 - Inspeksi Material dalam satuan SHEET</strong><br>
+                        📦 Target QC: <strong>${targetValue} Sheet</strong> (dari qty sheet material masuk)<br>
+                        ✅ Cek setiap lembar material yang masuk
+                    `;
+                }
+
+            } else if (currentQcNumber === 2) {
+                unit = 'Pcs';
+                targetValue = diecutData ? diecutData.qty_pcs_ok : 0;
+                targetLabel = `${targetValue} Pcs`;
+                
+                const labelQtyOk = getEl('labelQtyOk');
+                const labelQtyNg = getEl('labelQtyNg');
+                const labelQtyRework = getEl('labelQtyRework');
+                const maxUnitOk = getEl('maxUnitOk');
+                
+                if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
+                if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
+                if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
+                if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
+                
+                const unitInfoText = getEl('unitInfoText');
+                if (unitInfoText) {
+                    unitInfoText.innerHTML = `
+                        🔬 <strong>QC #2 - Inspeksi Hasil Diecut dalam satuan PCS</strong><br>
+                        📦 Target QC: <strong>${targetValue} Pcs</strong> (dari hasil diecut)<br>
+                        ✅ Cek setiap pcs hasil diecut sebelum dikirim ke produksi
+                    `;
+                }
+            }
+
+            // Tampilkan info material
+            const materialInfo = getEl('materialInfo');
+            if (materialInfo) materialInfo.style.display = 'block';
+            
+            const infoNoPo = getEl('infoNoPo');
+            if (infoNoPo) infoNoPo.innerText = noPo || '-';
+            
+            const infoNoPi = getEl('infoNoPi');
+            if (infoNoPi) infoNoPi.innerText = noPi || '-';
+            
+            const infoBrand = getEl('infoBrand');
+            if (infoBrand) infoBrand.innerText = brand || '-';
+            
+            const infoJenis = getEl('infoJenis');
+            if (infoJenis) infoJenis.innerText = jenis || '-';
+            
+            const infoQtySheet = getEl('infoQtySheet');
+            if (infoQtySheet) infoQtySheet.innerText = qtySheet || 0;
+            
+            const infoUp = getEl('infoUp');
+            if (infoUp) infoUp.innerText = upPerSheet || 0;
+            
+            const infoTarget = getEl('infoTarget');
+            if (infoTarget) infoTarget.innerHTML = `<span style="color:#3b82f6;font-weight:bold;">${targetLabel}</span>`;
+            
+            const infoUnit = getEl('infoUnit');
+            if (infoUnit) infoUnit.innerHTML = `<span class="unit-badge">${unit}</span>`;
+            
+            const infoStatus = getEl('infoStatus');
+            if (infoStatus) infoStatus.innerHTML = `<span class="status-badge" style="background:#e0f2fe;color:#0369a1;">${statusMap[status] || status}</span>`;
+
+            const maxQtyOk = getEl('maxQtyOk');
+            if (maxQtyOk) maxQtyOk.innerText = targetValue;
+
+            const qcBadge = getEl('qcBadge');
+            if (qcBadge) {
+                qcBadge.innerText = `✅ ${noPo} - ${brand}`;
+                qcBadge.style.background = '#d1fae5';
+            }
+
+            const unitInfo = getEl('unitInfo');
+            if (unitInfo) unitInfo.style.display = 'block';
+
+            // Reset history dropdown
+            const selectHistory = getEl('selectHistoryPi');
+            if (selectHistory) {
+                selectHistory.value = '';
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI di dropdown bawah untuk melihat riwayat QC</div>';
+                }
+            }
+        }
+
+        // ============================================================
+        // DROPDOWN 2 - LOAD DAFTAR NO PI UNTUK RIWAYAT
+        // ============================================================
+        async function loadHistoryPiList() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            const { data, error } = await sb
+                .from('qc_inspection')
+                .select('material_inbound_id')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading history PI list:', error);
+                return;
+            }
+
+            const materialIds = [...new Set(data.map(item => item.material_inbound_id))];
+            
+            if (materialIds.length === 0) {
+                select.innerHTML = '<option value="">-- Pilih No PI --</option><option value="" disabled>Belum ada riwayat QC</option>';
+                return;
+            }
+
+            const { data: materials, error: matError } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, id')
+                .in('id', materialIds)
+                .order('created_at', { ascending: false });
+
+            if (matError || !materials) {
+                select.innerHTML = '<option value="">-- Pilih No PI --</option><option value="" disabled>Error memuat data</option>';
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+
+            for (const item of materials) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    
+                    let statusText = '';
+                    if (item.status === 'DITERIMA') statusText = '📥 Diterima';
+                    else if (item.status === 'QC1') statusText = '🔬 QC #1';
+                    else if (item.status === 'DIECUT') statusText = '⚙️ Diecut';
+                    else if (item.status === 'QC2') statusText = '🔬 QC #2';
+                    else if (item.status === 'KIRIM') statusText = '🏭 Kirim Produksi';
+                    
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
+                    option.dataset.noPi = item.no_pi;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+                await loadHistoryByPi();
+            }
+        }
+
+        // ============================================================
+        // LOAD HISTORY BERDASARKAN DROPDOWN 2
+        // ============================================================
+        async function loadHistoryByPi() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            const materialId = select.value;
+            if (!materialId) {
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat QC</div>';
+                }
+                return;
+            }
+            
+            await loadHistory(materialId);
+        }
+
+        // ============================================================
+        // LOAD HISTORY (DENGAN KOLOM CATATAN)
+        // ============================================================
+        async function loadHistory(materialId) {
+            const container = getEl('historyList');
+            if (!container) return;
+            
+            if (!materialId) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                return;
+            }
+            
+            const { data, error } = await sb
+                .from('qc_inspection')
+                .select('*')
+                .eq('material_inbound_id', materialId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
+                return;
+            }
+
+            const { data: material } = await sb
+                .from('material_inbound')
+                .select('qty_sheet, up_per_sheet, qty_pcs')
+                .eq('id', materialId)
+                .single();
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat QC untuk No PI ini</div>`;
+                return;
+            }
+
+            let html = `
+                <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr style="background:#f8fafc;">
+                            <th style="padding:8px; text-align:left;">QC #</th>
+                            <th style="padding:8px; text-align:left;">Tanggal</th>
+                            <th style="padding:8px; text-align:center;">Qty Masuk</th>
+                            <th style="padding:8px; text-align:center;">OK</th>
+                            <th style="padding:8px; text-align:center;">NG</th>
+                            <th style="padding:8px; text-align:center;">Rework</th>
+                            <th style="padding:8px; text-align:center;">Hasil</th>
+                            <th style="padding:8px; text-align:left;">Inspector</th>
+                            <th style="padding:8px; text-align:left;">Catatan</th>
+                            <th style="padding:8px; text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const item of data) {
+                const hasilClass = item.hasil === 'OK' ? 'status-ok' : (item.hasil === 'NG' ? 'status-ng' : 'status-rework');
+                const unitLabel = item.qc_number === 1 ? 'Sheet' : 'Pcs';
+                const qtyMasuk = item.qc_number === 1 ? (material?.qty_sheet || 0) : (material?.qty_pcs || 0);
+                const alasanNgText = item.alasan_ng ? ` (${item.alasan_ng})` : '';
+                const catatan = item.notes || '-';
+                
+                html += `
+                    <tr>
+                        <td style="padding:8px; font-weight:500;">QC #${item.qc_number}</td>
+                        <td style="padding:8px;">${item.tanggal_qc || '-'}</td>
+                        <td style="padding:8px; text-align:center; font-weight:bold;">${qtyMasuk} ${unitLabel}</td>
+                        <td style="padding:8px; text-align:center; color:#10b981; font-weight:bold;">${item.qty_ok} ${unitLabel}</td>
+                        <td style="padding:8px; text-align:center; color:#ef4444; font-weight:bold;">${item.qty_ng} ${unitLabel}${alasanNgText}</td>
+                        <td style="padding:8px; text-align:center; color:#f59e0b;">${item.qty_rework || 0} ${unitLabel}</td>
+                        <td style="padding:8px; text-align:center;"><span class="status-badge ${hasilClass}">${item.hasil}</span></td>
+                        <td style="padding:8px;">${item.inspector || '-'}</td>
+                        <td style="padding:8px; max-width:150px; word-wrap:break-word; font-size:11px;">${catatan}</td>
+                        <td style="padding:8px; text-align:center;">
+                            <button class="btn-small btn-edit-small" onclick="editQC('${item.id}')">✏️</button>
+                            <button class="btn-small btn-delete-small" onclick="deleteQC('${item.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // REFRESH HISTORY
+        // ============================================================
+        async function refreshHistory() {
+            const select = getEl('selectHistoryPi');
+            if (select && select.value) {
+                await loadHistory(select.value);
+            } else {
+                await loadHistoryPiList();
+            }
+        }
+
+        // ============================================================
+        // EDIT QC
+        // ============================================================
+        async function editQC(id) {
+            const { data: qc, error } = await sb
+                .from('qc_inspection')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !qc) {
+                showToast('❌ Data tidak ditemukan!', 'error');
+                return;
+            }
+
+            isEditMode = true;
+            const editId = getEl('editId');
+            if (editId) editId.value = id;
+            
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'inline';
+            
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) btnSubmit.innerHTML = '✏️ Update QC';
+            
+            const tanggalQc = getEl('tanggal_qc');
+            if (tanggalQc) tanggalQc.value = qc.tanggal_qc || '';
+            
+            const inspector = getEl('inspector');
+            if (inspector) inspector.value = qc.inspector || '';
+            
+            const qtyOk = getEl('qty_ok');
+            if (qtyOk) qtyOk.value = qc.qty_ok || '';
+            
+            const qtyNg = getEl('qty_ng');
+            if (qtyNg) qtyNg.value = qc.qty_ng || '';
+            
+            const qtyRework = getEl('qty_rework');
+            if (qtyRework) qtyRework.value = qc.qty_rework || 0;
+            
+            const hasil = getEl('hasil');
+            if (hasil) hasil.value = qc.hasil || '';
+            
+            const alasanNg = getEl('alasan_ng');
+            if (alasanNg) alasanNg.value = qc.alasan_ng || '';
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = qc.notes || '';
+            
+            const alasanGroup = getEl('alasanNgGroup');
+            if (qc.hasil === 'NG') {
+                if (alasanGroup) alasanGroup.style.display = 'block';
+                if (alasanNg) alasanNg.setAttribute('required', 'required');
+            } else {
+                if (alasanGroup) alasanGroup.style.display = 'none';
+                if (alasanNg) alasanNg.removeAttribute('required');
+            }
+            
+            const card = document.querySelector('.card');
+            if (card) card.scrollIntoView({ behavior: 'smooth' });
+            
+            showToast('📝 Mode Edit: silakan ubah data QC', 'info');
+        }
+
+        // ============================================================
+        // DELETE QC
+        // ============================================================
+        async function deleteQC(id) {
+            if (!confirm('Yakin ingin menghapus data QC ini? Data tidak bisa dikembalikan!')) return;
+            
+            const { error } = await sb
+                .from('qc_inspection')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('❌ Gagal menghapus: ' + error.message, 'error');
+            } else {
+                showToast('✅ Data QC berhasil dihapus', 'success');
+                const select = getEl('selectHistoryPi');
+                if (select && select.value) {
+                    await loadHistory(select.value);
+                }
+                await loadHistoryPiList();
+            }
+        }
+
+        // ============================================================
+        // SAVE QC - DENGAN PERBAIKAN NG TRACKING
+        // ============================================================
+        async function saveQC() {
+            if (isSubmitting) return;
+
+            const materialId = getEl('materialId')?.value;
+            const qcNumber = parseInt(getEl('qcNumber')?.value) || 1;
+            const editId = getEl('editId')?.value;
+            const tanggal_qc = getEl('tanggal_qc')?.value;
+            const inspector = getEl('inspector')?.value?.trim();
+            const qty_ok = parseInt(getEl('qty_ok')?.value);
+            const qty_ng = parseInt(getEl('qty_ng')?.value);
+            const qty_rework = parseInt(getEl('qty_rework')?.value) || 0;
+            const hasil = getEl('hasil')?.value;
+            const alasan_ng = getEl('alasan_ng')?.value;
+            const notes = getEl('notes')?.value?.trim();
+
+            if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+            if (!tanggal_qc) { showMessage('❌ Tanggal QC wajib diisi!', 'error'); return; }
+            if (!inspector) { showMessage('❌ Nama Inspector wajib diisi!', 'error'); return; }
+            if (isNaN(qty_ok) || qty_ok < 0) { showMessage('❌ Qty OK harus lebih dari 0!', 'error'); return; }
+            if (isNaN(qty_ng) || qty_ng < 0) { showMessage('❌ Qty NG harus lebih dari 0!', 'error'); return; }
+            if (!hasil) { showMessage('❌ Hasil QC wajib dipilih!', 'error'); return; }
+            if (hasil === 'NG' && !alasan_ng) { showMessage('❌ Alasan NG wajib diisi!', 'error'); return; }
+
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            const selectedOption = select.options[select.selectedIndex];
+            let targetValue = 0;
+            let unitLabel = '';
+
+            if (qcNumber === 1) {
+                targetValue = parseInt(selectedOption.dataset.qtySheet) || 0;
+                unitLabel = 'Sheet';
+            } else if (qcNumber === 2) {
+                if (!diecutData) {
+                    const { data: diecut } = await sb
+                        .from('diecut_process')
+                        .select('qty_pcs_ok')
+                        .eq('material_inbound_id', materialId)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+                    diecutData = diecut ? diecut[0] : null;
+                }
+                targetValue = diecutData ? diecutData.qty_pcs_ok : 0;
+                unitLabel = 'Pcs';
+            }
+
+            if (qty_ok > targetValue) {
+                showMessage(`❌ Qty OK (${qty_ok} ${unitLabel}) melebihi target (${targetValue} ${unitLabel})!`, 'error');
+                return;
+            }
+
+            if ((qty_ok + qty_ng + qty_rework) > targetValue) {
+                showMessage(`❌ Total OK + NG + Rework (${qty_ok + qty_ng + qty_rework} ${unitLabel}) melebihi target (${targetValue} ${unitLabel})!`, 'error');
+                return;
+            }
+
+            const btn = getEl('btnSubmit');
+            if (!btn) return;
+            
+            const originalText = btn.innerHTML;
+            btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
+            btn.disabled = true;
+
+            isSubmitting = true;
 
             try {
-                var response = await sb
-                    .from('ng_tracking')
-                    .select(`
-                        *,
-                        material_inbound:material_inbound_id (
-                            no_pi,
-                            no_po,
-                            brand,
-                            jenis,
-                            paper,
-                            size,
-                            qty_sheet,
-                            up_per_sheet,
-                            qty_pcs
-                        )
-                    `)
-                    .order('created_at', { ascending: false });
+                const { data: { user } } = await sb.auth.getUser();
 
-                if (response.error) throw response.error;
+                const data = {
+                    material_inbound_id: materialId,
+                    qc_number: qcNumber,
+                    tanggal_qc,
+                    qty_ok,
+                    qty_ng,
+                    qty_rework,
+                    hasil,
+                    alasan_ng: hasil === 'NG' ? alasan_ng : null,
+                    notes: notes || null,
+                    inspector,
+                    updated_by: user?.email || 'Unknown',
+                    updated_at: new Date().toISOString()
+                };
 
-                allData = response.data || [];
-                currentFiltered = allData.slice(0);
-                renderPage();
+                let result;
+                if (editId) {
+                    result = await sb
+                        .from('qc_inspection')
+                        .update(data)
+                        .eq('id', editId);
+                } else {
+                    data.created_by = user?.email || 'Unknown';
+                    result = await sb.from('qc_inspection').insert([data]);
+                }
+
+                if (result.error) throw result.error;
+
+                let newStatus = '';
+                if (!editId) {
+                    if (qcNumber === 1) {
+                        if (hasil === 'OK' || hasil === 'REWORK') {
+                            newStatus = 'QC1';
+                        } else if (hasil === 'NG') {
+                            newStatus = 'DITERIMA';
+                        }
+                    } else if (qcNumber === 2) {
+                        if (hasil === 'OK') {
+                            newStatus = 'KIRIM';
+                        } else if (hasil === 'NG' || hasil === 'REWORK') {
+                            newStatus = 'QC2';
+                        }
+                    }
+
+                    if (newStatus) {
+                        await sb.from('material_inbound').update({ status: newStatus }).eq('id', materialId);
+                    }
+                }
+
+                // ✅ NG selalu tersimpan jika ada qty_ng
+                if (qty_ng > 0) {
+                    const proses = qcNumber === 1 ? 'QC1' : 'QC2';
+                    await sb.from('ng_tracking').insert({
+                        material_inbound_id: materialId,
+                        proses: proses,
+                        qty_ng: qty_ng,
+                        jenis_ng: alasan_ng || 'LAINNYA',
+                        deskripsi: notes || `NG dari QC #${qcNumber} (Hasil: ${hasil})`,
+                        created_by: user?.email || 'Unknown'
+                    });
+                }
+
+                const actionText = editId ? 'diupdate' : 'disimpan';
+                const statusText = editId ? '' : (newStatus ? `Status: ${newStatus}` : 'Status Tetap');
+                showMessage(`✅ QC #${qcNumber} berhasil ${actionText}! ${statusText}`, 'success');
+                showToast(`✅ QC #${qcNumber} berhasil ${actionText}!`, 'success');
+
+                resetForm();
+                
+                isEditMode = false;
+                const editIdEl = getEl('editId');
+                if (editIdEl) editIdEl.value = '';
+                
+                const editBadge = getEl('editBadge');
+                if (editBadge) editBadge.style.display = 'none';
+                
+                if (btn) btn.innerHTML = '💾 Simpan QC';
+                
+                await loadPiList();
+                await loadHistoryPiList();
+                
+                if (selectedNoPi) {
+                    const selectEl = getEl('selectNoPi');
+                    if (selectEl) {
+                        selectEl.value = selectedNoPi;
+                        await loadMaterialByPi();
+                    }
+                }
+
+                try {
+                    await addLog('QC INSPECTION', `${user?.email} ${actionText} QC #${qcNumber} untuk No PI ${selectedNoPi}`);
+                } catch(e) {}
 
             } catch (err) {
-                if (container) {
-                    container.innerHTML = '<div class="card">❌ Error: ' + err.message + '</div>';
+                showMessage('❌ Gagal: ' + err.message, 'error');
+                showToast('❌ Gagal: ' + err.message, 'error');
+            } finally {
+                isSubmitting = false;
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                 }
-                showToast('❌ Gagal memuat data: ' + err.message, 'error');
             }
         }
 
-        function renderPage() {
-            var container = getEl('mainContent');
-            if (!container) return;
-
-            var searchInput = getEl('searchInput');
-            var filterProsesEl = getEl('filterProses');
-            var filterJenisEl = getEl('filterJenisNg');
-
-            var searchText = (searchInput ? searchInput.value : '').toLowerCase();
-            var prosesFilter = (filterProsesEl ? filterProsesEl.value : 'all');
-            var jenisFilter = (filterJenisEl ? filterJenisEl.value : 'all');
-
-            var filtered = allData.filter(function(item) {
-                var material = item.material_inbound || {};
-                var matchSearch = (material.no_pi || '').toLowerCase().indexOf(searchText) !== -1 ||
-                                   (material.no_po || '').toLowerCase().indexOf(searchText) !== -1 ||
-                                   (material.brand || '').toLowerCase().indexOf(searchText) !== -1 ||
-                                   (material.jenis || '').toLowerCase().indexOf(searchText) !== -1;
-                var matchProses = prosesFilter === 'all' || item.proses === prosesFilter;
-                var matchJenis = jenisFilter === 'all' || item.jenis_ng === jenisFilter;
-                return matchSearch && matchProses && matchJenis;
-            });
-            currentFiltered = filtered;
-
-            // Hitung KPI
-            var totalNG = 0;
-            var totalQC1 = 0;
-            var totalDiecut = 0;
-            var totalQC2 = 0;
-            var materialIds = {};
-
-            for (var i = 0; i < allData.length; i++) {
-                var item = allData[i];
-                var qty = item.qty_ng || 0;
-                totalNG += qty;
-                if (item.proses === 'QC1') totalQC1 += qty;
-                else if (item.proses === 'DIECUT') totalDiecut += qty;
-                else if (item.proses === 'QC2') totalQC2 += qty;
-                if (item.material_inbound_id) {
-                    materialIds[item.material_inbound_id] = true;
-                }
-            }
-            var uniqueMaterial = Object.keys(materialIds).length;
-
-            // Hitung jenis NG
-            var jenisCount = {};
-            for (var j = 0; j < allData.length; j++) {
-                var item = allData[j];
-                if (item.jenis_ng) {
-                    if (!jenisCount[item.jenis_ng]) jenisCount[item.jenis_ng] = 0;
-                    jenisCount[item.jenis_ng] += (item.qty_ng || 0);
-                }
-            }
-            var topJenis = Object.keys(jenisCount).sort(function(a, b) {
-                return jenisCount[b] - jenisCount[a];
-            }).slice(0, 5);
-
-            var rows = '';
-            for (var k = 0; k < filtered.length; k++) {
-                var item = filtered[k];
-                var material = item.material_inbound || {};
-                var date = new Date(item.created_at).toLocaleDateString('id-ID', {
-                    day: '2-digit', month: '2-digit', year: 'numeric'
-                });
-                
-                rows += '<tr>' +
-                    '<td>' + (material.no_pi || '-') + '</td>' +
-                    '<td>' + (material.no_po || '-') + '</td>' +
-                    '<td>' + (material.brand || '-') + '</td>' +
-                    '<td>' + (material.jenis || '-') + '</td>' +
-                    '<td><span class="status-badge ' + getStatusBadge(item.proses) + '">' + getStatusLabel(item.proses) + '</span></td>' +
-                    '<td style="text-align:center;">' + getUnitBadge(item.proses) + '</td>' +
-                    '<td style="text-align:center; font-weight:bold; color:#ef4444;">' + item.qty_ng + '</td>' +
-                    '<td>' + (item.jenis_ng || '-') + '</td>' +
-                    '<td style="font-size:11px; max-width:150px; word-wrap:break-word;">' + (item.deskripsi || '-') + '</td>' +
-                    '<td style="font-size:11px;">' + date + '</td>' +
-                    '</tr>';
-            }
-
-            if (filtered.length === 0) {
-                rows = '<tr><td colspan="10" style="text-align:center;padding:20px;">Belum ada data NG</td></tr>';
-            }
-
-            var topJenisHtml = '';
-            if (topJenis.length > 0) {
-                for (var t = 0; t < topJenis.length; t++) {
-                    var jenis = topJenis[t];
-                    topJenisHtml += '<div style="flex:1; min-width:120px; text-align:center; padding:10px; background:#f8fafc; border-radius:12px;">' +
-                        '<div style="font-size:12px; color:#64748b;">' + jenis + '</div>' +
-                        '<div style="font-size:20px; font-weight:bold; color:#ef4444;">' + jenisCount[jenis] + '</div>' +
-                        '</div>';
-                }
-            } else {
-                topJenisHtml = '<div style="padding:10px; color:#94a3b8;">Belum ada data NG</div>';
-            }
-
-            var html = '';
-            html += '<div class="kpi-grid">' +
-                '<div class="kpi-card" style="border-left:4px solid #ef4444;">' +
-                    '<div class="kpi-value" style="color:#ef4444;">' + totalNG + '</div>' +
-                    '<div class="kpi-label">❌ Total NG</div>' +
-                '</div>' +
-                '<div class="kpi-card" style="border-left:4px solid #f59e0b;">' +
-                    '<div class="kpi-value" style="color:#f59e0b;">' + totalQC1 + '</div>' +
-                    '<div class="kpi-label">🔬 QC #1 (Sheet)</div>' +
-                '</div>' +
-                '<div class="kpi-card" style="border-left:4px solid #3b82f6;">' +
-                    '<div class="kpi-value" style="color:#3b82f6;">' + totalDiecut + '</div>' +
-                    '<div class="kpi-label">⚙️ Diecut (Pcs)</div>' +
-                '</div>' +
-                '<div class="kpi-card" style="border-left:4px solid #9d174d;">' +
-                    '<div class="kpi-value" style="color:#9d174d;">' + totalQC2 + '</div>' +
-                    '<div class="kpi-label">🔬 QC #2 (Pcs)</div>' +
-                '</div>' +
-                '<div class="kpi-card" style="border-left:4px solid #64748b;">' +
-                    '<div class="kpi-value">' + uniqueMaterial + '</div>' +
-                    '<div class="kpi-label">📦 Material Bermasalah</div>' +
-                '</div>' +
-            '</div>';
-
-            html += '<div class="card">' +
-                '<div class="card-title"><span>📋 TOP 5 JENIS NG</span></div>' +
-                '<div style="display:flex; gap:15px; flex-wrap:wrap;">' + topJenisHtml + '</div>' +
-            '</div>';
-
-            html += '<div class="card">' +
-                '<div class="card-title">' +
-                    '<span>📊 Daftar NG</span>' +
-                    '<button class="btn-export" onclick="exportData()">📎 Export Excel</button>' +
-                '</div>' +
-                '<div class="filter-bar">' +
-                    '<input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." oninput="filterData()">' +
-                    '<select id="filterProses" onchange="filterData()">' +
-                        '<option value="all">Semua Proses</option>' +
-                        '<option value="QC1">🔬 QC #1 (Sheet)</option>' +
-                        '<option value="DIECUT">⚙️ Diecut (Pcs)</option>' +
-                        '<option value="QC2">🔬 QC #2 (Pcs)</option>' +
-                    '</select>' +
-                    '<select id="filterJenisNg" onchange="filterData()">' +
-                        '<option value="all">Semua Jenis NG</option>' +
-                        '<option value="CACAT PRINT">CACAT PRINT</option>' +
-                        '<option value="SOBEK">SOBEK</option>' +
-                        '<option value="DIMENSI SALAH">DIMENSI SALAH</option>' +
-                        '<option value="KOTOR">KOTOR</option>' +
-                        '<option value="CACAT BAHAN">CACAT BAHAN</option>' +
-                        '<option value="LAINNYA">LAINNYA</option>' +
-                        '<option value="BINTIK">BINTIK</option>' +
-                    '</select>' +
-                    '<button onclick="resetFilter()">Reset</button>' +
-                '</div>' +
-                '<div class="table-wrapper">' +
-                    '<table>' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th>No PI</th><th>No PO</th><th>Brand</th><th>Jenis</th>' +
-                                '<th>Proses</th><th>Satuan</th><th>Qty NG</th><th>Jenis NG</th><th>Deskripsi</th><th>Tanggal</th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' + rows + '</tbody>' +
-                    '</table>' +
-                '</div>' +
-            '</div>';
-
-            container.innerHTML = html;
-
-            // Re-attach event listeners
-            var newSearchInput = getEl('searchInput');
-            var newFilterProses = getEl('filterProses');
-            var newFilterJenis = getEl('filterJenisNg');
-            if (newSearchInput) newSearchInput.oninput = filterData;
-            if (newFilterProses) newFilterProses.onchange = filterData;
-            if (newFilterJenis) newFilterJenis.onchange = filterData;
-        }
-
-        function filterData() {
-            renderPage();
-        }
-
-        function resetFilter() {
-            var searchInput = getEl('searchInput');
-            var filterProses = getEl('filterProses');
-            var filterJenisNg = getEl('filterJenisNg');
+        function resetForm() {
+            const tanggalQc = getEl('tanggal_qc');
+            if (tanggalQc) tanggalQc.value = new Date().toISOString().split('T')[0];
             
-            if (searchInput) searchInput.value = '';
-            if (filterProses) filterProses.value = 'all';
-            if (filterJenisNg) filterJenisNg.value = 'all';
+            const inspector = getEl('inspector');
+            if (inspector) inspector.value = '';
             
-            renderPage();
-        }
-
-        function exportData() {
-            if (currentFiltered.length === 0) {
-                alert('Tidak ada data untuk diexport!');
-                return;
-            }
-
-            var excelData = [
-                ['No PI', 'No PO', 'Brand', 'Jenis', 'Proses', 'Satuan', 'Qty NG', 'Jenis NG', 'Deskripsi', 'Tanggal']
-            ];
-
-            for (var i = 0; i < currentFiltered.length; i++) {
-                var item = currentFiltered[i];
-                var material = item.material_inbound || {};
-                excelData.push([
-                    material.no_pi || '-',
-                    material.no_po || '-',
-                    material.brand || '-',
-                    material.jenis || '-',
-                    getStatusLabel(item.proses),
-                    getUnitByProses(item.proses),
-                    item.qty_ng,
-                    item.jenis_ng || '-',
-                    item.deskripsi || '-',
-                    new Date(item.created_at).toLocaleDateString('id-ID')
-                ]);
-            }
-
-            var ws = XLSX.utils.aoa_to_sheet(excelData);
-            var wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Laporan NG');
-            XLSX.writeFile(wb, 'Laporan_NG_' + new Date().toISOString().slice(0,10) + '.xlsx');
-            showToast('✅ Export berhasil!', 'success');
+            const qtyOk = getEl('qty_ok');
+            if (qtyOk) qtyOk.value = '';
+            
+            const qtyNg = getEl('qty_ng');
+            if (qtyNg) qtyNg.value = '';
+            
+            const qtyRework = getEl('qty_rework');
+            if (qtyRework) qtyRework.value = '0';
+            
+            const hasil = getEl('hasil');
+            if (hasil) hasil.value = '';
+            
+            const alasanNg = getEl('alasan_ng');
+            if (alasanNg) alasanNg.value = '';
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = '';
+            
+            const alasanGroup = getEl('alasanNgGroup');
+            if (alasanGroup) alasanGroup.style.display = 'none';
+            
+            const msgContainer = getEl('msgContainer');
+            if (msgContainer) msgContainer.innerHTML = '';
         }
 
         // ============ NAVIGASI ============
         function goToMenu(menu) {
-            var files = {
+            const files = {
                 dashboard: 'dashboard.html',
                 'pi-input': 'pi-input.html',
                 'stock-in': 'stock-in.html',
@@ -580,22 +1334,22 @@
             window.location.href = files[menu] || 'dashboard.html';
         }
 
-        function openSidebar() {
-            var sidebar = getEl('sidebar');
-            var overlay = getEl('overlay');
+        function openSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
             if (sidebar) sidebar.classList.add('open');
             if (overlay) overlay.classList.add('show');
         }
         
-        function closeSidebar() {
-            var sidebar = getEl('sidebar');
-            var overlay = getEl('overlay');
+        function closeSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
             if (sidebar) sidebar.classList.remove('open');
             if (overlay) overlay.classList.remove('show');
         }
         
-        function toggleSidebar() {
-            var sidebar = getEl('sidebar');
+        function toggleSidebar() { 
+            const sidebar = getEl('sidebar');
             if (sidebar && sidebar.classList.contains('open')) {
                 closeSidebar();
             } else {
@@ -603,43 +1357,84 @@
             }
         }
 
-        async function logout() {
-            await sb.auth.signOut();
-            window.location.href = 'login.html';
+        async function logout() { 
+            await sb.auth.signOut(); 
+            window.location.href = 'login.html'; 
         }
 
         function setupEventListeners() {
-            var menuToggle = getEl('menuToggle');
+            const menuToggle = getEl('menuToggle');
             if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
             
-            var overlay = getEl('overlay');
+            const overlay = getEl('overlay');
             if (overlay) overlay.addEventListener('click', closeSidebar);
             
-            var logoutBtn = getEl('logoutBtn');
+            const logoutBtn = getEl('logoutBtn');
             if (logoutBtn) logoutBtn.addEventListener('click', logout);
             
-            var logoutMenu = getEl('logoutMenu');
+            const logoutMenu = getEl('logoutMenu');
             if (logoutMenu) logoutMenu.addEventListener('click', logout);
             
-            var menuItems = document.querySelectorAll('.menu-item[data-menu]');
-            for (var i = 0; i < menuItems.length; i++) {
-                (function(el) {
-                    el.addEventListener('click', function() {
-                        goToMenu(el.getAttribute('data-menu'));
-                    });
-                })(menuItems[i]);
-            }
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
         }
 
         async function init() {
-            await cekSession();
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            
             setupEventListeners();
-            await loadData();
+            
+            const params = new URLSearchParams(window.location.search);
+            const qcParam = parseInt(params.get('qc')) || 1;
+            
+            if (qcParam === 2) {
+                setQcNumber(2);
+            } else {
+                setQcNumber(1);
+            }
+            
+            await loadPiList();
+            await loadHistoryPiList();
+            
+            const materialId = params.get('material_id');
+            if (materialId) {
+                const selectMain = getEl('selectNoPi');
+                if (selectMain) {
+                    for (let i = 0; i < selectMain.options.length; i++) {
+                        if (selectMain.options[i].dataset.id === materialId) {
+                            selectMain.value = selectMain.options[i].value;
+                            await loadMaterialByPi();
+                            break;
+                        }
+                    }
+                }
+                
+                const selectHistory = getEl('selectHistoryPi');
+                if (selectHistory) {
+                    for (let i = 0; i < selectHistory.options.length; i++) {
+                        if (selectHistory.options[i].value === materialId) {
+                            selectHistory.value = materialId;
+                            await loadHistory(materialId);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
-        window.filterData = filterData;
-        window.resetFilter = resetFilter;
-        window.exportData = exportData;
+        window.setQcNumber = setQcNumber;
+        window.loadPiList = loadPiList;
+        window.loadMaterialByPi = loadMaterialByPi;
+        window.loadHistoryPiList = loadHistoryPiList;
+        window.loadHistoryByPi = loadHistoryByPi;
+        window.loadHistory = loadHistory;
+        window.refreshHistory = refreshHistory;
+        window.saveQC = saveQC;
+        window.editQC = editQC;
+        window.deleteQC = deleteQC;
+        window.resetForm = resetForm;
 
         init();
     </script>
