@@ -1220,8 +1220,7 @@
                         await sb.from('material_inbound').update({ status: newStatus }).eq('id', materialId);
                     }
                 }
-
-              // ✅ PERBAIKAN: Simpan NG selalu jika ada qty_ng (APAPUN HASILNYA)
+                // ✅ KODE BARU (NG selalu tersimpan jika ada qty_ng > 0)
 if (qty_ng > 0) {
     const proses = qcNumber === 1 ? 'QC1' : 'QC2';
     await sb.from('ng_tracking').insert({
@@ -1233,6 +1232,8 @@ if (qty_ng > 0) {
         created_by: user?.email || 'Unknown'
     });
 }
+
+
 
                 const actionText = editId ? 'diupdate' : 'disimpan';
                 const statusText = editId ? '' : (newStatus ? `Status: ${newStatus}` : 'Status Tetap');
