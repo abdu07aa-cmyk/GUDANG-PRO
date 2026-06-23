@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Laporan NG - SUPPLY MATERIAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-bar input, .filter-bar select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .filter-bar input { flex: 2; }
+        .filter-bar button {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-export { background: #10b981 !important; }
+        .btn-add { background: #8b5cf6 !important; }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .kpi-value { font-size: 28px; font-weight: bold; color: #1e293b; }
+        .kpi-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-qc1 { background: #fef3c7; color: #92400e; }
+        .status-diecut { background: #dbeafe; color: #1e40af; }
+        .status-qc2 { background: #fce7f3; color: #9d174d; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            display: none;
+            font-size: 14px;
+        }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            th, td { font-size: 10px; padding: 6px 4px; }
+        }
+    </style>
+</head>
+<body>
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📦 SUPPLY MATERIAL</h3>
+            <p>Manajemen Inventory</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+
+            <div class="menu-divider"></div>
+
+            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+            <div class="menu-item active" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 SUPPLY MATERIAL</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+        <div class="container" id="mainContent">
+        <div class="loading">⏳ Memuat data...</div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let allData = [];
+        let currentFiltered = [];
+
+        function getEl(id) {
+            return document.getElementById(id);
+        }
+
+        function showToast(msg, type = 'success') {
+            const t = getEl('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function getStatusLabel(proses) {
+            const map = {
+                'QC1': '🔬 QC #1',
+                'DIECUT': '⚙️ Diecut',
+                'QC2': '🔬 QC #2'
+            };
+            return map[proses] || proses;
+        }
+
+        function getStatusBadge(proses) {
+            const map = {
+                'QC1': 'status-qc1',
+                'DIECUT': 'status-diecut',
+                'QC2': 'status-qc2'
+            };
+            return map[proses] || '';
+        }
+
+        async function cekSession() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            return session;
+        }
+
+        async function loadData() {
+            const container = getEl('mainContent');
+            if (!container) return;
+            container.innerHTML = '<div class="loading">📡 Mengambil data NG...</div>';
+
+            try {
+                // Ambil semua data NG dari ng_tracking dengan join ke material_inbound
+                const { data: ngData, error } = await sb
+                    .from('ng_tracking')
+                    .select(`
+                        *,
+                        material_inbound:material_inbound_id (
+                            no_pi,
+                            no_po,
+                            brand,
+                            jenis,
+                            paper,
+                            size,
+                            qty_sheet,
+                            up_per_sheet,
+                            qty_pcs
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allData = ngData || [];
+                currentFiltered = [...allData];
+                renderPage();
+
+            } catch (err) {
+                container.innerHTML = `<div class="card">❌ Error: ${err.message}</div>`;
+                showToast('❌ Gagal memuat data: ' + err.message, 'error');
+            }
+        }
+
+        function renderPage() {
+            const searchText = getEl('searchInput')?.value?.toLowerCase() || '';
+            const prosesFilter = getEl('filterProses')?.value || 'all';
+            const jenisFilter = getEl('filterJenisNg')?.value || 'all';
+
+            let filtered = allData.filter(item => {
+                const matchSearch = (item.material_inbound?.no_pi || '').toLowerCase().includes(searchText) ||
+                                   (item.material_inbound?.no_po || '').toLowerCase().includes(searchText) ||
+                                   (item.material_inbound?.brand || '').toLowerCase().includes(searchText) ||
+                                   (item.material_inbound?.jenis || '').toLowerCase().includes(searchText);
+                const matchProses = prosesFilter === 'all' || item.proses === prosesFilter;
+                const matchJenis = jenisFilter === 'all' || item.jenis_ng === jenisFilter;
+                return matchSearch && matchProses && matchJenis;
+            });
+            currentFiltered = filtered;
+
+            // Hitung KPI
+            const totalNG = allData.reduce((sum, item) => sum + (item.qty_ng || 0), 0);
+            const totalQC1 = allData.filter(i => i.proses === 'QC1').reduce((sum, item) => sum + (item.qty_ng || 0), 0);
+            const totalDiecut = allData.filter(i => i.proses === 'DIECUT').reduce((sum, item) => sum + (item.qty_ng || 0), 0);
+            const totalQC2 = allData.filter(i => i.proses === 'QC2').reduce((sum, item) => sum + (item.qty_ng || 0), 0);
+            const uniqueMaterial = new Set(allData.map(i => i.material_inbound_id)).size;
+
+            // Hitung jenis NG
+            const jenisCount = {};
+            allData.forEach(item => {
+                if (item.jenis_ng) {
+                    jenisCount[item.jenis_ng] = (jenisCount[item.jenis_ng] || 0) + item.qty_ng;
+                }
+            });
+            const topJenis = Object.entries(jenisCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            let rows = '';
+            for (const item of filtered) {
+                const material = item.material_inbound || {};
+                const date = new Date(item.created_at).toLocaleDateString('id-ID', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+                
+                rows += `
+                    <tr>
+                        <td>${material.no_pi || '-'}</td>
+                        <td>${material.no_po || '-'}</td>
+                        <td>${material.brand || '-'}</td>
+                        <td>${material.jenis || '-'}</td>
+                        <td><span class="status-badge ${getStatusBadge(item.proses)}">${getStatusLabel(item.proses)}</span></td>
+                        <td style="text-align:center; font-weight:bold; color:#ef4444;">${item.qty_ng}</td>
+                        <td>${item.jenis_ng || '-'}</td>
+                        <td style="font-size:11px; max-width:150px; word-wrap:break-word;">${item.deskripsi || '-'}</td>
+                        <td style="font-size:11px;">${date}</td>
+                    </tr>
+                `;
+            }
+
+            if (filtered.length === 0) {
+                rows = `<tr><td colspan="9" style="text-align:center;padding:20px;">Belum ada data NG</td></tr>`;
+            }
+
+            const html = `
+                <div class="kpi-grid">
+                    <div class="kpi-card" style="border-left:4px solid #ef4444;">
+                        <div class="kpi-value" style="color:#ef4444;">${totalNG}</div>
+                        <div class="kpi-label">❌ Total NG</div>
+                    </div>
+                    <div class="kpi-card" style="border-left:4px solid #f59e0b;">
+                        <div class="kpi-value" style="color:#f59e0b;">${totalQC1}</div>
+                        <div class="kpi-label">🔬 QC #1</div>
+                    </div>
+                    <div class="kpi-card" style="border-left:4px solid #3b82f6;">
+                        <div class="kpi-value" style="color:#3b82f6;">${totalDiecut}</div>
+                        <div class="kpi-label">⚙️ Diecut</div>
+                    </div>
+                    <div class="kpi-card" style="border-left:4px solid #9d174d;">
+                        <div class="kpi-value" style="color:#9d174d;">${totalQC2}</div>
+                        <div class="kpi-label">🔬 QC #2</div>
+                    </div>
+                    <div class="kpi-card" style="border-left:4px solid #64748b;">
+                        <div class="kpi-value">${uniqueMaterial}</div>
+                        <div class="kpi-label">📦 Material Bermasalah</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>📋 TOP 5 JENIS NG</span>
+                    </div>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        ${topJenis.length > 0 ? topJenis.map(([jenis, total]) => `
+                            <div style="flex:1; min-width:120px; text-align:center; padding:10px; background:#f8fafc; border-radius:12px;">
+                                <div style="font-size:12px; color:#64748b;">${jenis}</div>
+                                <div style="font-size:20px; font-weight:bold; color:#ef4444;">${total}</div>
+                            </div>
+                        `).join('') : '<div style="padding:10px; color:#94a3b8;">Belum ada data NG</div>'}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>📊 Daftar NG</span>
+                        <button class="btn-export" onclick="exportData()">📎 Export Excel</button>
+                    </div>
+                    <div class="filter-bar">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." oninput="filterData()">
+                        <select id="filterProses" onchange="filterData()">
+                            <option value="all">Semua Proses</option>
+                            <option value="QC1">🔬 QC #1</option>
+                            <option value="DIECUT">⚙️ Diecut</option>
+                            <option value="QC2">🔬 QC #2</option>
+                        </select>
+                        <select id="filterJenisNg" onchange="filterData()">
+                            <option value="all">Semua Jenis NG</option>
+                            <option value="CACAT PRINT">CACAT PRINT</option>
+                            <option value="SOBEK">SOBEK</option>
+                            <option value="DIMENSI SALAH">DIMENSI SALAH</option>
+                            <option value="KOTOR">KOTOR</option>
+                            <option value="CACAT BAHAN">CACAT BAHAN</option>
+                            <option value="LAINNYA">LAINNYA</option>
+                        </select>
+                        <button onclick="resetFilter()">Reset</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>No PI</th>
+                                    <th>No PO</th>
+                                    <th>Brand</th>
+                                    <th>Jenis</th>
+                                    <th>Proses</th>
+                                    <th>Qty NG</th>
+                                    <th>Jenis NG</th>
+                                    <th>Deskripsi</th>
+                                    <th>Tanggal</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function filterData() {
+            renderPage();
+        }
+
+        function resetFilter() {
+            const searchInput = getEl('searchInput');
+            const filterProses = getEl('filterProses');
+            const filterJenisNg = getEl('filterJenisNg');
+            
+            if (searchInput) searchInput.value = '';
+            if (filterProses) filterProses.value = 'all';
+            if (filterJenisNg) filterJenisNg.value = 'all';
+            
+            renderPage();
+        }
+
+        function exportData() {
+            if (currentFiltered.length === 0) {
+                alert('Tidak ada data untuk diexport!');
+                return;
+            }
+
+            const excelData = [
+                ['No PI', 'No PO', 'Brand', 'Jenis', 'Proses', 'Qty NG', 'Jenis NG', 'Deskripsi', 'Tanggal']
+            ];
+
+            for (const item of currentFiltered) {
+                const material = item.material_inbound || {};
+                excelData.push([
+                    material.no_pi || '-',
+                    material.no_po || '-',
+                    material.brand || '-',
+                    material.jenis || '-',
+                    getStatusLabel(item.proses),
+                    item.qty_ng,
+                    item.jenis_ng || '-',
+                    item.deskripsi || '-',
+                    new Date(item.created_at).toLocaleDateString('id-ID')
+                ]);
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Laporan NG');
+            XLSX.writeFile(wb, `Laporan_NG_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('✅ Export berhasil!', 'success');
+        }
+
+        // ============ NAVIGASI ============
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        function openSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+        }
+        
+        function closeSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+        }
+        
+        function toggleSidebar() { 
+            const sidebar = getEl('sidebar');
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        async function logout() { 
+            await sb.auth.signOut(); 
+            window.location.href = 'login.html'; 
+        }
+
+        function setupEventListeners() {
+            const menuToggle = getEl('menuToggle');
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            
+            const overlay = getEl('overlay');
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            
+            const logoutBtn = getEl('logoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            
+            const logoutMenu = getEl('logoutMenu');
+            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+
+        async function init() {
+            await cekSession();
+            setupEventListeners();
+            await loadData();
+        }
+
+        window.filterData = filterData;
+        window.resetFilter = resetFilter;
+        window.exportData = exportData;
+
+        init();
+    </script>
+</body>
+</html>
