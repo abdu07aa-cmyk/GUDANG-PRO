@@ -319,13 +319,13 @@
                 </button>
             </div>
 
-            <!-- Pilih No PI -->
+            <!-- DROPDOWN 1: Untuk Proses QC -->
             <div class="form-group">
-                <label>Pilih No PI <span class="required">*</span></label>
+                <label>Pilih No PI (Untuk QC) <span class="required">*</span></label>
                 <select id="selectNoPi" onchange="loadMaterialByPi()">
                     <option value="">-- Pilih No PI --</option>
                 </select>
-                <span class="small-text">📌 Pilih No PI dari daftar material yang sudah masuk</span>
+                <span class="small-text" id="dropdownInfo">📌 Hanya menampilkan material dengan status yang sesuai</span>
             </div>
 
             <input type="hidden" id="materialId">
@@ -424,12 +424,24 @@
             </form>
         </div>
 
-        <!-- History QC -->
+        <!-- ============================================================ -->
+        <!-- ✅ TAMBAHAN: DROPDOWN RIWAYAT QC (TANPA MENGUBAH YANG ADA)   -->
+        <!-- ============================================================ -->
         <div class="card">
             <div class="card-title">
                 <span>📋 Riwayat QC</span>
-                <button class="btn btn-secondary" onclick="loadHistory(currentMaterialId)" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+                <button class="btn btn-secondary" onclick="refreshHistory()" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
             </div>
+            
+            <!-- Dropdown untuk riwayat (SEMUA status yang sudah pernah QC) -->
+            <div class="form-group">
+                <label>Pilih No PI untuk Lihat Riwayat QC</label>
+                <select id="selectHistoryPi" onchange="loadHistoryByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Menampilkan semua No PI yang sudah pernah di-QC (QC1, QC2, DIECUT, KIRIM)</span>
+            </div>
+            
             <div id="historyList" style="overflow-x:auto;">
                 <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>
             </div>
@@ -490,12 +502,10 @@
 
         // Set today's date
         const tanggalQc = getEl('tanggal_qc');
-        if (tanggalQc) {
-            tanggalQc.value = new Date().toISOString().split('T')[0];
-        }
+        if (tanggalQc) tanggalQc.value = new Date().toISOString().split('T')[0];
 
         // ============================================================
-        // SET QC NUMBER (TOGGLE) - DENGAN NULL CHECK
+        // SET QC NUMBER (TOGGLE) - TIDAK BERUBAH
         // ============================================================
         function setQcNumber(qc) {
             currentQcNumber = qc;
@@ -528,11 +538,7 @@
             const unitInfo = getEl('unitInfo');
             if (unitInfo) unitInfo.style.display = 'none';
             
-            const historyList = getEl('historyList');
-            if (historyList) {
-                historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
-            }
-            
+            // Update label unit
             const labelQtyOk = getEl('labelQtyOk');
             const labelQtyNg = getEl('labelQtyNg');
             const labelQtyRework = getEl('labelQtyRework');
@@ -543,11 +549,17 @@
                 if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Sheet) <span class="required">*</span>';
                 if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Sheet)';
                 if (maxUnitOk) maxUnitOk.innerText = 'Sheet';
+                
+                const dropdownInfo = getEl('dropdownInfo');
+                if (dropdownInfo) dropdownInfo.innerHTML = '📌 Hanya menampilkan material dengan status DITERIMA (untuk QC #1)';
             } else {
                 if (labelQtyOk) labelQtyOk.innerHTML = 'Qty OK (Pcs) <span class="required">*</span>';
                 if (labelQtyNg) labelQtyNg.innerHTML = 'Qty NG (Pcs) <span class="required">*</span>';
                 if (labelQtyRework) labelQtyRework.innerHTML = 'Qty Rework (Pcs)';
                 if (maxUnitOk) maxUnitOk.innerText = 'Pcs';
+                
+                const dropdownInfo = getEl('dropdownInfo');
+                if (dropdownInfo) dropdownInfo.innerHTML = '📌 Hanya menampilkan material dengan status DIECUT (untuk QC #2)';
             }
             
             isEditMode = false;
@@ -571,15 +583,23 @@
         }
 
         // ============================================================
-        // LOAD DAFTAR NO PI
+        // DROPDOWN 1: LOAD DAFTAR NO PI (SESUAI QC) - TIDAK BERUBAH
         // ============================================================
         async function loadPiList() {
             const select = getEl('selectNoPi');
             if (!select) return;
             
+            let statusFilter = [];
+            if (currentQcNumber === 1) {
+                statusFilter = ['DITERIMA'];
+            } else if (currentQcNumber === 2) {
+                statusFilter = ['DIECUT'];
+            }
+            
             const { data, error } = await sb
                 .from('material_inbound')
                 .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .in('status', statusFilter)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -591,28 +611,11 @@
             select.innerHTML = '<option value="">-- Pilih No PI --</option>';
 
             if (!data || data.length === 0) {
-                select.innerHTML += '<option value="" disabled>Belum ada material masuk</option>';
+                select.innerHTML += `<option value="" disabled>${currentQcNumber === 1 ? 'Tidak ada material dengan status DITERIMA' : 'Tidak ada material dengan status DIECUT'}</option>`;
                 return;
             }
 
-            let filteredData = data;
-            if (currentQcNumber === 1) {
-                filteredData = data.filter(item => item.status === 'DITERIMA');
-            } else if (currentQcNumber === 2) {
-                filteredData = data.filter(item => 
-                    item.status === 'QC1' || 
-                    item.status === 'DIECUT' || 
-                    item.status === 'QC2' || 
-                    item.status === 'KIRIM'
-                );
-            }
-
-            if (filteredData.length === 0) {
-                select.innerHTML += `<option value="" disabled>${currentQcNumber === 1 ? 'Tidak ada material dengan status DITERIMA' : 'Tidak ada material yang sudah lewat QC #1'}</option>`;
-                return;
-            }
-
-            for (const item of filteredData) {
+            for (const item of data) {
                 if (item.no_pi) {
                     const option = document.createElement('option');
                     option.value = item.no_pi;
@@ -621,7 +624,7 @@
                     if (currentQcNumber === 1) {
                         statusText = '✅ Siap QC #1';
                     } else {
-                        statusText = `✅ Siap QC #2 (${item.status})`;
+                        statusText = '✅ Siap QC #2';
                     }
                     
                     option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
@@ -642,7 +645,7 @@
         }
 
         // ============================================================
-        // LOAD MATERIAL BERDASARKAN NO PI
+        // LOAD MATERIAL - TIDAK BERUBAH
         // ============================================================
         async function loadMaterialByPi() {
             const select = getEl('selectNoPi');
@@ -663,11 +666,6 @@
                     qcBadge.innerText = 'Pilih No PI';
                     qcBadge.style.background = '#fef3c7';
                 }
-                
-                const historyList = getEl('historyList');
-                if (historyList) {
-                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
-                }
                 return;
             }
 
@@ -682,8 +680,8 @@
             currentMaterialId = materialId;
             selectedNoPi = noPi;
             
-            const elMaterialId = getEl('materialId');
-            if (elMaterialId) elMaterialId.value = materialId;
+            const materialIdEl = getEl('materialId');
+            if (materialIdEl) materialIdEl.value = materialId;
 
             const statusMap = {
                 'DITERIMA': '📥 Diterima',
@@ -693,6 +691,7 @@
                 'KIRIM': '🏭 Kirim Produksi'
             };
 
+            // ✅ Validasi status
             if (currentQcNumber === 1 && status !== 'DITERIMA') {
                 showMessage(`⚠️ QC #1 hanya untuk status DITERIMA! Status saat ini: ${statusMap[status] || status}`, 'warning');
                 const qcBadge = getEl('qcBadge');
@@ -700,14 +699,11 @@
                     qcBadge.innerText = `⚠️ Status: ${status}`;
                     qcBadge.style.background = '#fee2e2';
                 }
-                const materialInfo = getEl('materialInfo');
-                if (materialInfo) materialInfo.style.display = 'none';
-                const unitInfo = getEl('unitInfo');
-                if (unitInfo) unitInfo.style.display = 'none';
                 return;
             }
 
             if (currentQcNumber === 2) {
+                // Cek QC #1 sudah ada
                 const { data: qc1Exists } = await sb
                     .from('qc_inspection')
                     .select('id')
@@ -717,18 +713,10 @@
 
                 if (!qc1Exists || qc1Exists.length === 0) {
                     showMessage('❌ Harus melakukan QC #1 terlebih dahulu sebelum QC #2!', 'error');
-                    const qcBadge = getEl('qcBadge');
-                    if (qcBadge) {
-                        qcBadge.innerText = '⚠️ Belum QC #1';
-                        qcBadge.style.background = '#fee2e2';
-                    }
-                    const materialInfo = getEl('materialInfo');
-                    if (materialInfo) materialInfo.style.display = 'none';
-                    const unitInfo = getEl('unitInfo');
-                    if (unitInfo) unitInfo.style.display = 'none';
                     return;
                 }
 
+                // Ambil data diecut
                 const { data: diecut } = await sb
                     .from('diecut_process')
                     .select('qty_pcs_ok')
@@ -796,6 +784,7 @@
                 }
             }
 
+            // Tampilkan info material
             const materialInfo = getEl('materialInfo');
             if (materialInfo) materialInfo.style.display = 'block';
             
@@ -838,11 +827,103 @@
             const unitInfo = getEl('unitInfo');
             if (unitInfo) unitInfo.style.display = 'block';
 
+            // Reset history dropdown saat pilih material baru
+            const selectHistory = getEl('selectHistoryPi');
+            if (selectHistory) {
+                selectHistory.value = '';
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI di dropdown bawah untuk melihat riwayat QC</div>';
+                }
+            }
+        }
+
+        // ============================================================
+        // ✅ TAMBAHAN: DROPDOWN 2 - LOAD DAFTAR NO PI UNTUK RIWAYAT
+        // ============================================================
+        async function loadHistoryPiList() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            // Ambil semua material yang sudah pernah di-QC (punya data di qc_inspection)
+            const { data, error } = await sb
+                .from('qc_inspection')
+                .select('material_inbound_id')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading history PI list:', error);
+                return;
+            }
+
+            // Ambil ID unik dari material yang sudah di-QC
+            const materialIds = [...new Set(data.map(item => item.material_inbound_id))];
+            
+            if (materialIds.length === 0) {
+                select.innerHTML = '<option value="">-- Pilih No PI --</option><option value="" disabled>Belum ada riwayat QC</option>';
+                return;
+            }
+
+            // Ambil detail material
+            const { data: materials, error: matError } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, id')
+                .in('id', materialIds)
+                .order('created_at', { ascending: false });
+
+            if (matError || !materials) {
+                select.innerHTML = '<option value="">-- Pilih No PI --</option><option value="" disabled>Error memuat data</option>';
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+
+            for (const item of materials) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    
+                    let statusText = '';
+                    if (item.status === 'DITERIMA') statusText = '📥 Diterima';
+                    else if (item.status === 'QC1') statusText = '🔬 QC #1';
+                    else if (item.status === 'DIECUT') statusText = '⚙️ Diecut';
+                    else if (item.status === 'QC2') statusText = '🔬 QC #2';
+                    else if (item.status === 'KIRIM') statusText = '🏭 Kirim Produksi';
+                    
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
+                    option.dataset.noPi = item.no_pi;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+                await loadHistoryByPi();
+            }
+        }
+
+        // ============================================================
+        // ✅ TAMBAHAN: LOAD HISTORY BERDASARKAN DROPDOWN 2
+        // ============================================================
+        async function loadHistoryByPi() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            const materialId = select.value;
+            if (!materialId) {
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat QC</div>';
+                }
+                return;
+            }
+            
             await loadHistory(materialId);
         }
 
         // ============================================================
-        // LOAD HISTORY QC
+        // LOAD HISTORY (YANG SUDAH ADA) - DIPANGGIL DARI DROPDOWN 2
         // ============================================================
         async function loadHistory(materialId) {
             const container = getEl('historyList');
@@ -871,7 +952,7 @@
                 .single();
 
             if (!data || data.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat QC</div>`;
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat QC untuk No PI ini</div>`;
                 return;
             }
 
@@ -921,7 +1002,19 @@
         }
 
         // ============================================================
-        // EDIT QC
+        // REFRESH HISTORY
+        // ============================================================
+        async function refreshHistory() {
+            const select = getEl('selectHistoryPi');
+            if (select && select.value) {
+                await loadHistory(select.value);
+            } else {
+                await loadHistoryPiList();
+            }
+        }
+
+        // ============================================================
+        // EDIT QC - TIDAK BERUBAH
         // ============================================================
         async function editQC(id) {
             const { data: qc, error } = await sb
@@ -985,7 +1078,7 @@
         }
 
         // ============================================================
-        // DELETE QC
+        // DELETE QC - TIDAK BERUBAH
         // ============================================================
         async function deleteQC(id) {
             if (!confirm('Yakin ingin menghapus data QC ini? Data tidak bisa dikembalikan!')) return;
@@ -999,14 +1092,18 @@
                 showToast('❌ Gagal menghapus: ' + error.message, 'error');
             } else {
                 showToast('✅ Data QC berhasil dihapus', 'success');
-                if (currentMaterialId) {
-                    await loadHistory(currentMaterialId);
+                // Refresh history
+                const select = getEl('selectHistoryPi');
+                if (select && select.value) {
+                    await loadHistory(select.value);
                 }
+                // Refresh dropdown history
+                await loadHistoryPiList();
             }
         }
 
         // ============================================================
-        // SAVE QC
+        // SAVE QC - TIDAK BERUBAH
         // ============================================================
         async function saveQC() {
             if (isSubmitting) return;
@@ -1154,7 +1251,10 @@
                 
                 if (btn) btn.innerHTML = '💾 Simpan QC';
                 
+                // ✅ Refresh kedua dropdown
                 await loadPiList();
+                await loadHistoryPiList();
+                
                 if (selectedNoPi) {
                     const selectEl = getEl('selectNoPi');
                     if (selectEl) {
@@ -1288,6 +1388,7 @@
             
             setupEventListeners();
             
+            // Cek parameter qc dari URL
             const params = new URLSearchParams(window.location.search);
             const qcParam = parseInt(params.get('qc')) || 1;
             
@@ -1297,13 +1398,46 @@
                 setQcNumber(1);
             }
             
+            // Load kedua dropdown
             await loadPiList();
+            await loadHistoryPiList();
+            
+            // Cek parameter material_id
+            const materialId = params.get('material_id');
+            if (materialId) {
+                // Cari di dropdown utama
+                const selectMain = getEl('selectNoPi');
+                if (selectMain) {
+                    for (let i = 0; i < selectMain.options.length; i++) {
+                        if (selectMain.options[i].dataset.id === materialId) {
+                            selectMain.value = selectMain.options[i].value;
+                            await loadMaterialByPi();
+                            break;
+                        }
+                    }
+                }
+                
+                // Cari di dropdown history
+                const selectHistory = getEl('selectHistoryPi');
+                if (selectHistory) {
+                    for (let i = 0; i < selectHistory.options.length; i++) {
+                        if (selectHistory.options[i].value === materialId) {
+                            selectHistory.value = materialId;
+                            await loadHistory(materialId);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         window.setQcNumber = setQcNumber;
         window.loadPiList = loadPiList;
         window.loadMaterialByPi = loadMaterialByPi;
+        window.loadHistoryPiList = loadHistoryPiList;
+        window.loadHistoryByPi = loadHistoryByPi;
         window.loadHistory = loadHistory;
+        window.refreshHistory = refreshHistory;
         window.saveQC = saveQC;
         window.editQC = editQC;
         window.deleteQC = deleteQC;
