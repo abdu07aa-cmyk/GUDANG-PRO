@@ -229,17 +229,20 @@
             return document.getElementById(id);
         }
 
-        function showToast(msg, type = 'success') {
+        function showToast(msg, type) {
+            if (typeof type === 'undefined') type = 'success';
             const t = getEl('toast');
             if (!t) return;
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.className = 'toast', 3000);
+            t._timeout = setTimeout(function() {
+                t.className = 'toast';
+            }, 3000);
         }
 
         function getStatusLabel(proses) {
-            const map = {
+            var map = {
                 'QC1': '🔬 QC #1',
                 'DIECUT': '⚙️ Diecut',
                 'QC2': '🔬 QC #2'
@@ -248,7 +251,7 @@
         }
 
         function getStatusBadge(proses) {
-            const map = {
+            var map = {
                 'QC1': 'status-qc1',
                 'DIECUT': 'status-diecut',
                 'QC2': 'status-qc2'
@@ -257,13 +260,15 @@
         }
 
         async function cekSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-            return session;
+            var sessionData = await sb.auth.getSession();
+            if (!sessionData.data.session) {
+                window.location.href = 'login.html';
+            }
+            return sessionData.data.session;
         }
 
         async function loadData() {
-            const container = getEl('mainContent');
+            var container = getEl('mainContent');
             if (!container) {
                 console.error('Element mainContent tidak ditemukan!');
                 return;
@@ -271,7 +276,7 @@
             container.innerHTML = '<div class="loading">📡 Mengambil data NG...</div>';
 
             try {
-                const { data: ngData, error } = await sb
+                var response = await sb
                     .from('ng_tracking')
                     .select(`
                         *,
@@ -289,165 +294,190 @@
                     `)
                     .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                if (response.error) throw response.error;
 
-                allData = ngData || [];
-                currentFiltered = [...allData];
+                allData = response.data || [];
+                currentFiltered = allData.slice(0);
                 renderPage();
 
             } catch (err) {
                 if (container) {
-                    container.innerHTML = `<div class="card">❌ Error: ${err.message}</div>';
+                    container.innerHTML = '<div class="card">❌ Error: ' + err.message + '</div>';
                 }
                 showToast('❌ Gagal memuat data: ' + err.message, 'error');
             }
         }
 
         function renderPage() {
-            const container = getEl('mainContent');
+            var container = getEl('mainContent');
             if (!container) return;
 
-            const searchText = getEl('searchInput')?.value?.toLowerCase() || '';
-            const prosesFilter = getEl('filterProses')?.value || 'all';
-            const jenisFilter = getEl('filterJenisNg')?.value || 'all';
+            var searchInput = getEl('searchInput');
+            var filterProsesEl = getEl('filterProses');
+            var filterJenisEl = getEl('filterJenisNg');
 
-            let filtered = allData.filter(item => {
-                const matchSearch = (item.material_inbound?.no_pi || '').toLowerCase().includes(searchText) ||
-                                   (item.material_inbound?.no_po || '').toLowerCase().includes(searchText) ||
-                                   (item.material_inbound?.brand || '').toLowerCase().includes(searchText) ||
-                                   (item.material_inbound?.jenis || '').toLowerCase().includes(searchText);
-                const matchProses = prosesFilter === 'all' || item.proses === prosesFilter;
-                const matchJenis = jenisFilter === 'all' || item.jenis_ng === jenisFilter;
+            var searchText = (searchInput ? searchInput.value : '').toLowerCase();
+            var prosesFilter = (filterProsesEl ? filterProsesEl.value : 'all');
+            var jenisFilter = (filterJenisEl ? filterJenisEl.value : 'all');
+
+            var filtered = allData.filter(function(item) {
+                var material = item.material_inbound || {};
+                var matchSearch = (material.no_pi || '').toLowerCase().indexOf(searchText) !== -1 ||
+                                   (material.no_po || '').toLowerCase().indexOf(searchText) !== -1 ||
+                                   (material.brand || '').toLowerCase().indexOf(searchText) !== -1 ||
+                                   (material.jenis || '').toLowerCase().indexOf(searchText) !== -1;
+                var matchProses = prosesFilter === 'all' || item.proses === prosesFilter;
+                var matchJenis = jenisFilter === 'all' || item.jenis_ng === jenisFilter;
                 return matchSearch && matchProses && matchJenis;
             });
             currentFiltered = filtered;
 
             // Hitung KPI
-            const totalNG = allData.reduce((sum, item) => sum + (item.qty_ng || 0), 0);
-            const totalQC1 = allData.filter(i => i.proses === 'QC1').reduce((sum, item) => sum + (item.qty_ng || 0), 0);
-            const totalDiecut = allData.filter(i => i.proses === 'DIECUT').reduce((sum, item) => sum + (item.qty_ng || 0), 0);
-            const totalQC2 = allData.filter(i => i.proses === 'QC2').reduce((sum, item) => sum + (item.qty_ng || 0), 0);
-            const uniqueMaterial = new Set(allData.map(i => i.material_inbound_id)).size;
+            var totalNG = 0;
+            var totalQC1 = 0;
+            var totalDiecut = 0;
+            var totalQC2 = 0;
+            var materialIds = {};
+
+            for (var i = 0; i < allData.length; i++) {
+                var item = allData[i];
+                var qty = item.qty_ng || 0;
+                totalNG += qty;
+                if (item.proses === 'QC1') totalQC1 += qty;
+                else if (item.proses === 'DIECUT') totalDiecut += qty;
+                else if (item.proses === 'QC2') totalQC2 += qty;
+                if (item.material_inbound_id) {
+                    materialIds[item.material_inbound_id] = true;
+                }
+            }
+            var uniqueMaterial = Object.keys(materialIds).length;
 
             // Hitung jenis NG
-            const jenisCount = {};
-            allData.forEach(item => {
+            var jenisCount = {};
+            for (var j = 0; j < allData.length; j++) {
+                var item = allData[j];
                 if (item.jenis_ng) {
-                    jenisCount[item.jenis_ng] = (jenisCount[item.jenis_ng] || 0) + item.qty_ng;
+                    if (!jenisCount[item.jenis_ng]) jenisCount[item.jenis_ng] = 0;
+                    jenisCount[item.jenis_ng] += (item.qty_ng || 0);
                 }
-            });
-            const topJenis = Object.entries(jenisCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            }
+            var topJenis = Object.keys(jenisCount).sort(function(a, b) {
+                return jenisCount[b] - jenisCount[a];
+            }).slice(0, 5);
 
-            let rows = '';
-            for (const item of filtered) {
-                const material = item.material_inbound || {};
-                const date = new Date(item.created_at).toLocaleDateString('id-ID', {
+            var rows = '';
+            for (var k = 0; k < filtered.length; k++) {
+                var item = filtered[k];
+                var material = item.material_inbound || {};
+                var date = new Date(item.created_at).toLocaleDateString('id-ID', {
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 });
                 
-                rows += `
-                    <tr>
-                        <td>${material.no_pi || '-'}</td>
-                        <td>${material.no_po || '-'}</td>
-                        <td>${material.brand || '-'}</td>
-                        <td>${material.jenis || '-'}</td>
-                        <td><span class="status-badge ${getStatusBadge(item.proses)}">${getStatusLabel(item.proses)}</span></td>
-                        <td style="text-align:center; font-weight:bold; color:#ef4444;">${item.qty_ng}</td>
-                        <td>${item.jenis_ng || '-'}</td>
-                        <td style="font-size:11px; max-width:150px; word-wrap:break-word;">${item.deskripsi || '-'}</td>
-                        <td style="font-size:11px;">${date}</td>
-                    </tr>
-                `;
+                rows += '<tr>' +
+                    '<td>' + (material.no_pi || '-') + '</td>' +
+                    '<td>' + (material.no_po || '-') + '</td>' +
+                    '<td>' + (material.brand || '-') + '</td>' +
+                    '<td>' + (material.jenis || '-') + '</td>' +
+                    '<td><span class="status-badge ' + getStatusBadge(item.proses) + '">' + getStatusLabel(item.proses) + '</span></td>' +
+                    '<td style="text-align:center; font-weight:bold; color:#ef4444;">' + item.qty_ng + '</td>' +
+                    '<td>' + (item.jenis_ng || '-') + '</td>' +
+                    '<td style="font-size:11px; max-width:150px; word-wrap:break-word;">' + (item.deskripsi || '-') + '</td>' +
+                    '<td style="font-size:11px;">' + date + '</td>' +
+                    '</tr>';
             }
 
             if (filtered.length === 0) {
-                rows = `<tr><td colspan="9" style="text-align:center;padding:20px;">Belum ada data NG</td></tr>`;
+                rows = '<tr><td colspan="9" style="text-align:center;padding:20px;">Belum ada data NG</td></tr>';
             }
 
-            const html = `
-                <div class="kpi-grid">
-                    <div class="kpi-card" style="border-left:4px solid #ef4444;">
-                        <div class="kpi-value" style="color:#ef4444;">${totalNG}</div>
-                        <div class="kpi-label">❌ Total NG</div>
-                    </div>
-                    <div class="kpi-card" style="border-left:4px solid #f59e0b;">
-                        <div class="kpi-value" style="color:#f59e0b;">${totalQC1}</div>
-                        <div class="kpi-label">🔬 QC #1</div>
-                    </div>
-                    <div class="kpi-card" style="border-left:4px solid #3b82f6;">
-                        <div class="kpi-value" style="color:#3b82f6;">${totalDiecut}</div>
-                        <div class="kpi-label">⚙️ Diecut</div>
-                    </div>
-                    <div class="kpi-card" style="border-left:4px solid #9d174d;">
-                        <div class="kpi-value" style="color:#9d174d;">${totalQC2}</div>
-                        <div class="kpi-label">🔬 QC #2</div>
-                    </div>
-                    <div class="kpi-card" style="border-left:4px solid #64748b;">
-                        <div class="kpi-value">${uniqueMaterial}</div>
-                        <div class="kpi-label">📦 Material Bermasalah</div>
-                    </div>
-                </div>
+            var topJenisHtml = '';
+            if (topJenis.length > 0) {
+                for (var t = 0; t < topJenis.length; t++) {
+                    var jenis = topJenis[t];
+                    topJenisHtml += '<div style="flex:1; min-width:120px; text-align:center; padding:10px; background:#f8fafc; border-radius:12px;">' +
+                        '<div style="font-size:12px; color:#64748b;">' + jenis + '</div>' +
+                        '<div style="font-size:20px; font-weight:bold; color:#ef4444;">' + jenisCount[jenis] + '</div>' +
+                        '</div>';
+                }
+            } else {
+                topJenisHtml = '<div style="padding:10px; color:#94a3b8;">Belum ada data NG</div>';
+            }
 
-                <div class="card">
-                    <div class="card-title">
-                        <span>📋 TOP 5 JENIS NG</span>
-                    </div>
-                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
-                        ${topJenis.length > 0 ? topJenis.map(([jenis, total]) => `
-                            <div style="flex:1; min-width:120px; text-align:center; padding:10px; background:#f8fafc; border-radius:12px;">
-                                <div style="font-size:12px; color:#64748b;">${jenis}</div>
-                                <div style="font-size:20px; font-weight:bold; color:#ef4444;">${total}</div>
-                            </div>
-                        `).join('') : '<div style="padding:10px; color:#94a3b8;">Belum ada data NG</div>'}
-                    </div>
-                </div>
+            var html = '';
+            html += '<div class="kpi-grid">' +
+                '<div class="kpi-card" style="border-left:4px solid #ef4444;">' +
+                    '<div class="kpi-value" style="color:#ef4444;">' + totalNG + '</div>' +
+                    '<div class="kpi-label">❌ Total NG</div>' +
+                '</div>' +
+                '<div class="kpi-card" style="border-left:4px solid #f59e0b;">' +
+                    '<div class="kpi-value" style="color:#f59e0b;">' + totalQC1 + '</div>' +
+                    '<div class="kpi-label">🔬 QC #1</div>' +
+                '</div>' +
+                '<div class="kpi-card" style="border-left:4px solid #3b82f6;">' +
+                    '<div class="kpi-value" style="color:#3b82f6;">' + totalDiecut + '</div>' +
+                    '<div class="kpi-label">⚙️ Diecut</div>' +
+                '</div>' +
+                '<div class="kpi-card" style="border-left:4px solid #9d174d;">' +
+                    '<div class="kpi-value" style="color:#9d174d;">' + totalQC2 + '</div>' +
+                    '<div class="kpi-label">🔬 QC #2</div>' +
+                '</div>' +
+                '<div class="kpi-card" style="border-left:4px solid #64748b;">' +
+                    '<div class="kpi-value">' + uniqueMaterial + '</div>' +
+                    '<div class="kpi-label">📦 Material Bermasalah</div>' +
+                '</div>' +
+            '</div>';
 
-                <div class="card">
-                    <div class="card-title">
-                        <span>📊 Daftar NG</span>
-                        <button class="btn-export" onclick="exportData()">📎 Export Excel</button>
-                    </div>
-                    <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." oninput="filterData()">
-                        <select id="filterProses" onchange="filterData()">
-                            <option value="all">Semua Proses</option>
-                            <option value="QC1">🔬 QC #1</option>
-                            <option value="DIECUT">⚙️ Diecut</option>
-                            <option value="QC2">🔬 QC #2</option>
-                        </select>
-                        <select id="filterJenisNg" onchange="filterData()">
-                            <option value="all">Semua Jenis NG</option>
-                            <option value="CACAT PRINT">CACAT PRINT</option>
-                            <option value="SOBEK">SOBEK</option>
-                            <option value="DIMENSI SALAH">DIMENSI SALAH</option>
-                            <option value="KOTOR">KOTOR</option>
-                            <option value="CACAT BAHAN">CACAT BAHAN</option>
-                            <option value="LAINNYA">LAINNYA</option>
-                        </select>
-                        <button onclick="resetFilter()">Reset</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>No PI</th>
-                                    <th>No PO</th>
-                                    <th>Brand</th>
-                                    <th>Jenis</th>
-                                    <th>Proses</th>
-                                    <th>Qty NG</th>
-                                    <th>Jenis NG</th>
-                                    <th>Deskripsi</th>
-                                    <th>Tanggal</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+            html += '<div class="card">' +
+                '<div class="card-title"><span>📋 TOP 5 JENIS NG</span></div>' +
+                '<div style="display:flex; gap:15px; flex-wrap:wrap;">' + topJenisHtml + '</div>' +
+            '</div>';
+
+            html += '<div class="card">' +
+                '<div class="card-title">' +
+                    '<span>📊 Daftar NG</span>' +
+                    '<button class="btn-export" onclick="exportData()">📎 Export Excel</button>' +
+                '</div>' +
+                '<div class="filter-bar">' +
+                    '<input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." oninput="filterData()">' +
+                    '<select id="filterProses" onchange="filterData()">' +
+                        '<option value="all">Semua Proses</option>' +
+                        '<option value="QC1">🔬 QC #1</option>' +
+                        '<option value="DIECUT">⚙️ Diecut</option>' +
+                        '<option value="QC2">🔬 QC #2</option>' +
+                    '</select>' +
+                    '<select id="filterJenisNg" onchange="filterData()">' +
+                        '<option value="all">Semua Jenis NG</option>' +
+                        '<option value="CACAT PRINT">CACAT PRINT</option>' +
+                        '<option value="SOBEK">SOBEK</option>' +
+                        '<option value="DIMENSI SALAH">DIMENSI SALAH</option>' +
+                        '<option value="KOTOR">KOTOR</option>' +
+                        '<option value="CACAT BAHAN">CACAT BAHAN</option>' +
+                        '<option value="LAINNYA">LAINNYA</option>' +
+                    '</select>' +
+                    '<button onclick="resetFilter()">Reset</button>' +
+                '</div>' +
+                '<div class="table-wrapper">' +
+                    '<table>' +
+                        '<thead>' +
+                            '<tr>' +
+                                '<th>No PI</th><th>No PO</th><th>Brand</th><th>Jenis</th>' +
+                                '<th>Proses</th><th>Qty NG</th><th>Jenis NG</th><th>Deskripsi</th><th>Tanggal</th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody>' + rows + '</tbody>' +
+                    '</table>' +
+                '</div>' +
+            '</div>';
 
             container.innerHTML = html;
+
+            // Re-attach event listeners
+            var newSearchInput = getEl('searchInput');
+            var newFilterProses = getEl('filterProses');
+            var newFilterJenis = getEl('filterJenisNg');
+            if (newSearchInput) newSearchInput.oninput = filterData;
+            if (newFilterProses) newFilterProses.onchange = filterData;
+            if (newFilterJenis) newFilterJenis.onchange = filterData;
         }
 
         function filterData() {
@@ -455,9 +485,9 @@
         }
 
         function resetFilter() {
-            const searchInput = getEl('searchInput');
-            const filterProses = getEl('filterProses');
-            const filterJenisNg = getEl('filterJenisNg');
+            var searchInput = getEl('searchInput');
+            var filterProses = getEl('filterProses');
+            var filterJenisNg = getEl('filterJenisNg');
             
             if (searchInput) searchInput.value = '';
             if (filterProses) filterProses.value = 'all';
@@ -472,12 +502,13 @@
                 return;
             }
 
-            const excelData = [
+            var excelData = [
                 ['No PI', 'No PO', 'Brand', 'Jenis', 'Proses', 'Qty NG', 'Jenis NG', 'Deskripsi', 'Tanggal']
             ];
 
-            for (const item of currentFiltered) {
-                const material = item.material_inbound || {};
+            for (var i = 0; i < currentFiltered.length; i++) {
+                var item = currentFiltered[i];
+                var material = item.material_inbound || {};
                 excelData.push([
                     material.no_pi || '-',
                     material.no_po || '-',
@@ -491,16 +522,16 @@
                 ]);
             }
 
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
-            const wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(excelData);
+            var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Laporan NG');
-            XLSX.writeFile(wb, `Laporan_NG_${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.writeFile(wb, 'Laporan_NG_' + new Date().toISOString().slice(0,10) + '.xlsx');
             showToast('✅ Export berhasil!', 'success');
         }
 
         // ============ NAVIGASI ============
         function goToMenu(menu) {
-            const files = {
+            var files = {
                 dashboard: 'dashboard.html',
                 'pi-input': 'pi-input.html',
                 'stock-in': 'stock-in.html',
@@ -523,22 +554,22 @@
             window.location.href = files[menu] || 'dashboard.html';
         }
 
-        function openSidebar() { 
-            const sidebar = getEl('sidebar');
-            const overlay = getEl('overlay');
+        function openSidebar() {
+            var sidebar = getEl('sidebar');
+            var overlay = getEl('overlay');
             if (sidebar) sidebar.classList.add('open');
             if (overlay) overlay.classList.add('show');
         }
         
-        function closeSidebar() { 
-            const sidebar = getEl('sidebar');
-            const overlay = getEl('overlay');
+        function closeSidebar() {
+            var sidebar = getEl('sidebar');
+            var overlay = getEl('overlay');
             if (sidebar) sidebar.classList.remove('open');
             if (overlay) overlay.classList.remove('show');
         }
         
-        function toggleSidebar() { 
-            const sidebar = getEl('sidebar');
+        function toggleSidebar() {
+            var sidebar = getEl('sidebar');
             if (sidebar && sidebar.classList.contains('open')) {
                 closeSidebar();
             } else {
@@ -546,27 +577,32 @@
             }
         }
 
-        async function logout() { 
-            await sb.auth.signOut(); 
-            window.location.href = 'login.html'; 
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.href = 'login.html';
         }
 
         function setupEventListeners() {
-            const menuToggle = getEl('menuToggle');
+            var menuToggle = getEl('menuToggle');
             if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
             
-            const overlay = getEl('overlay');
+            var overlay = getEl('overlay');
             if (overlay) overlay.addEventListener('click', closeSidebar);
             
-            const logoutBtn = getEl('logoutBtn');
+            var logoutBtn = getEl('logoutBtn');
             if (logoutBtn) logoutBtn.addEventListener('click', logout);
             
-            const logoutMenu = getEl('logoutMenu');
+            var logoutMenu = getEl('logoutMenu');
             if (logoutMenu) logoutMenu.addEventListener('click', logout);
             
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
-            });
+            var menuItems = document.querySelectorAll('.menu-item[data-menu]');
+            for (var i = 0; i < menuItems.length; i++) {
+                (function(el) {
+                    el.addEventListener('click', function() {
+                        goToMenu(el.getAttribute('data-menu'));
+                    });
+                })(menuItems[i]);
+            }
         }
 
         async function init() {
