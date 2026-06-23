@@ -925,82 +925,88 @@
         // ============================================================
         // LOAD HISTORY (YANG SUDAH ADA) - DIPANGGIL DARI DROPDOWN 2
         // ============================================================
-        async function loadHistory(materialId) {
-            const container = getEl('historyList');
-            if (!container) return;
-            
-            if (!materialId) {
-                container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
-                return;
-            }
-            
-            const { data, error } = await sb
-                .from('qc_inspection')
-                .select('*')
-                .eq('material_inbound_id', materialId)
-                .order('created_at', { ascending: false });
+// ============================================================
+// LOAD HISTORY (DENGAN KOLOM CATATAN)
+// ============================================================
+async function loadHistory(materialId) {
+    const container = getEl('historyList');
+    if (!container) return;
+    
+    if (!materialId) {
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+        return;
+    }
+    
+    const { data, error } = await sb
+        .from('qc_inspection')
+        .select('*')
+        .eq('material_inbound_id', materialId)
+        .order('created_at', { ascending: false });
 
-            if (error) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
-                return;
-            }
+    if (error) {
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
+        return;
+    }
 
-            const { data: material } = await sb
-                .from('material_inbound')
-                .select('qty_sheet, up_per_sheet, qty_pcs')
-                .eq('id', materialId)
-                .single();
+    const { data: material } = await sb
+        .from('material_inbound')
+        .select('qty_sheet, up_per_sheet, qty_pcs')
+        .eq('id', materialId)
+        .single();
 
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat QC untuk No PI ini</div>`;
-                return;
-            }
+    if (!data || data.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat QC untuk No PI ini</div>`;
+        return;
+    }
 
-            let html = `
-                <table style="width:100%; border-collapse: collapse; font-size: 12px;">
-                    <thead>
-                        <tr style="background:#f8fafc;">
-                            <th style="padding:8px; text-align:left;">QC #</th>
-                            <th style="padding:8px; text-align:left;">Tanggal</th>
-                            <th style="padding:8px; text-align:center;">Qty Masuk</th>
-                            <th style="padding:8px; text-align:center;">OK</th>
-                            <th style="padding:8px; text-align:center;">NG</th>
-                            <th style="padding:8px; text-align:center;">Rework</th>
-                            <th style="padding:8px; text-align:center;">Hasil</th>
-                            <th style="padding:8px; text-align:left;">Inspector</th>
-                            <th style="padding:8px; text-align:center;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+    let html = `
+        <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+                <tr style="background:#f8fafc;">
+                    <th style="padding:8px; text-align:left;">QC #</th>
+                    <th style="padding:8px; text-align:left;">Tanggal</th>
+                    <th style="padding:8px; text-align:center;">Qty Masuk</th>
+                    <th style="padding:8px; text-align:center;">OK</th>
+                    <th style="padding:8px; text-align:center;">NG</th>
+                    <th style="padding:8px; text-align:center;">Rework</th>
+                    <th style="padding:8px; text-align:center;">Hasil</th>
+                    <th style="padding:8px; text-align:left;">Inspector</th>
+                    <th style="padding:8px; text-align:left;">Catatan</th>
+                    <th style="padding:8px; text-align:center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
-            for (const item of data) {
-                const hasilClass = item.hasil === 'OK' ? 'status-ok' : (item.hasil === 'NG' ? 'status-ng' : 'status-rework');
-                const unitLabel = item.qc_number === 1 ? 'Sheet' : 'Pcs';
-                const qtyMasuk = item.qc_number === 1 ? (material?.qty_sheet || 0) : (material?.qty_pcs || 0);
-                
-                html += `
-                    <tr>
-                        <td style="padding:8px; font-weight:500;">QC #${item.qc_number}</td>
-                        <td style="padding:8px;">${item.tanggal_qc || '-'}</td>
-                        <td style="padding:8px; text-align:center; font-weight:bold;">${qtyMasuk} ${unitLabel}</td>
-                        <td style="padding:8px; text-align:center; color:#10b981; font-weight:bold;">${item.qty_ok} ${unitLabel}</td>
-                        <td style="padding:8px; text-align:center; color:#ef4444; font-weight:bold;">${item.qty_ng} ${unitLabel}</td>
-                        <td style="padding:8px; text-align:center; color:#f59e0b;">${item.qty_rework || 0} ${unitLabel}</td>
-                        <td style="padding:8px; text-align:center;"><span class="status-badge ${hasilClass}">${item.hasil}</span></td>
-                        <td style="padding:8px;">${item.inspector || '-'}</td>
-                        <td style="padding:8px; text-align:center;">
-                            <button class="btn-small btn-edit-small" onclick="editQC('${item.id}')">✏️</button>
-                            <button class="btn-small btn-delete-small" onclick="deleteQC('${item.id}')">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            }
+    for (const item of data) {
+        const hasilClass = item.hasil === 'OK' ? 'status-ok' : (item.hasil === 'NG' ? 'status-ng' : 'status-rework');
+        const unitLabel = item.qc_number === 1 ? 'Sheet' : 'Pcs';
+        const qtyMasuk = item.qc_number === 1 ? (material?.qty_sheet || 0) : (material?.qty_pcs || 0);
+        const alasanNgText = item.alasan_ng ? ` (${item.alasan_ng})` : '';
+        const catatan = item.notes || '-';
+        
+        html += `
+            <tr>
+                <td style="padding:8px; font-weight:500;">QC #${item.qc_number}</td>
+                <td style="padding:8px;">${item.tanggal_qc || '-'}</td>
+                <td style="padding:8px; text-align:center; font-weight:bold;">${qtyMasuk} ${unitLabel}</td>
+                <td style="padding:8px; text-align:center; color:#10b981; font-weight:bold;">${item.qty_ok} ${unitLabel}</td>
+                <td style="padding:8px; text-align:center; color:#ef4444; font-weight:bold;">${item.qty_ng} ${unitLabel}${alasanNgText}</td>
+                <td style="padding:8px; text-align:center; color:#f59e0b;">${item.qty_rework || 0} ${unitLabel}</td>
+                <td style="padding:8px; text-align:center;"><span class="status-badge ${hasilClass}">${item.hasil}</span></td>
+                <td style="padding:8px;">${item.inspector || '-'}</td>
+                <td style="padding:8px; max-width:150px; word-wrap:break-word; font-size:11px;">${catatan}</td>
+                <td style="padding:8px; text-align:center;">
+                    <button class="btn-small btn-edit-small" onclick="editQC('${item.id}')">✏️</button>
+                    <button class="btn-small btn-delete-small" onclick="deleteQC('${item.id}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }
 
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
         // ============================================================
         // REFRESH HISTORY
         // ============================================================
