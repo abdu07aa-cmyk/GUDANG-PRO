@@ -1221,18 +1221,18 @@
                     }
                 }
 
-                // ✅ PERBAIKAN: Simpan NG selalu jika ada qty_ng (APAPUN HASILNYA)
-                if (qty_ng > 0) {
-                    const proses = qcNumber === 1 ? 'QC1' : 'QC2';
-                    await sb.from('ng_tracking').insert({
-                        material_inbound_id: materialId,
-                        proses: proses,
-                        qty_ng: qty_ng,
-                        jenis_ng: alasan_ng || 'LAINNYA',
-                        deskripsi: notes || `NG dari QC #${qcNumber} (Hasil: ${hasil})`,
-                        created_by: user?.email || 'Unknown'
-                    });
-                }
+              // ✅ PERBAIKAN: Simpan NG selalu jika ada qty_ng (APAPUN HASILNYA)
+if (qty_ng > 0) {
+    const proses = qcNumber === 1 ? 'QC1' : 'QC2';
+    await sb.from('ng_tracking').insert({
+        material_inbound_id: materialId,
+        proses: proses,
+        qty_ng: qty_ng,
+        jenis_ng: alasan_ng || 'LAINNYA',
+        deskripsi: notes || `NG dari QC #${qcNumber} (Hasil: ${hasil})`,
+        created_by: user?.email || 'Unknown'
+    });
+}
 
                 const actionText = editId ? 'diupdate' : 'disimpan';
                 const statusText = editId ? '' : (newStatus ? `Status: ${newStatus}` : 'Status Tetap');
