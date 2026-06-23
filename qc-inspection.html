@@ -479,7 +479,9 @@
         });
 
         // Set today's date
-        document.getElementById('tanggal_qc').value = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        const tanggalQc = document.getElementById('tanggal_qc');
+        if (tanggalQc) tanggalQc.value = today;
 
         // ============================================================
         // SET QC NUMBER (TOGGLE)
@@ -488,12 +490,15 @@
             currentQcNumber = qc;
             document.getElementById('qcNumber').value = qc;
             
+            const btnQc1 = document.getElementById('btnQc1');
+            const btnQc2 = document.getElementById('btnQc2');
+            
             if (qc === 1) {
-                document.getElementById('btnQc1').className = 'btn btn-qc1';
-                document.getElementById('btnQc2').className = 'btn btn-qc2';
+                btnQc1.className = 'btn btn-qc1';
+                btnQc2.className = 'btn btn-qc2';
             } else {
-                document.getElementById('btnQc1').className = 'btn btn-qc2';
-                document.getElementById('btnQc2').className = 'btn btn-qc1 active';
+                btnQc1.className = 'btn btn-qc2';
+                btnQc2.className = 'btn btn-qc1 active';
             }
             
             document.getElementById('pageTitle').innerText = `🔬 QC #${qc}`;
@@ -515,7 +520,6 @@
                 document.getElementById('maxUnitOk').innerText = 'Pcs';
             }
             
-            // Reset edit mode
             isEditMode = false;
             document.getElementById('editId').value = '';
             document.getElementById('editBadge').style.display = 'none';
@@ -731,12 +735,11 @@
 
             document.getElementById('unitInfo').style.display = 'block';
 
-            // ✅ LOAD HISTORY QC
             await loadHistory(materialId);
         }
 
         // ============================================================
-        // LOAD HISTORY QC (DENGAN QTY BARANG MASUK & TOMBOL EDIT)
+        // LOAD HISTORY QC
         // ============================================================
         async function loadHistory(materialId) {
             const container = document.getElementById('historyList');
@@ -757,7 +760,6 @@
                 return;
             }
 
-            // ✅ Ambil data material untuk qty sheet
             const { data: material } = await sb
                 .from('material_inbound')
                 .select('qty_sheet, up_per_sheet, qty_pcs')
@@ -834,7 +836,6 @@
             document.getElementById('editBadge').style.display = 'inline';
             document.getElementById('btnSubmit').innerHTML = '✏️ Update QC';
             
-            // Isi form dengan data
             document.getElementById('tanggal_qc').value = qc.tanggal_qc || '';
             document.getElementById('inspector').value = qc.inspector || '';
             document.getElementById('qty_ok').value = qc.qty_ok || '';
@@ -844,7 +845,6 @@
             document.getElementById('alasan_ng').value = qc.alasan_ng || '';
             document.getElementById('notes').value = qc.notes || '';
             
-            // Tampilkan alasan NG jika hasil NG
             if (qc.hasil === 'NG') {
                 document.getElementById('alasanNgGroup').style.display = 'block';
                 document.getElementById('alasan_ng').setAttribute('required', 'required');
@@ -871,7 +871,6 @@
                 showToast('❌ Gagal menghapus: ' + error.message, 'error');
             } else {
                 showToast('✅ Data QC berhasil dihapus', 'success');
-                // Refresh history
                 if (currentMaterialId) {
                     await loadHistory(currentMaterialId);
                 }
@@ -879,7 +878,7 @@
         }
 
         // ============================================================
-        // SAVE QC (TAMBAH + UPDATE)
+        // SAVE QC
         // ============================================================
         async function saveQC() {
             if (isSubmitting) return;
@@ -904,7 +903,6 @@
             if (!hasil) { showMessage('❌ Hasil QC wajib dipilih!', 'error'); return; }
             if (hasil === 'NG' && !alasan_ng) { showMessage('❌ Alasan NG wajib diisi!', 'error'); return; }
 
-            // Ambil target
             const select = document.getElementById('selectNoPi');
             const selectedOption = select.options[select.selectedIndex];
             let targetValue = 0;
@@ -964,22 +962,19 @@
 
                 let result;
                 if (editId) {
-                    // UPDATE
                     result = await sb
                         .from('qc_inspection')
                         .update(data)
                         .eq('id', editId);
                 } else {
-                    // INSERT
                     data.created_by = user?.email || 'Unknown';
                     result = await sb.from('qc_inspection').insert([data]);
                 }
 
                 if (result.error) throw result.error;
 
-                // Update status (hanya jika bukan edit)
+                let newStatus = '';
                 if (!editId) {
-                    let newStatus = '';
                     if (qcNumber === 1) {
                         if (hasil === 'OK' || hasil === 'REWORK') {
                             newStatus = 'QC1';
@@ -999,7 +994,6 @@
                     }
                 }
 
-                // Simpan NG (hanya jika bukan edit)
                 if (!editId && qty_ng > 0 && hasil === 'NG') {
                     const proses = qcNumber === 1 ? 'QC1' : 'QC2';
                     await sb.from('ng_tracking').insert({
@@ -1019,7 +1013,6 @@
 
                 resetForm();
                 
-                // Reset edit mode
                 isEditMode = false;
                 document.getElementById('editId').value = '';
                 document.getElementById('editBadge').style.display = 'none';
