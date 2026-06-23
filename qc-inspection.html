@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
+        /* ====== STYLE SAMA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -121,6 +122,12 @@
         .btn-back:hover { background: #475569; }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
+        .btn-qc1 { background: #3b82f6; color: white; }
+        .btn-qc1:hover { background: #2563eb; }
+        .btn-qc2 { background: #e2e8f0; color: #1e293b; }
+        .btn-qc2:hover { background: #cbd5e1; }
+        .btn-qc2.active { background: #3b82f6; color: white; }
+        .btn-qc2.active:hover { background: #2563eb; }
 
         .alert {
             padding: 12px 16px;
@@ -201,10 +208,25 @@
             font-weight: 600;
         }
 
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .toggle-buttons .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 13px;
+            text-align: center;
+            min-width: 100px;
+        }
+
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr; }
             .material-info-grid { grid-template-columns: 1fr 1fr; }
+            .toggle-buttons .btn { flex: 1; min-width: 80px; font-size: 11px; padding: 6px 8px; }
         }
     </style>
 </head>
@@ -256,12 +278,22 @@
         <div class="card">
             <div class="card-title">
                 <span id="pageTitle">🔬 QC Inspection</span>
-                <span id="qcBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih No PI</span>
+                <span id="qcBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih QC</span>
             </div>
             
             <div id="msgContainer"></div>
 
-            <!-- ✅ PILIH NO PI (CARA BARU) -->
+            <!-- ✅ TOGGLE QC #1 / QC #2 -->
+            <div class="toggle-buttons">
+                <button class="btn btn-qc1" id="btnQc1" onclick="setQcNumber(1)">
+                    🔬 QC #1 (Sheet)
+                </button>
+                <button class="btn btn-qc2" id="btnQc2" onclick="setQcNumber(2)">
+                    🔬 QC #2 (Pcs)
+                </button>
+            </div>
+
+            <!-- PILIH NO PI -->
             <div class="form-group">
                 <label>Pilih No PI <span class="required">*</span></label>
                 <select id="selectNoPi" onchange="loadMaterialByPi()">
@@ -270,7 +302,7 @@
                 <span class="small-text">📌 Pilih No PI dari daftar material yang sudah masuk</span>
             </div>
 
-            <!-- Hidden field untuk menyimpan ID material -->
+            <!-- Hidden -->
             <input type="hidden" id="materialId">
             <input type="hidden" id="qcNumber" value="1">
 
@@ -297,9 +329,6 @@
             </div>
 
             <form id="qcForm" onsubmit="return false;">
-                <input type="hidden" id="materialId">
-                <input type="hidden" id="qcNumber">
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tanggal QC <span class="required">*</span></label>
@@ -423,6 +452,41 @@
         document.getElementById('tanggal_qc').value = new Date().toISOString().split('T')[0];
 
         // ============================================================
+        // ✅ SET QC NUMBER (TOGGLE)
+        // ============================================================
+        function setQcNumber(qc) {
+            currentQcNumber = qc;
+            document.getElementById('qcNumber').value = qc;
+            
+            // Update button style
+            if (qc === 1) {
+                document.getElementById('btnQc1').className = 'btn btn-qc1';
+                document.getElementById('btnQc2').className = 'btn btn-qc2';
+            } else {
+                document.getElementById('btnQc1').className = 'btn btn-qc2';
+                document.getElementById('btnQc2').className = 'btn btn-qc1 active';
+            }
+            
+            // Update title
+            document.getElementById('pageTitle').innerText = `🔬 QC #${qc}`;
+            document.getElementById('qcBadge').innerText = `QC #${qc}`;
+            
+            // Reset material info
+            document.getElementById('materialInfo').style.display = 'none';
+            document.getElementById('unitInfo').style.display = 'none';
+            
+            // Reset dropdown
+            const select = document.getElementById('selectNoPi');
+            select.value = '';
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+            
+            // Reload daftar PI
+            loadPiList();
+            
+            showToast(`📌 Beralih ke QC #${qc}`, 'info');
+        }
+
+        // ============================================================
         // ✅ LOAD DAFTAR NO PI
         // ============================================================
         async function loadPiList() {
@@ -437,6 +501,8 @@
             }
 
             const select = document.getElementById('selectNoPi');
+            const currentValue = select.value;
+            
             // Kosongkan kecuali option pertama
             select.innerHTML = '<option value="">-- Pilih No PI --</option>';
 
@@ -446,11 +512,21 @@
             }
 
             for (const item of data) {
-                // Hanya tampilkan No PI yang tidak kosong
                 if (item.no_pi) {
                     const option = document.createElement('option');
                     option.value = item.no_pi;
-                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} (${item.status})`;
+                    
+                    // Tampilkan status yang sesuai dengan QC
+                    let statusText = '';
+                    if (currentQcNumber === 1 && item.status === 'DITERIMA') {
+                        statusText = '✅ Siap QC #1';
+                    } else if (currentQcNumber === 2 && item.status === 'DIECUT') {
+                        statusText = '✅ Siap QC #2';
+                    } else {
+                        statusText = `(${item.status})`;
+                    }
+                    
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
                     option.dataset.id = item.id;
                     option.dataset.qtySheet = item.qty_sheet;
                     option.dataset.upPerSheet = item.up_per_sheet;
@@ -462,16 +538,10 @@
                 }
             }
 
-            // Jika ada parameter qc di URL, set ke mode yang sesuai
-            const params = new URLSearchParams(window.location.search);
-            const qcParam = parseInt(params.get('qc')) || 1;
-            document.getElementById('qcNumber').value = qcParam;
-            currentQcNumber = qcParam;
-
-            // Update title
-            document.getElementById('pageTitle').innerText = `🔬 QC #${currentQcNumber}`;
-            document.getElementById('qcBadge').innerText = `QC #${currentQcNumber}`;
-            document.getElementById('qcBadge').style.background = '#dbeafe';
+            // Restore value jika ada
+            if (currentValue) {
+                select.value = currentValue;
+            }
         }
 
         // ============================================================
@@ -499,10 +569,8 @@
             const brand = selectedOption.dataset.brand;
             const jenis = selectedOption.dataset.jenis;
 
-            // Simpan ke variabel global
             currentMaterialId = materialId;
             selectedNoPi = noPi;
-
             document.getElementById('materialId').value = materialId;
 
             // ✅ VALIDASI STATUS
@@ -630,7 +698,7 @@
                 document.getElementById('infoQtyNg').innerText = 'Belum QC';
             }
 
-            // ✅ Set max qty_ok sesuai unit
+            // ✅ Set max qty_ok
             document.getElementById('maxQtyOk').innerText = targetValue;
 
             document.getElementById('qcBadge').innerText = `✅ ${noPo} - ${brand}`;
@@ -722,7 +790,7 @@
             if (!hasil) { showMessage('❌ Hasil QC wajib dipilih!', 'error'); return; }
             if (hasil === 'NG' && !alasan_ng) { showMessage('❌ Alasan NG wajib diisi!', 'error'); return; }
 
-            // ✅ Ambil target dari material
+            // ✅ Ambil target
             const select = document.getElementById('selectNoPi');
             const selectedOption = select.options[select.selectedIndex];
             let targetValue = 0;
@@ -745,7 +813,7 @@
                 unitLabel = 'Pcs';
             }
 
-            // ✅ Validasi Qty OK
+            // ✅ Validasi
             if (qty_ok > targetValue) {
                 showMessage(`❌ Qty OK (${qty_ok} ${unitLabel}) melebihi target (${targetValue} ${unitLabel})!`, 'error');
                 return;
@@ -756,7 +824,7 @@
                 return;
             }
 
-            // Loading state
+            // Loading
             const btn = document.getElementById('btnSubmit');
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Menyimpan...';
@@ -804,7 +872,7 @@
                     await sb.from('material_inbound').update({ status: newStatus }).eq('id', materialId);
                 }
 
-                // ✅ Simpan NG jika ada
+                // ✅ Simpan NG
                 if (qty_ng > 0 && hasil === 'NG') {
                     const proses = qcNumber === 1 ? 'QC1' : 'QC2';
                     await sb.from('ng_tracking').insert({
@@ -903,15 +971,22 @@
             if (!session) window.location.href = 'login.html';
             
             setupEventListeners();
-            await loadPiList();
             
-            // Cek apakah ada parameter qc di URL
+            // Cek parameter qc dari URL
             const params = new URLSearchParams(window.location.search);
             const qcParam = parseInt(params.get('qc')) || 1;
-            document.getElementById('qcNumber').value = qcParam;
-            currentQcNumber = qcParam;
+            
+            // Set default QC
+            if (qcParam === 2) {
+                setQcNumber(2);
+            } else {
+                setQcNumber(1);
+            }
+            
+            await loadPiList();
         }
 
+        window.setQcNumber = setQcNumber;
         window.loadPiList = loadPiList;
         window.loadMaterialByPi = loadMaterialByPi;
         window.saveQC = saveQC;
