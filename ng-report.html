@@ -113,7 +113,7 @@
         .btn-export { background: #10b981 !important; }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
 
@@ -143,6 +143,16 @@
         .status-qc1 { background: #fef3c7; color: #92400e; }
         .status-diecut { background: #dbeafe; color: #1e40af; }
         .status-qc2 { background: #fce7f3; color: #9d174d; }
+
+        .unit-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .unit-sheet { background: #dbeafe; color: #1e40af; }
+        .unit-pcs { background: #d1fae5; color: #065f46; }
 
         .toast {
             position: fixed;
@@ -222,8 +232,8 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        let allData = [];
-        let currentFiltered = [];
+        var allData = [];
+        var currentFiltered = [];
 
         function getEl(id) {
             return document.getElementById(id);
@@ -231,7 +241,7 @@
 
         function showToast(msg, type) {
             if (typeof type === 'undefined') type = 'success';
-            const t = getEl('toast');
+            var t = getEl('toast');
             if (!t) return;
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
@@ -257,6 +267,19 @@
                 'QC2': 'status-qc2'
             };
             return map[proses] || '';
+        }
+
+        function getUnitByProses(proses) {
+            if (proses === 'QC1') return 'Sheet';
+            if (proses === 'DIECUT') return 'Pcs';
+            if (proses === 'QC2') return 'Pcs';
+            return '-';
+        }
+
+        function getUnitBadge(proses) {
+            var unit = getUnitByProses(proses);
+            var cls = unit === 'Sheet' ? 'unit-sheet' : 'unit-pcs';
+            return '<span class="unit-badge ' + cls + '">' + unit + '</span>';
         }
 
         async function cekSession() {
@@ -379,6 +402,7 @@
                     '<td>' + (material.brand || '-') + '</td>' +
                     '<td>' + (material.jenis || '-') + '</td>' +
                     '<td><span class="status-badge ' + getStatusBadge(item.proses) + '">' + getStatusLabel(item.proses) + '</span></td>' +
+                    '<td style="text-align:center;">' + getUnitBadge(item.proses) + '</td>' +
                     '<td style="text-align:center; font-weight:bold; color:#ef4444;">' + item.qty_ng + '</td>' +
                     '<td>' + (item.jenis_ng || '-') + '</td>' +
                     '<td style="font-size:11px; max-width:150px; word-wrap:break-word;">' + (item.deskripsi || '-') + '</td>' +
@@ -387,7 +411,7 @@
             }
 
             if (filtered.length === 0) {
-                rows = '<tr><td colspan="9" style="text-align:center;padding:20px;">Belum ada data NG</td></tr>';
+                rows = '<tr><td colspan="10" style="text-align:center;padding:20px;">Belum ada data NG</td></tr>';
             }
 
             var topJenisHtml = '';
@@ -411,15 +435,15 @@
                 '</div>' +
                 '<div class="kpi-card" style="border-left:4px solid #f59e0b;">' +
                     '<div class="kpi-value" style="color:#f59e0b;">' + totalQC1 + '</div>' +
-                    '<div class="kpi-label">🔬 QC #1</div>' +
+                    '<div class="kpi-label">🔬 QC #1 (Sheet)</div>' +
                 '</div>' +
                 '<div class="kpi-card" style="border-left:4px solid #3b82f6;">' +
                     '<div class="kpi-value" style="color:#3b82f6;">' + totalDiecut + '</div>' +
-                    '<div class="kpi-label">⚙️ Diecut</div>' +
+                    '<div class="kpi-label">⚙️ Diecut (Pcs)</div>' +
                 '</div>' +
                 '<div class="kpi-card" style="border-left:4px solid #9d174d;">' +
                     '<div class="kpi-value" style="color:#9d174d;">' + totalQC2 + '</div>' +
-                    '<div class="kpi-label">🔬 QC #2</div>' +
+                    '<div class="kpi-label">🔬 QC #2 (Pcs)</div>' +
                 '</div>' +
                 '<div class="kpi-card" style="border-left:4px solid #64748b;">' +
                     '<div class="kpi-value">' + uniqueMaterial + '</div>' +
@@ -441,9 +465,9 @@
                     '<input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." oninput="filterData()">' +
                     '<select id="filterProses" onchange="filterData()">' +
                         '<option value="all">Semua Proses</option>' +
-                        '<option value="QC1">🔬 QC #1</option>' +
-                        '<option value="DIECUT">⚙️ Diecut</option>' +
-                        '<option value="QC2">🔬 QC #2</option>' +
+                        '<option value="QC1">🔬 QC #1 (Sheet)</option>' +
+                        '<option value="DIECUT">⚙️ Diecut (Pcs)</option>' +
+                        '<option value="QC2">🔬 QC #2 (Pcs)</option>' +
                     '</select>' +
                     '<select id="filterJenisNg" onchange="filterData()">' +
                         '<option value="all">Semua Jenis NG</option>' +
@@ -453,6 +477,7 @@
                         '<option value="KOTOR">KOTOR</option>' +
                         '<option value="CACAT BAHAN">CACAT BAHAN</option>' +
                         '<option value="LAINNYA">LAINNYA</option>' +
+                        '<option value="BINTIK">BINTIK</option>' +
                     '</select>' +
                     '<button onclick="resetFilter()">Reset</button>' +
                 '</div>' +
@@ -461,7 +486,7 @@
                         '<thead>' +
                             '<tr>' +
                                 '<th>No PI</th><th>No PO</th><th>Brand</th><th>Jenis</th>' +
-                                '<th>Proses</th><th>Qty NG</th><th>Jenis NG</th><th>Deskripsi</th><th>Tanggal</th>' +
+                                '<th>Proses</th><th>Satuan</th><th>Qty NG</th><th>Jenis NG</th><th>Deskripsi</th><th>Tanggal</th>' +
                             '</tr>' +
                         '</thead>' +
                         '<tbody>' + rows + '</tbody>' +
@@ -503,7 +528,7 @@
             }
 
             var excelData = [
-                ['No PI', 'No PO', 'Brand', 'Jenis', 'Proses', 'Qty NG', 'Jenis NG', 'Deskripsi', 'Tanggal']
+                ['No PI', 'No PO', 'Brand', 'Jenis', 'Proses', 'Satuan', 'Qty NG', 'Jenis NG', 'Deskripsi', 'Tanggal']
             ];
 
             for (var i = 0; i < currentFiltered.length; i++) {
@@ -515,6 +540,7 @@
                     material.brand || '-',
                     material.jenis || '-',
                     getStatusLabel(item.proses),
+                    getUnitByProses(item.proses),
                     item.qty_ng,
                     item.jenis_ng || '-',
                     item.deskripsi || '-',
