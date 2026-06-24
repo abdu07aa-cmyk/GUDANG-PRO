@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kirim Produksi - SUPPLY MATERIAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
+        .form-group label .required { color: #ef4444; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-group textarea { min-height: 60px; resize: vertical; }
+        .form-group input:read-only { background: #f1f5f9; cursor: not-allowed; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-back { background: #64748b; color: white; }
+        .btn-back:hover { background: #475569; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+        .info-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-left: 4px solid #3b82f6;
+            font-size: 13px;
+        }
+        .info-box strong { color: #1e293b; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            display: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-qc2 { background: #fce7f3; color: #9d174d; }
+        .status-kirim { background: #d1fae5; color: #065f46; }
+
+        .material-info {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .material-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .material-info-grid .label { color: #64748b; }
+        .material-info-grid .value { font-weight: 500; color: #1e293b; }
+
+        .small-text { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .material-info-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+        <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📦 SUPPLY MATERIAL</h3>
+            <p>Manajemen Inventory</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+
+            <div class="menu-divider"></div>
+
+            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item active" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 SUPPLY MATERIAL</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+        <div class="container" id="mainContent">
+        <div class="card">
+            <div class="card-title">
+                <span>🏭 KIRIM KE PRODUKSI</span>
+                <span id="statusBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">QC #2 → Kirim</span>
+            </div>
+            
+            <div id="msgContainer"></div>
+
+            <!-- Pilih No PI -->
+            <div class="form-group">
+                <label>Pilih No PI (Status KIRIM) <span class="required">*</span></label>
+                <select id="selectNoPi" onchange="loadMaterialByPi()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Menampilkan material dengan status KIRIM (sudah lolos QC #2)</span>
+            </div>
+
+            <input type="hidden" id="materialId">
+
+            <!-- Material Info -->
+            <div id="materialInfo" class="material-info" style="display:none;">
+                <div style="font-weight:600;margin-bottom:8px;">📋 Informasi Material</div>
+                <div class="material-info-grid" id="materialInfoGrid">
+                    <div><span class="label">No PO:</span> <span class="value" id="infoNoPo">-</span></div>
+                    <div><span class="label">No PI:</span> <span class="value" id="infoNoPi">-</span></div>
+                    <div><span class="label">Brand:</span> <span class="value" id="infoBrand">-</span></div>
+                    <div><span class="label">Jenis:</span> <span class="value" id="infoJenis">-</span></div>
+                    <div><span class="label">Qty Pcs OK (QC #2):</span> <span class="value" id="infoQtyOk" style="color:#10b981;font-weight:bold;">-</span></div>
+                    <div><span class="label">Status:</span> <span class="value" id="infoStatus">-</span></div>
+                </div>
+            </div>
+
+            <form id="sendForm" onsubmit="return false;">
+                <input type="hidden" id="materialId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tanggal Kirim <span class="required">*</span></label>
+                        <input type="date" id="tanggal_kirim" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tujuan</label>
+                        <input type="text" id="tujuan" placeholder="Contoh: Line A-01, Dept Produksi">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Qty Pcs Dikirim <span class="required">*</span></label>
+                    <input type="number" id="qty_pcs" readonly style="background:#f1f5f9; font-weight:bold; color:#10b981;">
+                    <span class="small-text">📌 Otomatis dari hasil QC #2 (Qty OK)</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Penerima <span class="required">*</span></label>
+                    <input type="text" id="penerima" placeholder="Nama penerima di produksi" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Catatan</label>
+                    <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveSend()" style="flex:2; min-width:150px;">
+                        🏭 Kirim ke Produksi
+                    </button>
+                    <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
+                        🔄 Reset
+                    </button>
+                    <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
+                        ⬅ Kembali
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- History Kirim -->
+        <div class="card">
+            <div class="card-title">
+                <span>📋 Riwayat Kirim Produksi</span>
+                <button class="btn btn-secondary" onclick="loadHistory(currentMaterialId)" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+            </div>
+            <div id="historyList" style="overflow-x:auto;">
+                <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+        <script>
+        let currentMaterialId = null;
+        let isSubmitting = false;
+        let selectedNoPi = null;
+        let qc2Data = null;
+
+        function getEl(id) {
+            return document.getElementById(id);
+        }
+
+        function showToast(msg, type = 'success') {
+            const t = getEl('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function showMessage(msg, type = 'info') {
+            const container = getEl('msgContainer');
+            if (!container) return;
+            const map = {
+                success: 'alert-success',
+                error: 'alert-error',
+                info: 'alert-info',
+                warning: 'alert-warning'
+            };
+            container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // Set today's date
+        const tanggalKirim = getEl('tanggal_kirim');
+        if (tanggalKirim) tanggalKirim.value = new Date().toISOString().split('T')[0];
+
+        // ============================================================
+        // LOAD DAFTAR NO PI (STATUS KIRIM)
+        // ============================================================
+        async function loadPiList() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .eq('status', 'KIRIM')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                showMessage('❌ Gagal memuat daftar No PI: ' + error.message, 'error');
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+
+            if (!data || data.length === 0) {
+                select.innerHTML += '<option value="" disabled>Belum ada material dengan status KIRIM</option>';
+                return;
+            }
+
+            for (const item of data) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.no_pi;
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ✅ Siap Kirim`;
+                    option.dataset.id = item.id;
+                    option.dataset.qtySheet = item.qty_sheet;
+                    option.dataset.upPerSheet = item.up_per_sheet;
+                    option.dataset.status = item.status;
+                    option.dataset.noPo = item.no_po;
+                    option.dataset.brand = item.brand;
+                    option.dataset.jenis = item.jenis;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        // ============================================================
+        // LOAD MATERIAL BERDASARKAN NO PI
+        // ============================================================
+        async function loadMaterialByPi() {
+            const select = getEl('selectNoPi');
+            if (!select) return;
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const noPi = select.value;
+
+            if (!noPi) {
+                const materialInfo = getEl('materialInfo');
+                if (materialInfo) materialInfo.style.display = 'none';
+                
+                const statusBadge = getEl('statusBadge');
+                if (statusBadge) {
+                    statusBadge.innerText = 'Pilih No PI';
+                    statusBadge.style.background = '#fef3c7';
+                }
+                
+                const historyList = getEl('historyList');
+                if (historyList) {
+                    historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                }
+                return;
+            }
+
+            const materialId = selectedOption.dataset.id;
+            const status = selectedOption.dataset.status;
+            const noPo = selectedOption.dataset.noPo;
+            const brand = selectedOption.dataset.brand;
+            const jenis = selectedOption.dataset.jenis;
+
+            currentMaterialId = materialId;
+            selectedNoPi = noPi;
+            
+            const materialIdEl = getEl('materialId');
+            if (materialIdEl) materialIdEl.value = materialId;
+
+            // ✅ Validasi status harus KIRIM
+            if (status !== 'KIRIM') {
+                showMessage(`⚠️ Status material: ${status}. Harus KIRIM untuk dikirim ke produksi!`, 'warning');
+                const statusBadge = getEl('statusBadge');
+                if (statusBadge) {
+                    statusBadge.innerText = `⚠️ Status: ${status} (harus KIRIM)`;
+                    statusBadge.style.background = '#fee2e2';
+                }
+                return;
+            }
+
+            // ✅ AMBIL DATA QC #2 (untuk qty_ok)
+            const { data: qc2DataResult, error: qc2Error } = await sb
+                .from('qc_inspection')
+                .select('*')
+                .eq('material_inbound_id', materialId)
+                .eq('qc_number', 2)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (qc2Error || !qc2DataResult || qc2DataResult.length === 0) {
+                showMessage('❌ Data QC #2 tidak ditemukan!', 'error');
+                return;
+            }
+
+            qc2Data = qc2DataResult[0];
+            const qtyOk = qc2Data.qty_ok || 0;
+
+            // Tampilkan info material
+            const materialInfo = getEl('materialInfo');
+            if (materialInfo) materialInfo.style.display = 'block';
+            
+            const infoNoPo = getEl('infoNoPo');
+            if (infoNoPo) infoNoPo.innerText = noPo || '-';
+            
+            const infoNoPi = getEl('infoNoPi');
+            if (infoNoPi) infoNoPi.innerText = noPi || '-';
+            
+            const infoBrand = getEl('infoBrand');
+            if (infoBrand) infoBrand.innerText = brand || '-';
+            
+            const infoJenis = getEl('infoJenis');
+            if (infoJenis) infoJenis.innerText = jenis || '-';
+            
+            const infoQtyOk = getEl('infoQtyOk');
+            if (infoQtyOk) infoQtyOk.innerText = qtyOk.toLocaleString();
+            
+            const infoStatus = getEl('infoStatus');
+            if (infoStatus) infoStatus.innerHTML = `<span class="status-badge status-kirim">KIRIM ✅</span>`;
+
+            const statusBadge = getEl('statusBadge');
+            if (statusBadge) {
+                statusBadge.innerText = `✅ ${noPo} - ${brand}`;
+                statusBadge.style.background = '#d1fae5';
+            }
+
+            // ✅ AUTO FILL qty_pcs
+            const qtyPcs = getEl('qty_pcs');
+            if (qtyPcs) qtyPcs.value = qtyOk;
+
+            // ✅ CEK APAKAH SUDAH PERNAH DIKIRIM
+            const { data: existingSend } = await sb
+                .from('production_send')
+                .select('id')
+                .eq('material_inbound_id', materialId)
+                .limit(1);
+
+            if (existingSend && existingSend.length > 0) {
+                const btnSubmit = getEl('btnSubmit');
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = '✅ Sudah Dikirim';
+                    btnSubmit.style.background = '#94a3b8';
+                }
+                showMessage('ℹ️ Material ini sudah pernah dikirim ke produksi.', 'info');
+            } else {
+                const btnSubmit = getEl('btnSubmit');
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '🏭 Kirim ke Produksi';
+                    btnSubmit.style.background = '';
+                }
+            }
+
+            // Load history
+            loadHistory(materialId);
+        }
+
+        // ============================================================
+        // LOAD HISTORY KIRIM
+        // ============================================================
+        async function loadHistory(materialId) {
+            const container = getEl('historyList');
+            if (!container) return;
+            
+            if (!materialId) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI untuk melihat riwayat</div>';
+                return;
+            }
+            
+            const { data, error } = await sb
+                .from('production_send')
+                .select('*')
+                .eq('material_inbound_id', materialId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada riwayat kirim produksi</div>`;
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal Kirim</th>
+                            <th>Qty Pcs</th>
+                            <th>Tujuan</th>
+                            <th>Penerima</th>
+                            <th>Catatan</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const item of data) {
+                html += `
+                    <tr>
+                        <td>${item.tanggal_kirim || '-'}</td>
+                        <td style="text-align:center; font-weight:bold; color:#10b981;">${item.qty_pcs.toLocaleString()}</td>
+                        <td>${item.tujuan || '-'}</td>
+                        <td>${item.penerima || '-'}</td>
+                        <td>${item.notes || '-'}</td>
+                        <td style="font-size:10px;color:#64748b;">${item.created_by || '-'}</td>
+                    </tr>
+                `;
+            }
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // SAVE KIRIM PRODUKSI
+        // ============================================================
+        async function saveSend() {
+            if (isSubmitting) return;
+
+            const materialId = getEl('materialId')?.value;
+            const tanggal_kirim = getEl('tanggal_kirim')?.value;
+            const tujuan = getEl('tujuan')?.value?.trim() || '';
+            const qty_pcs = parseInt(getEl('qty_pcs')?.value) || 0;
+            const penerima = getEl('penerima')?.value?.trim() || '';
+            const notes = getEl('notes')?.value?.trim() || '';
+
+            if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+            if (!tanggal_kirim) { showMessage('❌ Tanggal Kirim wajib diisi!', 'error'); return; }
+            if (!penerima) { showMessage('❌ Nama Penerima wajib diisi!', 'error'); return; }
+            if (qty_pcs < 1) { showMessage('❌ Qty Pcs tidak valid!', 'error'); return; }
+
+            // Cek apakah sudah pernah dikirim
+            const { data: existingSend } = await sb
+                .from('production_send')
+                .select('id')
+                .eq('material_inbound_id', materialId)
+                .limit(1);
+
+            if (existingSend && existingSend.length > 0) {
+                showMessage('⚠️ Material ini sudah pernah dikirim ke produksi!', 'warning');
+                return;
+            }
+
+            const btn = getEl('btnSubmit');
+            const originalText = btn ? btn.innerHTML : 'Loading...';
+            if (btn) {
+                btn.innerHTML = '⏳ Mengirim...';
+                btn.disabled = true;
+            }
+
+            isSubmitting = true;
+
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+
+                const data = {
+                    material_inbound_id: materialId,
+                    tanggal_kirim,
+                    qty_pcs,
+                    tujuan: tujuan || null,
+                    penerima,
+                    notes: notes || null,
+                    created_by: user?.email || 'Unknown'
+                };
+
+                const { error } = await sb.from('production_send').insert([data]);
+
+                if (error) throw error;
+
+                // ✅ Status tetap KIRIM (sudah benar)
+                // Tidak perlu update status karena sudah KIRIM
+
+                showMessage(`✅ Material berhasil dikirim ke produksi! Qty: ${qty_pcs.toLocaleString()} pcs`, 'success');
+                showToast(`✅ Berhasil dikirim! ${qty_pcs.toLocaleString()} pcs`, 'success');
+
+                // Reset form
+                resetForm();
+                
+                // Refresh data
+                await loadPiList();
+                if (selectedNoPi) {
+                    const selectEl = getEl('selectNoPi');
+                    if (selectEl) {
+                        selectEl.value = selectedNoPi;
+                        await loadMaterialByPi();
+                    }
+                }
+
+                try {
+                    await addLog('PRODUCTION SEND', `${user?.email} mengirim ${qty_pcs} pcs ke produksi untuk No PI ${selectedNoPi}`);
+                } catch(e) {}
+
+            } catch (err) {
+                showMessage('❌ Gagal menyimpan: ' + err.message, 'error');
+                showToast('❌ Gagal: ' + err.message, 'error');
+            } finally {
+                isSubmitting = false;
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        function resetForm() {
+            const tanggalKirim = getEl('tanggal_kirim');
+            if (tanggalKirim) tanggalKirim.value = new Date().toISOString().split('T')[0];
+            
+            const tujuan = getEl('tujuan');
+            if (tujuan) tujuan.value = '';
+            
+            const penerima = getEl('penerima');
+            if (penerima) penerima.value = '';
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = '';
+            
+            const msgContainer = getEl('msgContainer');
+            if (msgContainer) msgContainer.innerHTML = '';
+        }
+
+        // ============ NAVIGASI ============
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        function openSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+        }
+        
+        function closeSidebar() { 
+            const sidebar = getEl('sidebar');
+            const overlay = getEl('overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+        }
+        
+        function toggleSidebar() { 
+            const sidebar = getEl('sidebar');
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+
+        async function logout() { 
+            await sb.auth.signOut(); 
+            window.location.href = 'login.html'; 
+        }
+
+        function setupEventListeners() {
+            const menuToggle = getEl('menuToggle');
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            
+            const overlay = getEl('overlay');
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            
+            const logoutBtn = getEl('logoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            
+            const logoutMenu = getEl('logoutMenu');
+            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+
+        async function init() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            
+            setupEventListeners();
+            await loadPiList();
+            
+            // Cek parameter dari URL (dari tracking)
+            const params = new URLSearchParams(window.location.search);
+            const materialId = params.get('material_id');
+            if (materialId) {
+                const select = getEl('selectNoPi');
+                if (select) {
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].dataset.id === materialId) {
+                            select.value = select.options[i].value;
+                            await loadMaterialByPi();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        window.loadPiList = loadPiList;
+        window.loadMaterialByPi = loadMaterialByPi;
+        window.loadHistory = loadHistory;
+        window.saveSend = saveSend;
+        window.resetForm = resetForm;
+
+        init();
+    </script>
+</body>
+</html>
