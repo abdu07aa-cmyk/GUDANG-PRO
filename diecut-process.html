@@ -799,66 +799,83 @@
         // ============================================================
         // ✅ EDIT DIECUT
         // ============================================================
-        async function editDiecut(id) {
-            const { data, error } = await sb
-                .from('diecut_process')
-                .select('*')
-                .eq('id', id)
-                .single();
+       async function editDiecut(id) {
+    const { data, error } = await sb
+        .from('diecut_process')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-            if (error || !data) {
-                showToast('❌ Data tidak ditemukan!', 'error');
-                return;
+    if (error || !data) {
+        showToast('❌ Data tidak ditemukan!', 'error');
+        return;
+    }
+
+    // ✅ AMBIL DATA MATERIAL
+    const { data: material } = await sb
+        .from('material_inbound')
+        .select('no_pi')
+        .eq('id', data.material_inbound_id)
+        .single();
+
+    // ✅ SET DROPDOWN OTOMATIS
+    const select = getEl('selectNoPi');
+    if (select && material) {
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === material.no_pi) {
+                select.value = material.no_pi;
+                break;
             }
-
-            // Cek apakah material sudah lanjut ke QC2
-            const { data: material } = await sb
-                .from('material_inbound')
-                .select('status')
-                .eq('id', data.material_inbound_id)
-                .single();
-
-            if (material && (material.status === 'QC2' || material.status === 'KIRIM')) {
-                showToast('⚠️ Tidak bisa edit karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
-                return;
-            }
-
-            isEditMode = true;
-            const editId = getEl('editId');
-            if (editId) editId.value = id;
-            
-            const editBadge = getEl('editBadge');
-            if (editBadge) editBadge.style.display = 'inline';
-            
-            const btnSubmit = getEl('btnSubmit');
-            if (btnSubmit) {
-                btnSubmit.innerHTML = '✏️ Update Diecut';
-                btnSubmit.onclick = updateDiecut;
-            }
-
-            // Isi form
-            const tanggalDiecut = getEl('tanggal_diecut');
-            if (tanggalDiecut) tanggalDiecut.value = data.tanggal_diecut || '';
-            
-            const mesin = getEl('mesin');
-            if (mesin) mesin.value = data.mesin || '';
-            
-            const operator = getEl('operator');
-            if (operator) operator.value = data.operator || '';
-            
-            const qtyNgDiecut = getEl('qty_ng_diecut');
-            if (qtyNgDiecut) qtyNgDiecut.value = data.qty_ng_diecut || 0;
-            
-            const notes = getEl('notes');
-            if (notes) notes.value = data.notes || '';
-
-            // Scroll ke form
-            const card = document.querySelector('.card');
-            if (card) card.scrollIntoView({ behavior: 'smooth' });
-
-            showToast('📝 Mode Edit: silakan ubah data', 'info');
         }
+        await loadMaterialByPi();
+    }
 
+    // CEK STATUS MATERIAL
+    const { data: materialStatus } = await sb
+        .from('material_inbound')
+        .select('status')
+        .eq('id', data.material_inbound_id)
+        .single();
+
+    if (materialStatus && (materialStatus.status === 'QC2' || materialStatus.status === 'KIRIM')) {
+        showToast('⚠️ Tidak bisa edit karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
+        return;
+    }
+
+    isEditMode = true;
+    const editId = getEl('editId');
+    if (editId) editId.value = id;
+    
+    const editBadge = getEl('editBadge');
+    if (editBadge) editBadge.style.display = 'inline';
+    
+    const btnSubmit = getEl('btnSubmit');
+    if (btnSubmit) {
+        btnSubmit.innerHTML = '✏️ Update Diecut';
+        btnSubmit.onclick = updateDiecut;
+    }
+
+    // ISI FORM
+    const tanggalDiecut = getEl('tanggal_diecut');
+    if (tanggalDiecut) tanggalDiecut.value = data.tanggal_diecut || '';
+    
+    const mesin = getEl('mesin');
+    if (mesin) mesin.value = data.mesin || '';
+    
+    const operator = getEl('operator');
+    if (operator) operator.value = data.operator || '';
+    
+    const qtyNgDiecut = getEl('qty_ng_diecut');
+    if (qtyNgDiecut) qtyNgDiecut.value = data.qty_ng_diecut || 0;
+    
+    const notes = getEl('notes');
+    if (notes) notes.value = data.notes || '';
+
+    const card = document.querySelector('.card');
+    if (card) card.scrollIntoView({ behavior: 'smooth' });
+
+    showToast('📝 Mode Edit: silakan ubah data', 'info');
+}
         // ============================================================
         // ✅ UPDATE DIECUT
         // ============================================================
