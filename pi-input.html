@@ -303,22 +303,24 @@
                         continue; 
                     }
                     
-                    const { error: insertError } = await sb
-                        .from('material_inbound')
-                        .insert({
-                            no_pi: header.no_pi,
-                            no_po: header.no_po || '-',
-                            brand: item.brand,
-                            jenis: item.jenis,
-                            paper: item.paper || '-',
-                            size: item.size || '-',
-                            qty_sheet: item.qty_sheet || 0,
-                            up_per_sheet: item.up_per_sheet || 1,
-                            status: 'DITERIMA',
-                            tanggal_terima: today,
-                            notes: `Dikirim dari PI ${header.no_pi}`,
-                            created_by: 'system'
-                        });
+                   const { error: insertError } = await sb
+    .from('material_inbound')
+    .insert({
+        no_pi: header.no_pi,
+        no_po: header.no_po || '-',
+        brand: item.brand,
+        jenis: item.jenis,
+        paper: item.paper || '-',
+        size: item.size || '-',
+        qty_sheet: item.qty_sheet || 0,
+        up_per_sheet: item.up_per_sheet || 1,
+        qty_pi: item.qty_pi || 0,           // ✅ TAMBAHKAN
+        qty_po: header.qty_po || 0,          // ✅ TAMBAHKAN (jika ada)
+        status: 'DITERIMA',
+        tanggal_terima: today,
+        notes: `Dikirim dari PI ${header.no_pi}`,
+        created_by: 'system'
+    });
                     
                     if (insertError) { 
                         gagal++; 
@@ -482,7 +484,14 @@
             showToast('❌ No PI sudah ada!', 'error');
             return;
         }
-        const { data: header, error: headerError } = await sb.from('pi_header').insert([{ no_pi, tanggal }]).select();
+       const { data: header, error: headerError } = await sb
+    .from('pi_header')
+    .insert([{ 
+        no_pi, 
+        tanggal,
+        qty_po: parseInt(document.getElementById('qty_po')?.value) || 0  // TAMBAHKAN
+    }])
+    .select();
         if (headerError) {
             showToast('❌ ' + headerError.message, 'error');
             return;
@@ -591,10 +600,11 @@
     }
     
     function resetForm() {
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' }];
-        document.getElementById('no_pi').value = '';
-        renderItemForm();
-    }
+    itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' }];
+    document.getElementById('no_pi').value = '';
+    document.getElementById('qty_po').value = '';  // TAMBAHKAN
+    renderItemForm();
+}
     
     function switchMode(m) {
         mode = m;
@@ -673,6 +683,7 @@
                     <div id="msgInput"></div>
                     <input type="text" id="no_pi" placeholder="No PI *">
                     <input type="date" id="tanggal_pi" value="${today}">
+                    <input type="number" id="qty_po" placeholder="Qty PO" style="margin-top:5px;">
                     <div id="itemContainer"></div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
                         <button onclick="simpanPiBaru()" style="flex:2; min-width:150px;">💾 Simpan PI Baru</button>
