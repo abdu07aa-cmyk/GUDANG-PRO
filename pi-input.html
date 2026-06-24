@@ -470,7 +470,7 @@
         document.getElementById('msgInputEdit').innerHTML = '';
         
         // ✅ SWITCH KE MODE NEW
-        switchMode('new');
+        await switchMode('new');
     }
     
     async function hapusPi() {
@@ -500,7 +500,7 @@
             itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
             
             // ✅ SWITCH KE MODE NEW
-            switchMode('new');
+            await switchMode('new');
             
         } catch (err) {
             showToast('❌ Gagal hapus PI: ' + err.message, 'error');
@@ -514,27 +514,27 @@
         renderItemForm();
     }
     
-    function switchMode(m) {
-        mode = m;
-        document.getElementById('modeNew').classList.toggle('active', m === 'new');
-        document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
-        if (m === 'new') {
-            document.getElementById('formNew').style.display = 'block';
-            document.getElementById('formEdit').style.display = 'none';
-            resetForm();
-        } else {
-            document.getElementById('formNew').style.display = 'none';
-            document.getElementById('formEdit').style.display = 'block';
-            document.getElementById('edit_no_pi').value = '';
-            document.getElementById('edit_tanggal_pi').value = '';
-            document.getElementById('itemContainerEdit').innerHTML = '';
-            document.getElementById('msgInputEdit').innerHTML = '';
-            document.getElementById('msgInput').innerHTML = '';
-            loadPiList();
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-            renderItemForm();
-        }
+  async function switchMode(m) {
+    mode = m;
+    document.getElementById('modeNew').classList.toggle('active', m === 'new');
+    document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
+    if (m === 'new') {
+        document.getElementById('formNew').style.display = 'block';
+        document.getElementById('formEdit').style.display = 'none';
+        resetForm();
+    } else {
+        document.getElementById('formNew').style.display = 'none';
+        document.getElementById('formEdit').style.display = 'block';
+        document.getElementById('edit_no_pi').value = '';
+        document.getElementById('edit_tanggal_pi').value = '';
+        document.getElementById('itemContainerEdit').innerHTML = '';
+        document.getElementById('msgInputEdit').innerHTML = '';
+        document.getElementById('msgInput').innerHTML = '';
+        await loadPiList();
+        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        renderItemForm();
     }
+}
     
     async function loadHalaman() {
         const today = new Date().toISOString().split('T')[0];
