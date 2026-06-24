@@ -814,32 +814,76 @@
     // ✅ AMBIL DATA MATERIAL
     const { data: material } = await sb
         .from('material_inbound')
-        .select('no_pi')
+        .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
         .eq('id', data.material_inbound_id)
         .single();
 
-    // ✅ SET DROPDOWN OTOMATIS
+    if (!material) {
+        showToast('❌ Material tidak ditemukan!', 'error');
+        return;
+    }
+
+    // ✅ UPDATE BADGE
+    const statusBadge = getEl('statusBadge');
+    if (statusBadge) {
+        statusBadge.innerText = `✏️ Edit: ${material.no_pi}`;
+        statusBadge.style.background = '#f59e0b';
+    }
+
+    // ✅ RELOAD DROPDOWN PI LIST TERLEBIH DAHULU
+    await loadPiList();
+
+    // ✅ SET DROPDOWN NO PI OTOMATIS
     const select = getEl('selectNoPi');
     if (select && material) {
+        let found = false;
         for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === material.no_pi) {
-                select.value = material.no_pi;
+            if (select.options[i].dataset.id === material.id) {
+                select.value = select.options[i].value;
+                found = true;
                 break;
             }
         }
+        
+        // Jika tidak ditemukan di dropdown (karena status sudah DIECUT), tambahkan option sementara
+        if (!found) {
+            const option = document.createElement('option');
+            option.value = material.no_pi;
+            option.textContent = `${material.no_pi} - ${material.brand} - ${material.jenis} (${material.status})`;
+            option.dataset.id = material.id;
+            option.dataset.qtySheet = material.qty_sheet || 0;
+            option.dataset.upPerSheet = material.up_per_sheet || 1;
+            option.dataset.status = material.status;
+            option.dataset.noPo = material.no_po || '-';
+            option.dataset.brand = material.brand;
+            option.dataset.jenis = material.jenis;
+            select.appendChild(option);
+            select.value = material.no_pi;
+        }
+        
+        // ✅ LOAD DATA MATERIAL (skip validasi status)
         await loadMaterialByPi();
     }
 
-    // CEK STATUS MATERIAL
-    const { data: materialStatus } = await sb
-        .from('material_inbound')
-        .select('status')
-        .eq('id', data.material_inbound_id)
-        .single();
-
-    if (materialStatus && (materialStatus.status === 'QC2' || materialStatus.status === 'KIRIM')) {
+    // CEK STATUS MATERIAL - JIKA SUDAH QC2 ATAU KIRIM, TIDAK BISA EDIT
+    if (material.status === 'QC2' || material.status === 'KIRIM') {
         showToast('⚠️ Tidak bisa edit karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
-        return;
+        // Tetap isi form tapi nonaktifkan tombol simpan
+        const btnSubmit = getEl('btnSubmit');
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '⚠️ Tidak bisa diedit';
+            btnSubmit.style.background = '#94a3b8';
+        }
+    } else {
+        // Aktifkan tombol simpan
+        const btnSubmit = getEl('btnSubmit');
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '✏️ Update Diecut';
+            btnSubmit.onclick = updateDiecut;
+            btnSubmit.style.background = '';
+        }
     }
 
     isEditMode = true;
@@ -848,14 +892,8 @@
     
     const editBadge = getEl('editBadge');
     if (editBadge) editBadge.style.display = 'inline';
-    
-    const btnSubmit = getEl('btnSubmit');
-    if (btnSubmit) {
-        btnSubmit.innerHTML = '✏️ Update Diecut';
-        btnSubmit.onclick = updateDiecut;
-    }
 
-    // ISI FORM
+    // ✅ ISI FORM DENGAN DATA DIECUT
     const tanggalDiecut = getEl('tanggal_diecut');
     if (tanggalDiecut) tanggalDiecut.value = data.tanggal_diecut || '';
     
@@ -871,10 +909,11 @@
     const notes = getEl('notes');
     if (notes) notes.value = data.notes || '';
 
+    // ✅ SCROLL KE FORM
     const card = document.querySelector('.card');
     if (card) card.scrollIntoView({ behavior: 'smooth' });
 
-    showToast('📝 Mode Edit: silakan ubah data', 'info');
+    showToast(`📝 Mode Edit: Diecut - ${material.no_pi}`, 'info');
 }
         // ============================================================
         // ✅ UPDATE DIECUT
