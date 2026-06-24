@@ -135,6 +135,30 @@
             background: #3b82f6;
             color: white;
         }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            display: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 90%;
+        }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.warning { background: #f59e0b; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
         
         @media (max-width: 600px) {
             .item-row { flex-direction: column; }
@@ -150,17 +174,16 @@
         <p>Manajemen Inventory</p>
     </div>
     <div class="sidebar-menu">
-        <!-- MAIN MENU -->
         <div class="menu-item" data-menu="dashboard">
             <span class="icon">📊</span>
             <span class="text">Dashboard</span>
         </div>
-        <div class="menu-item" data-menu="pi-input">
+        <div class="menu-item active" data-menu="pi-input">
             <span class="icon">📝</span>
             <span class="text">Input PI</span>
         </div>
         <div class="menu-item" data-menu="stock-in">
-            <span class="icon">📥</span>
+            <span class">📥</span>
             <span class="text">Barang Masuk</span>
         </div>
         <div class="menu-item" data-menu="stock-out">
@@ -186,7 +209,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU TRACKING MATERIAL (BARU) -->
         <div class="menu-item" data-menu="material-tracking">
             <span class="icon">📊</span>
             <span class="text">Tracking Material</span>
@@ -214,7 +236,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU LAINNYA -->
         <div class="menu-item" data-menu="executive">
             <span class="icon">📈</span>
             <span class="text">Laporan Eksekutif</span>
@@ -246,390 +267,398 @@
         </div>
     </div>
 </div>
-    <div class="overlay" id="overlay"></div>
 
-    <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 SUPPLY MATERIAL</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-    </div>
+<div class="overlay" id="overlay"></div>
 
-    <div class="container" id="mainContent"></div>
+<div class="header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <div class="logo">📦 SUPPLY MATERIAL</div>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
 
-    <script>
-        let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-        let brandList = [], jenisList = [], paperList = [], sizeList = [];
-        let mode = 'new';
-        let editingPiId = null;
+<div class="container" id="mainContent"></div>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast" class="toast"></div>
+
+<script>
+    let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+    let brandList = [], jenisList = [], paperList = [], sizeList = [];
+    let mode = 'new';
+    let editingPiId = null;
+
+    // ============================================================
+    // ✅ TOAST NOTIFICATION
+    // ============================================================
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        if (!t) return;
+        t.textContent = msg;
+        t.className = 'toast ' + type + ' show';
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.className = 'toast', 3000);
+    }
+    
+    async function loadMasterData() {
+        const { data: items } = await sb.from('pi_detail').select('brand, jenis, paper, size');
+        if (items) {
+            brandList = [...new Set(items.map(i => i.brand).filter(b => b))];
+            jenisList = [...new Set(items.map(i => i.jenis).filter(j => j))];
+            paperList = [...new Set(items.map(i => i.paper).filter(p => p))];
+            sizeList = [...new Set(items.map(i => i.size).filter(s => s))];
+        }
+    }
+    
+    function renderItemForm() {
+        const container = document.getElementById('itemContainer');
+        if (!container) return;
         
-        async function loadMasterData() {
-            const { data: items } = await sb.from('pi_detail').select('brand, jenis, paper, size');
-            if (items) {
-                brandList = [...new Set(items.map(i => i.brand).filter(b => b))];
-                jenisList = [...new Set(items.map(i => i.jenis).filter(j => j))];
-                paperList = [...new Set(items.map(i => i.paper).filter(p => p))];
-                sizeList = [...new Set(items.map(i => i.size).filter(s => s))];
-            }
+        let html = '';
+        for (let i = 0; i < itemList.length; i++) {
+            html += `
+                <div class="item-row">
+                    <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
+                    <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
+                    <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
+                    <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
+                    <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                    <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                </div>
+            `;
         }
         
-        function renderItemForm() {
-            const container = document.getElementById('itemContainer');
-            if (!container) return;
+        html += `
+            <datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+            <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
+            <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
+            <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
+            <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
+        `;
+        container.innerHTML = html;
+    }
+    
+    function tambahItem() {
+        itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '' });
+        renderItemForm();
+    }
+    
+    function hapusItem(index) {
+        if (itemList.length > 1) {
+            itemList.splice(index, 1);
+            renderItemForm();
+        } else {
+            showToast('Minimal 1 item!', 'warning');
+        }
+    }
+    
+    function updateItem(index, field, value) {
+        itemList[index][field] = value;
+    }
+    
+    async function loadPiList() {
+        const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
+        let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
+        if (headers) {
+            for (const h of headers) {
+                options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`;
+            }
+        }
+        document.getElementById('edit_pi_select').innerHTML = options;
+    }
+    
+    async function onSelectPiForEdit() {
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) return;
+        editingPiId = piId;
+        const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
+        document.getElementById('edit_no_pi').value = header.no_pi;
+        document.getElementById('edit_tanggal_pi').value = header.tanggal;
+        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+        itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
+        renderItemForm();
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
+    }
+    
+    async function simpanPiBaru() {
+        const no_pi = document.getElementById('no_pi').value.trim();
+        const tanggal = document.getElementById('tanggal_pi').value;
+        if (!no_pi || !tanggal) {
+            showToast('❌ No PI dan Tanggal wajib!', 'error');
+            return;
+        }
+        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+        if (validItems.length === 0) {
+            showToast('❌ Minimal 1 item dengan Brand, Jenis, dan Qty!', 'error');
+            return;
+        }
+        const { data: existing } = await sb.from('pi_header').select('no_pi').eq('no_pi', no_pi).single();
+        if (existing) {
+            showToast('❌ No PI sudah ada!', 'error');
+            return;
+        }
+        const { data: header, error: headerError } = await sb.from('pi_header').insert([{ no_pi, tanggal }]).select();
+        if (headerError) {
+            showToast('❌ ' + headerError.message, 'error');
+            return;
+        }
+        const piId = header[0].id;
+        for (const item of validItems) {
+            await sb.from('pi_detail').insert({ pi_id: piId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+        }
+        await loadMasterData();
+        showToast('✅ PI baru berhasil disimpan!', 'success');
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
+        resetForm();
+        // ✅ TIDAK REDIRECT, TETAP DI HALAMAN
+        // Refresh daftar PI (jika ada)
+        loadPiList();
+    }
+    
+    async function updatePi() {
+        const no_pi = document.getElementById('edit_no_pi').value.trim();
+        const tanggal = document.getElementById('edit_tanggal_pi').value;
+        if (!no_pi || !tanggal) {
+            showToast('❌ No PI dan Tanggal wajib!', 'error');
+            return;
+        }
+        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+        if (validItems.length === 0) {
+            showToast('❌ Minimal 1 item dengan Brand, Jenis, dan Qty!', 'error');
+            return;
+        }
+        const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
+        if (headerError) {
+            showToast('❌ ' + headerError.message, 'error');
+            return;
+        }
+        const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
+        for (let i = 0; i < validItems.length; i++) {
+            const item = validItems[i];
+            if (existingDetails && existingDetails[i]) {
+                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
+            } else {
+                await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+            }
+        }
+        if (existingDetails && existingDetails.length > validItems.length) {
+            for (let i = validItems.length; i < existingDetails.length; i++) {
+                const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                if (masuk.length === 0 && keluar.length === 0) {
+                    await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
+                } else {
+                    showToast(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus (ada transaksi)`, 'warning');
+                }
+            }
+        }
+        await loadMasterData();
+        showToast('✅ PI berhasil diupdate!', 'success');
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate!</div>';
+        // ✅ TIDAK REDIRECT, TETAP DI HALAMAN
+        loadPiList();
+    }
+    
+    async function hapusPi() {
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) { showToast('❌ Pilih PI yang akan dihapus!', 'error'); return; }
+        
+        const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
+        if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
+        
+        try {
+            await sb.from('barang_masuk').delete().eq('pi_id', piId);
+            await sb.from('barang_keluar').delete().eq('pi_id', piId);
+            await sb.from('pi_detail').delete().eq('pi_id', piId);
+            await sb.from('pi_header').delete().eq('id', piId);
             
-            let html = '';
-            for (let i = 0; i < itemList.length; i++) {
-                html += `
-                    <div class="item-row">
+            showToast('✅ PI berhasil dihapus!', 'success');
+            document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
+            document.getElementById('edit_no_pi').value = '';
+            document.getElementById('edit_tanggal_pi').value = '';
+            document.getElementById('itemContainerEdit').innerHTML = '';
+            document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
+            
+            await loadPiList();
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            
+        } catch (err) {
+            showToast('❌ Gagal hapus PI: ' + err.message, 'error');
+            console.error(err);
+        }
+    }
+    
+    function resetForm() {
+        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        document.getElementById('no_pi').value = '';
+        renderItemForm();
+    }
+    
+    function switchMode(m) {
+        mode = m;
+        document.getElementById('modeNew').classList.toggle('active', m === 'new');
+        document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
+        if (m === 'new') {
+            document.getElementById('formNew').style.display = 'block';
+            document.getElementById('formEdit').style.display = 'none';
+            resetForm();
+        } else {
+            document.getElementById('formNew').style.display = 'none';
+            document.getElementById('formEdit').style.display = 'block';
+            loadPiList();
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            renderItemForm();
+        }
+    }
+    
+    async function loadHalaman() {
+        const today = new Date().toISOString().split('T')[0];
+        await loadMasterData();
+        document.getElementById('mainContent').innerHTML = `
+            <div class="card">
+                <div class="card-title">📝 Manajemen PI</div>
+                <div class="mode-switch">
+                    <div id="modeNew" class="mode-btn active" onclick="switchMode('new')">➕ PI Baru</div>
+                    <div id="modeEdit" class="mode-btn" onclick="switchMode('edit')">✏️ Edit/Hapus PI</div>
+                </div>
+                <div id="formNew">
+                    <div id="msgInput"></div>
+                    <input type="text" id="no_pi" placeholder="No PI *">
+                    <input type="date" id="tanggal_pi" value="${today}">
+                    <div id="itemContainer"></div>
+                    <button onclick="simpanPiBaru()">💾 Simpan PI Baru</button>
+                </div>
+                <div id="formEdit" style="display:none">
+                    <div id="msgInputEdit"></div>
+                    <select id="edit_pi_select" onchange="onSelectPiForEdit()"><option value="">-- Pilih PI --</option></select>
+                    <input type="text" id="edit_no_pi" placeholder="No PI *">
+                    <input type="date" id="edit_tanggal_pi">
+                    <div id="itemContainerEdit"></div>
+                    <button onclick="updatePi()" style="background:#f59e0b">✏️ Update PI</button>
+                    <button onclick="hapusPi()" style="background:#dc2626; margin-top:10px">🗑️ Hapus PI</button>
+                </div>
+            </div>
+        `;
+        const containerNew = document.getElementById('itemContainer');
+        const containerEdit = document.getElementById('itemContainerEdit');
+        window.renderItemForm = () => {
+            if (mode === 'new' && containerNew) {
+                let html = '';
+                for (let i = 0; i < itemList.length; i++) {
+                    html += `<div class="item-row">
                         <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
                         <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
                         <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
                         <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
                         <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
                         <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                    </div>
-                `;
-            }
-            
-            html += `
-                <datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
-                <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
-                <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
-                <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
-            `;
-            container.innerHTML = html;
-        }
-        
-        function tambahItem() {
-            itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '' });
-            renderItemForm();
-        }
-        
-        function hapusItem(index) {
-            if (itemList.length > 1) {
-                itemList.splice(index, 1);
-                renderItemForm();
-            } else {
-                alert('Minimal 1 item!');
-            }
-        }
-        
-        function updateItem(index, field, value) {
-            itemList[index][field] = value;
-        }
-        
-        async function loadPiList() {
-            const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
-            let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
-            if (headers) {
-                for (const h of headers) {
-                    options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`;
+                    </div>`;
                 }
-            }
-            document.getElementById('edit_pi_select').innerHTML = options;
-        }
-        
-        async function onSelectPiForEdit() {
-            const piId = document.getElementById('edit_pi_select').value;
-            if (!piId) return;
-            editingPiId = piId;
-            const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
-            document.getElementById('edit_no_pi').value = header.no_pi;
-            document.getElementById('edit_tanggal_pi').value = header.tanggal;
-            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
-            itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
-            renderItemForm();
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
-        }
-        
-        async function simpanPiBaru() {
-            const no_pi = document.getElementById('no_pi').value.trim();
-            const tanggal = document.getElementById('tanggal_pi').value;
-            if (!no_pi || !tanggal) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
-                return;
-            }
-            const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-            if (validItems.length === 0) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
-                return;
-            }
-            const { data: existing } = await sb.from('pi_header').select('no_pi').eq('no_pi', no_pi).single();
-            if (existing) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI sudah ada!</div>';
-                return;
-            }
-            const { data: header, error: headerError } = await sb.from('pi_header').insert([{ no_pi, tanggal }]).select();
-            if (headerError) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
-                return;
-            }
-            const piId = header[0].id;
-            for (const item of validItems) {
-                await sb.from('pi_detail').insert({ pi_id: piId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
-            }
-            await loadMasterData();
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
-            resetForm();
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-        }
-        
-        async function updatePi() {
-            const no_pi = document.getElementById('edit_no_pi').value.trim();
-            const tanggal = document.getElementById('edit_tanggal_pi').value;
-            if (!no_pi || !tanggal) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
-                return;
-            }
-            const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-            if (validItems.length === 0) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
-                return;
-            }
-            const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
-            if (headerError) {
-                document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
-                return;
-            }
-            const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
-            for (let i = 0; i < validItems.length; i++) {
-                const item = validItems[i];
-                if (existingDetails && existingDetails[i]) {
-                    await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
-                } else {
-                    await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+                html += `<datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+                    <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
+                    <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
+                    <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
+                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+                containerNew.innerHTML = html;
+            } else if (mode === 'edit' && containerEdit) {
+                let html = '';
+                for (let i = 0; i < itemList.length; i++) {
+                    html += `<div class="item-row">
+                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest2">
+                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
+                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
+                        <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
+                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                        <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                    </div>`;
                 }
+                html += `<datalist id="brandSuggest2">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+                    <datalist id="jenisSuggest2">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
+                    <datalist id="paperSuggest2">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
+                    <datalist id="sizeSuggest2">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
+                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+                containerEdit.innerHTML = html;
             }
-            if (existingDetails && existingDetails.length > validItems.length) {
-                for (let i = validItems.length; i < existingDetails.length; i++) {
-                    const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-                    const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-                    if (masuk.length === 0 && keluar.length === 0) {
-                        await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
-                    } else {
-                        alert(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus karena sudah memiliki transaksi.`);
-                    }
-                }
-            }
-            await loadMasterData();
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate! Data transaksi tetap terjaga.</div>';
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-        }
-        
-        async function hapusPi() {
-    const piId = document.getElementById('edit_pi_select').value;
-    if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
-    
-    const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
-    if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
-    
-    try {
-        // 1. Hapus barang masuk yang terkait
-        await sb.from('barang_masuk').delete().eq('pi_id', piId);
-        
-        // 2. Hapus barang keluar yang terkait
-        await sb.from('barang_keluar').delete().eq('pi_id', piId);
-        
-        // 3. Hapus detail PI
-        await sb.from('pi_detail').delete().eq('pi_id', piId);
-        
-        // 4. Hapus header PI
-        await sb.from('pi_header').delete().eq('id', piId);
-        
-        alert('✅ PI berhasil dihapus!');
-        
-        // ===== PERBAIKAN: Refresh dropdown =====
-        // Reset form edit
-        document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
-        document.getElementById('edit_no_pi').value = '';
-        document.getElementById('edit_tanggal_pi').value = '';
-        document.getElementById('itemContainerEdit').innerHTML = '';
-        
-        // Load ulang daftar PI
-        await loadPiList();
-        
-        // Kosongkan item list
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-        
-        // Tampilkan pesan sukses
-        document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
-        
-    } catch (err) {
-        console.error('Error hapus PI:', err);
-        alert('❌ Gagal hapus PI: ' + err.message);
+        };
+        renderItemForm();
     }
-}
-        function resetForm() {
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-            document.getElementById('no_pi').value = '';
-            renderItemForm();
-        }
-        
-        function switchMode(m) {
-            mode = m;
-            document.getElementById('modeNew').classList.toggle('active', m === 'new');
-            document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
-            if (m === 'new') {
-                document.getElementById('formNew').style.display = 'block';
-                document.getElementById('formEdit').style.display = 'none';
-                resetForm();
-            } else {
-                document.getElementById('formNew').style.display = 'none';
-                document.getElementById('formEdit').style.display = 'block';
-                loadPiList();
-                itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-                renderItemForm();
+    
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+    function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+    
+    async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+    
+    function goToMenu(menu) {
+        const files = {
+            dashboard: 'dashboard.html',
+            'pi-input': 'pi-input.html',
+            'stock-in': 'stock-in.html',
+            'stock-out': 'stock-out.html',
+            'stock-report': 'stock-report.html',
+            'stok-pendukung': 'stok-pendukung.html',
+            'barcode-generator': 'barcode-generator.html',
+            'scan-barcode': 'scan-barcode.html',
+            'material-tracking': 'material-tracking.html',
+            'material-inbound': 'material-inbound.html',
+            'qc-inspection': 'qc-inspection.html',
+            'diecut-process': 'diecut-process.html',
+            'production-send': 'production-send.html',
+            'ng-report': 'ng-report.html',
+            executive: 'executive-report.html',
+            'manage-users': 'manage-users.html',
+            'log-aktivitas': 'log-aktivitas.html',
+            export: 'export-final3.html'
+        };
+        window.location.href = files[menu] || 'dashboard.html';
+    }
+    
+    async function checkSession() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) window.location.href = 'login.html';
+    }
+    
+    function setupEventListeners() {
+        document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
+        document.getElementById('overlay')?.addEventListener('click', closeSidebar);
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        document.getElementById('logoutMenu')?.addEventListener('click', logout);
+        document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+            item.addEventListener('click', (e) => { goToMenu(item.getAttribute('data-menu')); });
+        });
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', (e) => {
+            const diff = e.changedTouches[0].screenX - touchStartX;
+            if (diff > 50 && touchStartX < 30) openSidebar();
+            else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
+        });
+    }
+    
+    async function init() {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+            if (profile?.role !== 'admin') {
+                document.getElementById('mainContent').innerHTML = `<div class="card" style="text-align:center;padding:30px"><h3>⛔ Akses Ditolak</h3><p>Halaman Input PI hanya untuk ADMIN.</p><button onclick="window.location.href='dashboard.html'">Ke Dashboard</button></div>`;
+                return;
             }
         }
-        
-        async function loadHalaman() {
-            const today = new Date().toISOString().split('T')[0];
-            await loadMasterData();
-            document.getElementById('mainContent').innerHTML = `
-                <div class="card">
-                    <div class="card-title">📝 Manajemen PI</div>
-                    <div class="mode-switch">
-                        <div id="modeNew" class="mode-btn active" onclick="switchMode('new')">➕ PI Baru</div>
-                        <div id="modeEdit" class="mode-btn" onclick="switchMode('edit')">✏️ Edit/Hapus PI</div>
-                    </div>
-                    <div id="formNew">
-                        <div id="msgInput"></div>
-                        <input type="text" id="no_pi" placeholder="No PI *">
-                        <input type="date" id="tanggal_pi" value="${today}">
-                        <div id="itemContainer"></div>
-                        <button onclick="simpanPiBaru()">💾 Simpan PI Baru</button>
-                    </div>
-                    <div id="formEdit" style="display:none">
-                        <div id="msgInputEdit"></div>
-                        <select id="edit_pi_select" onchange="onSelectPiForEdit()"><option value="">-- Pilih PI --</option></select>
-                        <input type="text" id="edit_no_pi" placeholder="No PI *">
-                        <input type="date" id="edit_tanggal_pi">
-                        <div id="itemContainerEdit"></div>
-                        <button onclick="updatePi()" style="background:#f59e0b">✏️ Update PI</button>
-                        <button onclick="hapusPi()" style="background:#dc2626; margin-top:10px">🗑️ Hapus PI</button>
-                    </div>
-                </div>
-            `;
-            const containerNew = document.getElementById('itemContainer');
-            const containerEdit = document.getElementById('itemContainerEdit');
-            window.renderItemForm = () => {
-                if (mode === 'new' && containerNew) {
-                    let html = '';
-                    for (let i = 0; i < itemList.length; i++) {
-                        html += `<div class="item-row">
-                            <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
-                            <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
-                            <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
-                            <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                            <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
-                            <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                        </div>`;
-                    }
-                    html += `<datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
-                        <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
-                        <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
-                        <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                        <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
-                    containerNew.innerHTML = html;
-                } else if (mode === 'edit' && containerEdit) {
-                    let html = '';
-                    for (let i = 0; i < itemList.length; i++) {
-                        html += `<div class="item-row">
-                            <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest2">
-                            <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
-                            <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
-                            <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
-                            <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
-                            <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                        </div>`;
-                    }
-                    html += `<datalist id="brandSuggest2">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
-                        <datalist id="jenisSuggest2">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
-                        <datalist id="paperSuggest2">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
-                        <datalist id="sizeSuggest2">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                        <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
-                    containerEdit.innerHTML = html;
-                }
-            };
-            renderItemForm();
-        }
-        
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-        
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-        
-function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        'material-tracking': 'material-tracking.html',
-        'material-inbound': 'material-inbound.html',
-        'qc-inspection': 'qc-inspection.html',
-        'diecut-process': 'diecut-process.html',
-        'production-send': 'production-send.html',
-        'ng-report': 'ng-report.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
-        async function checkSession() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-        }
-        
-        function setupEventListeners() {
-            document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
-            document.getElementById('overlay')?.addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn')?.addEventListener('click', logout);
-            document.getElementById('logoutMenu')?.addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
-                item.addEventListener('click', (e) => { goToMenu(item.getAttribute('data-menu')); });
-            });
-            let touchStartX = 0;
-            document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
-            document.addEventListener('touchend', (e) => {
-                const diff = e.changedTouches[0].screenX - touchStartX;
-                if (diff > 50 && touchStartX < 30) openSidebar();
-                else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
-            });
-        }
-        
-        async function init() {
-            const { data: { user } } = await sb.auth.getUser();
-            if (user) {
-                const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
-                if (profile?.role !== 'admin') {
-                    document.getElementById('mainContent').innerHTML = `<div class="card" style="text-align:center;padding:30px"><h3>⛔ Akses Ditolak</h3><p>Halaman Input PI hanya untuk ADMIN.</p><button onclick="window.location.href='dashboard.html'">Ke Dashboard</button></div>`;
-                    return;
-                }
-            }
-            await checkSession();
-            await loadHalaman();
-            setupEventListeners();
-        }
-        
-        window.tambahItem = tambahItem;
-        window.hapusItem = hapusItem;
-        window.updateItem = updateItem;
-        window.simpanPiBaru = simpanPiBaru;
-        window.updatePi = updatePi;
-        window.hapusPi = hapusPi;
-        window.switchMode = switchMode;
-        window.onSelectPiForEdit = onSelectPiForEdit;
-        window.renderItemForm = renderItemForm;
-        
-        init();
-    </script>
+        await checkSession();
+        await loadHalaman();
+        setupEventListeners();
+    }
+    
+    window.tambahItem = tambahItem;
+    window.hapusItem = hapusItem;
+    window.updateItem = updateItem;
+    window.simpanPiBaru = simpanPiBaru;
+    window.updatePi = updatePi;
+    window.hapusPi = hapusPi;
+    window.switchMode = switchMode;
+    window.onSelectPiForEdit = onSelectPiForEdit;
+    window.renderItemForm = renderItemForm;
+    
+    init();
+</script>
 </body>
 </html>
