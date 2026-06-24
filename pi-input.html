@@ -492,7 +492,7 @@
             document.getElementById('edit_tanggal_pi').value = '';
             document.getElementById('itemContainerEdit').innerHTML = '';
             document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
-            
+
             // ✅ REFRESH DROPDOWN
             await loadPiList();
             
@@ -501,7 +501,8 @@
             
             // ✅ SWITCH KE MODE NEW
             await switchMode('new');
-            
+            // ✅ REFRESH HALAMAN
+            window.location.reload();
         } catch (err) {
             showToast('❌ Gagal hapus PI: ' + err.message, 'error');
             console.error(err);
