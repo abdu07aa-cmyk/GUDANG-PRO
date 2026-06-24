@@ -1016,7 +1016,7 @@
         // ============================================================
         // EDIT QC
         // ============================================================
-        async function editQC(id) {
+       async function editQC(id) {
     const { data: qc, error } = await sb
         .from('qc_inspection')
         .select('*')
@@ -1028,24 +1028,69 @@
         return;
     }
 
-    // ✅ AMBIL DATA MATERIAL UNTUK MENDAPATKAN NO_PI
+    // ✅ AMBIL DATA MATERIAL
     const { data: material } = await sb
         .from('material_inbound')
-        .select('no_pi, no_po, brand, jenis, qty_sheet, up_per_sheet, status')
+        .select('no_pi, no_po, brand, jenis, qty_sheet, up_per_sheet, status, id')
         .eq('id', qc.material_inbound_id)
         .single();
+
+    if (!material) {
+        showToast('❌ Material tidak ditemukan!', 'error');
+        return;
+    }
+
+    // ✅ SET QC NUMBER sesuai dengan data QC
+    currentQcNumber = qc.qc_number;
+    document.getElementById('qcNumber').value = qc.qc_number;
+
+    // ✅ UPDATE TITLE & BADGE
+    document.getElementById('pageTitle').innerText = `🔬 QC #${qc.qc_number}`;
+    document.getElementById('qcBadge').innerText = `QC #${qc.qc_number}`;
+
+    // ✅ UPDATE DROPDOWN INFO
+    const dropdownInfo = getEl('dropdownInfo');
+    if (dropdownInfo) {
+        if (qc.qc_number === 1) {
+            dropdownInfo.innerHTML = '📌 Menampilkan material dengan status DITERIMA (untuk QC #1)';
+        } else {
+            dropdownInfo.innerHTML = '📌 Menampilkan material dengan status DIECUT (untuk QC #2)';
+        }
+    }
+
+    // ✅ RELOAD DROPDOWN PI LIST TERLEBIH DAHULU
+    await loadPiList();
 
     // ✅ SET DROPDOWN NO PI OTOMATIS
     const select = getEl('selectNoPi');
     if (select && material) {
         // Cari option dengan value no_pi yang sesuai
+        let found = false;
         for (let i = 0; i < select.options.length; i++) {
             if (select.options[i].value === material.no_pi) {
                 select.value = material.no_pi;
+                found = true;
                 break;
             }
         }
-        // Load data material (biar info material tampil)
+        
+        // Jika tidak ditemukan di dropdown, tambahkan option sementara
+        if (!found) {
+            const option = document.createElement('option');
+            option.value = material.no_pi;
+            option.textContent = `${material.no_pi} - ${material.brand} - ${material.jenis} (${material.status})`;
+            option.dataset.id = material.id;
+            option.dataset.qtySheet = material.qty_sheet;
+            option.dataset.upPerSheet = material.up_per_sheet;
+            option.dataset.status = material.status;
+            option.dataset.noPo = material.no_po;
+            option.dataset.brand = material.brand;
+            option.dataset.jenis = material.jenis;
+            select.appendChild(option);
+            select.value = material.no_pi;
+        }
+        
+        // Load data material
         await loadMaterialByPi();
     }
 
@@ -1097,9 +1142,8 @@
     const card = document.querySelector('.card');
     if (card) card.scrollIntoView({ behavior: 'smooth' });
     
-    showToast('📝 Mode Edit: silakan ubah data QC', 'info');
+    showToast(`📝 Mode Edit: QC #${qc.qc_number} - ${material.no_pi}`, 'info');
 }
-
         // ============================================================
         // DELETE QC
         // ============================================================
