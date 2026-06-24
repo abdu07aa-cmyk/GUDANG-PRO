@@ -6,6 +6,7 @@
     <title>Proses Diecut - SUPPLY MATERIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
@@ -117,8 +118,8 @@
         .btn-secondary:hover { background: #cbd5e1; }
         .btn-back { background: #64748b; color: white; }
         .btn-back:hover { background: #475569; }
-        .btn-primary { background: #3b82f6; color: white; }
-        .btn-primary:hover { background: #2563eb; }
+        .btn-export { background: #10b981; color: white; }
+        .btn-export:hover { background: #059669; }
 
         .alert {
             padding: 12px 16px;
@@ -158,6 +159,7 @@
         .toast.show { display: block; animation: fadeInUp 0.3s ease; }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -175,11 +177,8 @@
             font-weight: 600;
             display: inline-block;
         }
-        .status-diterima { background: #e0f2fe; color: #0369a1; }
         .status-qc1 { background: #fef3c7; color: #92400e; }
         .status-diecut { background: #dbeafe; color: #1e40af; }
-        .status-qc2 { background: #fce7f3; color: #9d174d; }
-        .status-kirim { background: #d1fae5; color: #065f46; }
 
         .material-info {
             background: #f1f5f9;
@@ -197,6 +196,28 @@
         .material-info-grid .value { font-weight: 500; color: #1e293b; }
 
         .small-text { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
+
+        .btn-small {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 2px;
+        }
+        .btn-edit-small { background: #f59e0b; color: white; }
+        .btn-edit-small:hover { background: #d97706; }
+        .btn-delete-small { background: #ef4444; color: white; }
+        .btn-delete-small:hover { background: #dc2626; }
+
+        .edit-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
 
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
@@ -251,13 +272,13 @@
         <div class="container" id="mainContent">
         <div class="card">
             <div class="card-title">
-                <span>⚙️ PROSES DIECUT</span>
+                <span>⚙️ PROSES DIECUT <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
                 <span id="statusBadge" style="font-size:12px;background:#f1f5f9;padding:4px 12px;border-radius:20px;">Pilih No PI</span>
             </div>
             
             <div id="msgContainer"></div>
 
-            <!-- ✅ DROPDOWN 1: Untuk Proses Diecut (Hanya QC1) -->
+            <!-- Dropdown 1: Untuk Proses Diecut (Hanya QC1) -->
             <div class="form-group">
                 <label>Pilih No PI (Untuk Diecut) <span class="required">*</span></label>
                 <select id="selectNoPi" onchange="loadMaterialByPi()">
@@ -267,6 +288,7 @@
             </div>
 
             <input type="hidden" id="materialId">
+            <input type="hidden" id="editId" value="">
 
             <!-- Material Info -->
             <div id="materialInfo" class="material-info" style="display:none;">
@@ -304,7 +326,7 @@
                     <input type="text" id="operator" placeholder="Nama Operator" required>
                 </div>
 
-                <!-- ✅ AUTO DARI QC #1 OK -->
+                <!-- AUTO DARI QC #1 OK -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Qty Sheet In (Dari QC #1 OK) <span class="required">*</span></label>
@@ -352,14 +374,19 @@
             </form>
         </div>
 
-        <!-- ✅ DROPDOWN 2 + HISTORY RIWAYAT -->
+        <!-- History Diecut -->
         <div class="card">
             <div class="card-title">
                 <span>📋 Riwayat Diecut</span>
-                <button class="btn btn-secondary" onclick="refreshHistory()" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+                <div>
+                    <button class="btn btn-export" onclick="exportDiecutHistory()" style="padding:4px 12px; font-size:11px; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer;">
+                        📎 Export Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshHistory()" style="padding:4px 12px; font-size:11px;">🔄 Refresh</button>
+                </div>
             </div>
             
-            <!-- Dropdown untuk riwayat (hanya status yang sudah diecut) -->
+            <!-- Dropdown untuk riwayat (status DIECUT, QC2, KIRIM) -->
             <div class="form-group">
                 <label>Pilih No PI yang Sudah Diecut</label>
                 <select id="selectHistoryPi" onchange="loadHistoryByPi()">
@@ -379,6 +406,7 @@
         let currentMaterialId = null;
         let isSubmitting = false;
         let selectedNoPi = null;
+        let isEditMode = false;
 
         function getEl(id) {
             return document.getElementById(id);
@@ -514,7 +542,6 @@
             const materialIdEl = getEl('materialId');
             if (materialIdEl) materialIdEl.value = materialId;
 
-            // ✅ Validasi status harus QC1
             if (status !== 'QC1') {
                 showMessage(`⚠️ Status material: ${status}. Harus QC1 untuk diecut!`, 'warning');
                 const statusBadge = getEl('statusBadge');
@@ -598,17 +625,22 @@
                 btnSubmit.style.background = '';
             }
 
-            // Load history diecut
-            // Kosongkan history karena ini untuk proses baru
+            // Reset edit mode
+            isEditMode = false;
+            const editId = getEl('editId');
+            if (editId) editId.value = '';
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'none';
+
+            // Load history
             const historyList = getEl('historyList');
             if (historyList) {
                 historyList.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Pilih No PI yang sudah diecut di dropdown bawah untuk melihat riwayat</div>';
             }
 
-            // Hitung yield awal
             calculateYield();
             
-            // Reset dropdown history agar tidak conflict
+            // Reset dropdown history
             const selectHistory = getEl('selectHistoryPi');
             if (selectHistory) {
                 selectHistory.value = '';
@@ -683,7 +715,7 @@
         }
 
         // ============================================================
-        // LOAD HISTORY (YANG SUDAH ADA)
+        // LOAD HISTORY (DENGAN TOMBOL EDIT & DELETE)
         // ============================================================
         async function loadHistory(materialId) {
             const container = getEl('historyList');
@@ -722,6 +754,7 @@
                             <th>NG</th>
                             <th>Pcs OK</th>
                             <th>Yield</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -739,6 +772,10 @@
                         <td style="text-align:center; color:#ef4444;">${item.qty_ng_diecut}</td>
                         <td style="text-align:center; font-weight:bold; color:#10b981;">${item.qty_pcs_ok}</td>
                         <td style="text-align:center; font-weight:bold; color:${yieldColor};">${item.yield_percent}%</td>
+                        <td style="text-align:center;">
+                            <button class="btn-small btn-edit-small" onclick="editDiecut('${item.id}')">✏️</button>
+                            <button class="btn-small btn-delete-small" onclick="deleteDiecut('${item.id}')">🗑️</button>
+                        </td>
                     </tr>
                 `;
             }
@@ -760,6 +797,273 @@
         }
 
         // ============================================================
+        // ✅ EDIT DIECUT
+        // ============================================================
+        async function editDiecut(id) {
+            const { data, error } = await sb
+                .from('diecut_process')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !data) {
+                showToast('❌ Data tidak ditemukan!', 'error');
+                return;
+            }
+
+            // Cek apakah material sudah lanjut ke QC2
+            const { data: material } = await sb
+                .from('material_inbound')
+                .select('status')
+                .eq('id', data.material_inbound_id)
+                .single();
+
+            if (material && (material.status === 'QC2' || material.status === 'KIRIM')) {
+                showToast('⚠️ Tidak bisa edit karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
+                return;
+            }
+
+            isEditMode = true;
+            const editId = getEl('editId');
+            if (editId) editId.value = id;
+            
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'inline';
+            
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) {
+                btnSubmit.innerHTML = '✏️ Update Diecut';
+                btnSubmit.onclick = updateDiecut;
+            }
+
+            // Isi form
+            const tanggalDiecut = getEl('tanggal_diecut');
+            if (tanggalDiecut) tanggalDiecut.value = data.tanggal_diecut || '';
+            
+            const mesin = getEl('mesin');
+            if (mesin) mesin.value = data.mesin || '';
+            
+            const operator = getEl('operator');
+            if (operator) operator.value = data.operator || '';
+            
+            const qtyNgDiecut = getEl('qty_ng_diecut');
+            if (qtyNgDiecut) qtyNgDiecut.value = data.qty_ng_diecut || 0;
+            
+            const notes = getEl('notes');
+            if (notes) notes.value = data.notes || '';
+
+            // Scroll ke form
+            const card = document.querySelector('.card');
+            if (card) card.scrollIntoView({ behavior: 'smooth' });
+
+            showToast('📝 Mode Edit: silakan ubah data', 'info');
+        }
+
+        // ============================================================
+        // ✅ UPDATE DIECUT
+        // ============================================================
+        async function updateDiecut() {
+            if (isSubmitting) return;
+
+            const editId = getEl('editId')?.value;
+            if (!editId) { showMessage('❌ Tidak ada data yang diedit!', 'error'); return; }
+
+            const tanggal_diecut = getEl('tanggal_diecut')?.value;
+            const mesin = getEl('mesin')?.value?.trim() || '';
+            const operator = getEl('operator')?.value?.trim() || '';
+            const qty_ng_diecut = parseInt(getEl('qty_ng_diecut')?.value) || 0;
+            const notes = getEl('notes')?.value?.trim() || '';
+
+            if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
+            if (!operator) { showMessage('❌ Nama Operator wajib diisi!', 'error'); return; }
+
+            const { pcsOk, yieldPercent } = calculateYield();
+
+            const btn = getEl('btnSubmit');
+            const originalText = btn ? btn.innerHTML : 'Loading...';
+            if (btn) {
+                btn.innerHTML = '⏳ Mengupdate...';
+                btn.disabled = true;
+            }
+
+            isSubmitting = true;
+
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+
+                const data = {
+                    tanggal_diecut,
+                    mesin: mesin || null,
+                    operator,
+                    qty_ng_diecut,
+                    yield_percent: yieldPercent,
+                    notes: notes || null,
+                    updated_by: user?.email || 'Unknown',
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await sb
+                    .from('diecut_process')
+                    .update(data)
+                    .eq('id', editId);
+
+                if (error) throw error;
+
+                showToast('✅ Data diecut berhasil diupdate!', 'success');
+                showMessage('✅ Data diecut berhasil diupdate!', 'success');
+
+                // Reset edit mode
+                isEditMode = false;
+                const editIdEl = getEl('editId');
+                if (editIdEl) editIdEl.value = '';
+                
+                const editBadge = getEl('editBadge');
+                if (editBadge) editBadge.style.display = 'none';
+                
+                if (btn) {
+                    btn.innerHTML = '💾 Simpan Proses Diecut';
+                    btn.onclick = saveDiecut;
+                }
+
+                // Refresh history
+                const selectHistory = getEl('selectHistoryPi');
+                if (selectHistory && selectHistory.value) {
+                    await loadHistory(selectHistory.value);
+                }
+
+                try {
+                    await addLog('UPDATE DIECUT', `${user?.email} mengupdate data diecut ID ${editId}`);
+                } catch(e) {}
+
+            } catch (err) {
+                showMessage('❌ Gagal mengupdate: ' + err.message, 'error');
+                showToast('❌ Gagal: ' + err.message, 'error');
+            } finally {
+                isSubmitting = false;
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // ============================================================
+        // ✅ DELETE DIECUT
+        // ============================================================
+        async function deleteDiecut(id) {
+            if (!confirm('Yakin ingin menghapus data diecut ini?')) return;
+
+            // Cek apakah material sudah lanjut ke QC2
+            const { data: diecut } = await sb
+                .from('diecut_process')
+                .select('material_inbound_id')
+                .eq('id', id)
+                .single();
+
+            if (diecut) {
+                const { data: material } = await sb
+                    .from('material_inbound')
+                    .select('status')
+                    .eq('id', diecut.material_inbound_id)
+                    .single();
+
+                if (material && (material.status === 'QC2' || material.status === 'KIRIM')) {
+                    showToast('⚠️ Tidak bisa hapus karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
+                    return;
+                }
+            }
+
+            const { error } = await sb
+                .from('diecut_process')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                showToast('❌ Gagal menghapus: ' + error.message, 'error');
+            } else {
+                showToast('✅ Data diecut berhasil dihapus', 'success');
+                // Refresh history
+                const selectHistory = getEl('selectHistoryPi');
+                if (selectHistory && selectHistory.value) {
+                    await loadHistory(selectHistory.value);
+                }
+                await loadHistoryPiList();
+            }
+        }
+
+        // ============================================================
+        // ✅ EXPORT DIECUT HISTORY
+        // ============================================================
+        async function exportDiecutHistory() {
+            const selectHistory = getEl('selectHistoryPi');
+            if (!selectHistory || !selectHistory.value) {
+                showToast('❌ Pilih No PI yang sudah diecut terlebih dahulu!', 'error');
+                return;
+            }
+
+            const materialId = selectHistory.value;
+            
+            const { data, error } = await sb
+                .from('diecut_process')
+                .select('*')
+                .eq('material_inbound_id', materialId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                showToast('❌ Gagal mengambil data: ' + error.message, 'error');
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                showToast('⚠️ Tidak ada data diecut', 'warning');
+                return;
+            }
+
+            // Ambil info material
+            const { data: material } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis')
+                .eq('id', materialId)
+                .single();
+
+            const fileName = `Riwayat_Diecut_${material?.no_pi || 'export'}_${new Date().toISOString().slice(0,10)}`;
+
+            const wsData = [
+                ['No PI', 'No PO', 'Brand', 'Jenis', 'Tanggal', 'Mesin', 'Operator', 
+                 'Sheet In', 'Pcs Out', 'NG', 'Pcs OK', 'Yield (%)', 'Catatan']
+            ];
+
+            for (const item of data) {
+                wsData.push([
+                    material?.no_pi || '-',
+                    material?.no_po || '-',
+                    material?.brand || '-',
+                    material?.jenis || '-',
+                    item.tanggal_diecut || '-',
+                    item.mesin || '-',
+                    item.operator || '-',
+                    item.qty_sheet_in,
+                    item.qty_pcs_out,
+                    item.qty_ng_diecut,
+                    item.qty_pcs_ok,
+                    item.yield_percent || 0,
+                    item.notes || '-'
+                ]);
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            ws['!cols'] = [
+                {wch:15}, {wch:15}, {wch:15}, {wch:20}, {wch:12}, {wch:12},
+                {wch:15}, {wch:10}, {wch:10}, {wch:10}, {wch:10}, {wch:10}, {wch:20}
+            ];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Riwayat Diecut');
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            showToast('✅ Export berhasil!', 'success');
+        }
+
+        // ============================================================
         // SAVE DIECUT
         // ============================================================
         async function saveDiecut() {
@@ -774,7 +1078,6 @@
             const qty_ng_diecut = parseInt(getEl('qty_ng_diecut')?.value) || 0;
             const notes = getEl('notes')?.value?.trim() || '';
 
-            // Validasi
             if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
             if (!operator) { showMessage('❌ Nama Operator wajib diisi!', 'error'); return; }
@@ -784,14 +1087,14 @@
 
             const { pcsOk, yieldPercent } = calculateYield();
 
-            isSubmitting = true;
-
             const btn = getEl('btnSubmit');
             const originalText = btn ? btn.innerHTML : 'Loading...';
             if (btn) {
                 btn.innerHTML = '⏳ Menyimpan...';
                 btn.disabled = true;
             }
+
+            isSubmitting = true;
 
             try {
                 const { data: { user } } = await sb.auth.getUser();
@@ -833,14 +1136,14 @@
 
                 resetForm();
                 
-                // ✅ Refresh dropdown diecut (QC1) - material ini akan hilang karena statusnya sudah DIECUT
+                // Refresh dropdown diecut (QC1)
                 await loadPiList();
                 
-                // ✅ Refresh dropdown history (DIECUT, QC2, KIRIM) - material ini akan muncul
+                // Refresh dropdown history (DIECUT, QC2, KIRIM)
                 await loadHistoryPiList();
 
                 try {
-                    await addLog('DIECUT', `${user?.email} melakukan diecut untuk No PI ${selectedNoPi}`);
+                    await addLog('DIECUT', `${user?.email} melakukan diecut untuk material ID ${materialId}`);
                 } catch(e) {}
 
             } catch (err) {
@@ -873,6 +1176,19 @@
             
             const msgContainer = getEl('msgContainer');
             if (msgContainer) msgContainer.innerHTML = '';
+            
+            // Reset edit mode
+            isEditMode = false;
+            const editId = getEl('editId');
+            if (editId) editId.value = '';
+            const editBadge = getEl('editBadge');
+            if (editBadge) editBadge.style.display = 'none';
+            
+            const btnSubmit = getEl('btnSubmit');
+            if (btnSubmit) {
+                btnSubmit.innerHTML = '💾 Simpan Proses Diecut';
+                btnSubmit.onclick = saveDiecut;
+            }
             
             calculateYield();
         }
@@ -964,7 +1280,6 @@
             const params = new URLSearchParams(window.location.search);
             const materialId = params.get('material_id');
             if (materialId) {
-                // Cari di dropdown diecut dan pilih
                 const selectDiecut = getEl('selectNoPi');
                 if (selectDiecut) {
                     for (let i = 0; i < selectDiecut.options.length; i++) {
@@ -976,22 +1291,14 @@
                     }
                 }
                 
-                // Cari di dropdown history
                 const selectHistory = getEl('selectHistoryPi');
                 if (selectHistory) {
-                    // Cek apakah material ada di dropdown history
-                    let found = false;
                     for (let i = 0; i < selectHistory.options.length; i++) {
                         if (selectHistory.options[i].value === materialId) {
                             selectHistory.value = materialId;
                             await loadHistory(materialId);
-                            found = true;
                             break;
                         }
-                    }
-                    if (!found) {
-                        // Jika tidak ditemukan, mungkin masih QC1, kosongkan
-                        selectHistory.value = '';
                     }
                 }
             }
@@ -999,7 +1306,6 @@
             calculateYield();
         }
 
-        // ============ EXPOSE FUNCTIONS ============
         window.loadPiList = loadPiList;
         window.loadMaterialByPi = loadMaterialByPi;
         window.loadHistoryPiList = loadHistoryPiList;
@@ -1007,6 +1313,10 @@
         window.loadHistory = loadHistory;
         window.refreshHistory = refreshHistory;
         window.saveDiecut = saveDiecut;
+        window.editDiecut = editDiecut;
+        window.updateDiecut = updateDiecut;
+        window.deleteDiecut = deleteDiecut;
+        window.exportDiecutHistory = exportDiecutHistory;
         window.resetForm = resetForm;
         window.calculateYield = calculateYield;
 
