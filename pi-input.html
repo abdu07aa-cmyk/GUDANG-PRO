@@ -244,9 +244,12 @@ async function kirimKeSupply(piId) {
         let berhasil = 0, gagal = 0, duplikat = 0;
         let errorMessages = [];
         
+        // ✅ Ambil tanggal sekarang
+        const today = new Date().toISOString().split('T')[0];
+        
         for (const item of details) {
             try {
-                // ✅ CEK DUPLIKAT - PAKAI FILTER SEDERHANA
+                // CEK DUPLIKAT
                 const { data: existing, error: checkError } = await sb
                     .from('material_inbound')
                     .select('id')
@@ -255,7 +258,6 @@ async function kirimKeSupply(piId) {
                     .eq('jenis', item.jenis)
                     .maybeSingle();
                 
-                // Jika error karena karakter khusus, lanjutkan tanpa cek duplikat
                 if (checkError) {
                     console.warn('⚠️ Skip duplikat check:', checkError.message);
                 }
@@ -265,7 +267,7 @@ async function kirimKeSupply(piId) {
                     continue; 
                 }
                 
-                // ✅ INSERT - TANPA source_type DAN source_id
+                // ✅ INSERT - DENGAN TANGGAL_TERIMA
                 const { error: insertError } = await sb
                     .from('material_inbound')
                     .insert({
@@ -278,6 +280,7 @@ async function kirimKeSupply(piId) {
                         qty_sheet: item.qty_pi,
                         up_per_sheet: 1,
                         status: 'DITERIMA',
+                        tanggal_terima: today,  // ✅ TAMBAHKAN INI!
                         notes: `Dikirim dari PI ${header.no_pi}`,
                         created_by: 'system'
                     });
@@ -305,7 +308,6 @@ async function kirimKeSupply(piId) {
         
         if (berhasil > 0) {
             try { await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`); } catch(e) {}
-            // Refresh daftar
             loadPiListForDisplay();
         }
         
