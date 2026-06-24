@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Input PI - SUPPLY MATERIAL</title>
+    <title>Material Masuk - SUPPLY MATERIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
@@ -83,61 +83,111 @@
             cursor: pointer;
         }
 
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
-        
-        input, button, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        button { background: #3b82f6; color: white; border: none; cursor: pointer; }
-        button:active { transform: scale(0.98); }
-        .btn-add { background: #10b981; margin-top: 10px; }
-        .btn-remove { background: #ef4444; width: auto; padding: 5px 10px; margin: 0; }
-        .btn-edit { background: #f59e0b; width: auto; padding: 5px 10px; margin: 0; }
-        .btn-danger { background: #dc2626; }
-        .btn-supply { background: #8b5cf6; }
-        .btn-supply:hover { background: #7c3aed; }
-        
-        .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
-        .alert-success { background: #d1fae5; color: #065f46; }
-        .alert-error { background: #fee2e2; color: #991b1b; }
-        .alert-warning { background: #fed7aa; color: #9a3412; }
-        .alert-info { background: #dbeafe; color: #1e40af; }
-        
-        .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
-        
-        .item-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .item-row input { flex: 1; margin: 0; }
-        .item-row .btn-remove { flex: 0; }
-        
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: 500; }
-        
-        .mode-switch {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .mode-btn {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            background: #e2e8f0;
-            color: #1e293b;
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
+        .form-group label .required { color: #ef4444; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
             border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-group textarea { min-height: 60px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .mode-btn.active {
-            background: #3b82f6;
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-back { background: #64748b; color: white; }
+        .btn-back:hover { background: #475569; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-edit { background: #f59e0b; color: white; }
+        .btn-edit:hover { background: #d97706; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+        .info-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-left: 4px solid #3b82f6;
+            font-size: 13px;
+        }
+        .info-box strong { color: #1e293b; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
             color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            display: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-diterima { background: #e0f2fe; color: #0369a1; }
+        .status-qc1 { background: #fef3c7; color: #92400e; }
+        .status-diecut { background: #dbeafe; color: #1e40af; }
+        .status-qc2 { background: #fce7f3; color: #9d174d; }
+        .status-kirim { background: #d1fae5; color: #065f46; }
 
         .btn-small {
             padding: 4px 10px;
@@ -146,644 +196,759 @@
             cursor: pointer;
             font-size: 11px;
             margin: 2px;
+            white-space: nowrap;
         }
-        
+        .btn-qc { background: #f59e0b; color: white; }
+        .btn-qc:hover { background: #d97706; }
+        .btn-diecut { background: #3b82f6; color: white; }
+        .btn-diecut:hover { background: #2563eb; }
+        .btn-send { background: #10b981; color: white; }
+        .btn-send:hover { background: #059669; }
+        .btn-detail { background: #8b5cf6; color: white; }
+        .btn-detail:hover { background: #7c3aed; }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-delete:hover { background: #dc2626; }
+        .btn-edit-small { background: #f59e0b; color: white; }
+        .btn-edit-small:hover { background: #d97706; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px;
+        }
+        .modal-content h3 { margin-bottom: 15px; }
+        .modal-content .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .modal-footer button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-cancel { background: #e2e8f0; color: #1e293b; }
+
+        .edit-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
         @media (max-width: 600px) {
-            .item-row { flex-direction: column; }
-            .item-row .btn-remove { width: 100%; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-row-3 { grid-template-columns: 1fr; }
+            .modal-content .row { grid-template-columns: 1fr; }
+            .btn-small { font-size: 9px; padding: 2px 6px; }
         }
     </style>
 </head>
 <body>
-    <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-        <h3>📦 SUPPLY MATERIAL</h3>
-        <p>Manajemen Inventory</p>
+        <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📦 SUPPLY MATERIAL</h3>
+            <p>Manajemen Inventory</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+
+            <div class="menu-divider"></div>
+
+            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+            <div class="menu-item active" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+            <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+        </div>
     </div>
-    <div class="sidebar-menu">
-        <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-        <div class="menu-item active" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-        <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-        <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-        <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-        <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
-        <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
-        <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
-        <div class="menu-divider"></div>
+    <div class="overlay" id="overlay"></div>
 
-        <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
-        <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
-        <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
-        <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
-        <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
-        <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-        <div class="menu-divider"></div>
-        <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
-        <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 SUPPLY MATERIAL</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
-</div>
+        <div class="container" id="mainContent">
+        <!-- FORM INPUT -->
+        <div class="card">
+            <div class="card-title">
+                <span>📥 MATERIAL MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
+                <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">
+                    📊 Tracking
+                </button>
+            </div>
+            
+            <div id="msgContainer"></div>
 
-<div class="overlay" id="overlay"></div>
+            <form id="inboundForm" onsubmit="return false;">
+                <input type="hidden" id="editId" value="">
 
-<div class="header">
-    <button class="menu-toggle" id="menuToggle">☰</button>
-    <div class="logo">📦 SUPPLY MATERIAL</div>
-    <button class="logout-btn" id="logoutBtn">Logout</button>
-</div>
-
-<div class="container" id="mainContent"></div>
-<script>
-    let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-    let brandList = [], jenisList = [], paperList = [], sizeList = [];
-    let mode = 'new';
-    let editingPiId = null;
-    
-    async function loadMasterData() {
-        const { data: items } = await sb.from('pi_detail').select('brand, jenis, paper, size');
-        if (items) {
-            brandList = [...new Set(items.map(i => i.brand).filter(b => b))];
-            jenisList = [...new Set(items.map(i => i.jenis).filter(j => j))];
-            paperList = [...new Set(items.map(i => i.paper).filter(p => p))];
-            sizeList = [...new Set(items.map(i => i.size).filter(s => s))];
-        }
-    }
-    
-    function renderItemForm() {
-        const container = document.getElementById('itemContainer');
-        if (!container) return;
-        
-        let html = '';
-        for (let i = 0; i < itemList.length; i++) {
-            html += `
-                <div class="item-row">
-                    <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
-                    <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
-                    <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
-                    <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                    <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
-                    <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>No PO <span class="required">*</span></label>
+                        <input type="text" id="no_po" placeholder="Contoh: PO-2024-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>No PI</label>
+                        <input type="text" id="no_pi" placeholder="Contoh: PI-2024-001">
+                    </div>
                 </div>
-            `;
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Surat Jalan / DO <span class="required">*</span></label>
+                        <input type="text" id="surat_jalan" placeholder="Contoh: SJ-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Terima <span class="required">*</span></label>
+                        <input type="date" id="tanggal_terima" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Supplier</label>
+                    <input type="text" id="supplier" placeholder="Nama Supplier">
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Brand <span class="required">*</span></label>
+                        <input type="text" id="brand" placeholder="Contoh: Straight cones tubes" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Jenis <span class="required">*</span></label>
+                        <input type="text" id="jenis" placeholder="Contoh: Glass Tips 11x30mm" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Paper</label>
+                        <input type="text" id="paper" placeholder="Contoh: Art Paper 250gsm">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Size</label>
+                        <input type="text" id="size" placeholder="Contoh: 10x10 cm">
+                    </div>
+                    <div class="form-group">
+                        <label>Qty Sheet (Lembar) <span class="required">*</span></label>
+                        <input type="number" id="qty_sheet" placeholder="Jumlah lembar" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Up per Sheet (Pcs/Lembar) <span class="required">*</span></label>
+                        <input type="number" id="up_per_sheet" placeholder="4-12 pcs" min="1" max="99" required>
+                    </div>
+                </div>
+
+                <!-- ✅ TAMBAHAN: QTY PO & QTY PI -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Qty PO <span class="required">*</span></label>
+                        <input type="number" id="qty_po" placeholder="Jumlah sesuai PO" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Qty PI <span class="required">*</span></label>
+                        <input type="number" id="qty_pi" placeholder="Jumlah sesuai PI" min="1" required>
+                    </div>
+                </div>
+
+                <div class="info-box" id="calcInfo">
+                    <strong>📊 Perhitungan Otomatis:</strong><br>
+                    <span id="calcResult">Qty Sheet: 0 × Up: 0 = <strong>0 Pcs</strong></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Catatan / Keterangan</label>
+                    <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">
+                        💾 Simpan Material Masuk
+                    </button>
+                    <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
+                        🔄 Reset
+                    </button>
+                    <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
+                        ⬅ Kembali
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- LIST MATERIAL + TOMBOL AKSI -->
+        <div class="card">
+            <div class="card-title">
+                <span>📋 Daftar Material Masuk</span>
+                <button class="btn btn-primary" onclick="loadData()" style="padding:6px 12px; font-size:12px;">🔄 Refresh</button>
+            </div>
+            <div id="materialList" style="overflow-x:auto;">
+                <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat data...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <h3 id="detailTitle">📋 Detail Material</h3>
+            <div id="detailContent"></div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('detailModal')">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Konfirmasi</h3>
+            <div id="confirmContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-success" id="confirmYes" onclick="confirmAction()">✅ Ya, Lanjutkan</button>
+                <button class="btn btn-cancel" onclick="closeModal('confirmModal')">❌ Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+        <script>
+        let allData = [];
+        let isSubmitting = false;
+        let pendingAction = null;
+        let pendingData = null;
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 3000);
         }
-        
-        html += `
-            <datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
-            <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
-            <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
-            <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-            <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
-        `;
-        container.innerHTML = html;
-    }
-    
-    function tambahItem() {
-        itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '' });
-        renderItemForm();
-    }
-    
-    function hapusItem(index) {
-        if (itemList.length > 1) {
-            itemList.splice(index, 1);
-            renderItemForm();
-        } else {
-            alert('Minimal 1 item!');
+
+        function showMessage(msg, type = 'info') {
+            const container = document.getElementById('msgContainer');
+            const map = {
+                success: 'alert-success',
+                error: 'alert-error',
+                info: 'alert-info',
+                warning: 'alert-warning'
+            };
+            container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
         }
-    }
-    
-    function updateItem(index, field, value) {
-        itemList[index][field] = value;
-    }
-    
-    // ============================================================
-    // ✅ FUNGSI KIRIM KE SUPPLY MATERIAL (TAMBAHAN BARU)
-    // ============================================================
-    async function kirimKeSupply(piId) {
-        if (!confirm('⚠️ Kirim PI ini ke Supply Material?\n\nData akan masuk ke menu "Material Masuk" dengan status DITERIMA.')) return;
-        
-        // Tampilkan loading
-        const btn = document.querySelector(`button[data-pi-id="${piId}"]`);
-        if (btn) {
-            btn.textContent = '⏳';
-            btn.disabled = true;
+
+        // Auto calculate
+        function calculatePcs() {
+            const sheet = parseInt(document.getElementById('qty_sheet').value) || 0;
+            const up = parseInt(document.getElementById('up_per_sheet').value) || 0;
+            const total = sheet * up;
+            document.getElementById('calcResult').innerHTML = 
+                `Qty Sheet: ${sheet} × Up: ${up} = <strong>${total.toLocaleString()} Pcs</strong>`;
+            return total;
         }
-        
-        try {
-            // 1. Ambil data header PI
-            const { data: header, error: headerError } = await sb
-                .from('pi_header')
-                .select('*')
-                .eq('id', piId)
-                .single();
-            
-            if (headerError) throw headerError;
-            
-            // 2. Ambil data detail PI
-            const { data: details, error: detailError } = await sb
-                .from('pi_detail')
-                .select('*')
-                .eq('pi_id', piId);
-            
-            if (detailError) throw detailError;
-            
-            if (!details || details.length === 0) {
-                alert('⚠️ Tidak ada item di PI ini!');
-                if (btn) {
-                    btn.textContent = '🔄 Supply';
-                    btn.disabled = false;
-                }
-                return;
+
+        document.getElementById('qty_sheet').addEventListener('input', calculatePcs);
+        document.getElementById('up_per_sheet').addEventListener('input', calculatePcs);
+
+        // Set today's date
+        document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+
+        // ========== SHOW CONFIRMATION ==========
+        function showConfirmation(message, action, data) {
+            document.getElementById('confirmContent').innerHTML = `<p>${message}</p>`;
+            pendingAction = action;
+            pendingData = data;
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        function confirmAction() {
+            closeModal('confirmModal');
+            if (pendingAction) {
+                pendingAction(pendingData);
+                pendingAction = null;
+                pendingData = null;
             }
+        }
+
+        // ========== SAVE INBOUND ==========
+        async function saveInbound() {
+            if (isSubmitting) return;
             
-            let berhasil = 0;
-            let gagal = 0;
-            let duplikat = 0;
-            
-            for (const item of details) {
-                // 3. Cek apakah sudah ada di material_inbound
+            const no_po = document.getElementById('no_po').value.trim();
+            const no_pi = document.getElementById('no_pi').value.trim();
+            const surat_jalan = document.getElementById('surat_jalan').value.trim();
+            const tanggal_terima = document.getElementById('tanggal_terima').value;
+            const supplier = document.getElementById('supplier').value.trim();
+            const brand = document.getElementById('brand').value.trim();
+            const jenis = document.getElementById('jenis').value.trim();
+            const paper = document.getElementById('paper').value.trim();
+            const size = document.getElementById('size').value.trim();
+            const qty_sheet = parseInt(document.getElementById('qty_sheet').value);
+            const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value);
+            const qty_po = parseInt(document.getElementById('qty_po').value);
+            const qty_pi = parseInt(document.getElementById('qty_pi').value);
+            const notes = document.getElementById('notes').value.trim();
+            const editId = document.getElementById('editId').value;
+
+            // Validasi
+            if (!no_po) { showMessage('❌ No PO wajib diisi!', 'error'); return; }
+            if (!surat_jalan) { showMessage('❌ Surat Jalan wajib diisi!', 'error'); return; }
+            if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
+            if (!brand) { showMessage('❌ Brand wajib diisi!', 'error'); return; }
+            if (!jenis) { showMessage('❌ Jenis wajib diisi!', 'error'); return; }
+            if (!qty_sheet || qty_sheet < 1) { showMessage('❌ Qty Sheet harus lebih dari 0!', 'error'); return; }
+            if (!up_per_sheet || up_per_sheet < 1) { showMessage('❌ Up per Sheet harus lebih dari 0!', 'error'); return; }
+            if (!qty_po || qty_po < 1) { showMessage('❌ Qty PO harus lebih dari 0!', 'error'); return; }
+            if (!qty_pi || qty_pi < 1) { showMessage('❌ Qty PI harus lebih dari 0!', 'error'); return; }
+
+            // Cek duplikat (hanya untuk tambah baru)
+            if (!editId) {
                 const { data: existing } = await sb
                     .from('material_inbound')
                     .select('id')
-                    .eq('no_pi', header.no_pi)
-                    .eq('brand', item.brand)
-                    .eq('jenis', item.jenis)
+                    .eq('no_po', no_po)
+                    .eq('surat_jalan', surat_jalan)
                     .single();
-                
+
                 if (existing) {
-                    duplikat++;
-                    continue;
-                }
-                
-                // 4. Insert ke material_inbound
-                const { error: insertError } = await sb
-                    .from('material_inbound')
-                    .insert({
-                        no_pi: header.no_pi,
-                        no_po: header.no_po || '-',
-                        brand: item.brand,
-                        jenis: item.jenis,
-                        paper: item.paper || '-',
-                        size: item.size || '-',
-                        qty_sheet: item.qty_pi,
-                        up_per_sheet: 1,
-                        status: 'DITERIMA',
-                        source_type: 'PI',
-                        source_id: piId,
-                        created_by: 'system'
-                    });
-                
-                if (insertError) {
-                    console.error('Error insert:', insertError);
-                    gagal++;
-                } else {
-                    berhasil++;
+                    showMessage(`⚠️ Material dengan No PO "${no_po}" dan Surat Jalan "${surat_jalan}" sudah ada!`, 'error');
+                    return;
                 }
             }
-            
-            // 5. Tampilkan notifikasi
-            let msg = `✅ ${berhasil} item berhasil dikirim ke Supply Material!\n`;
-            if (duplikat > 0) msg += `⚠️ ${duplikat} item duplikat (sudah ada di Material Masuk)\n`;
-            if (gagal > 0) msg += `❌ ${gagal} item gagal dikirim`;
-            
-            alert(msg);
-            
-            // 6. Log aktivitas
+
+            // Loading state
+            const btn = document.getElementById('btnSubmit');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
+            btn.disabled = true;
+
+            isSubmitting = true;
+
             try {
-                await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`);
-            } catch(e) {}
-            
-        } catch (err) {
-            alert('❌ Gagal: ' + err.message);
-            console.error(err);
-        } finally {
-            if (btn) {
-                btn.textContent = '🔄 Supply';
+                const { data: { user } } = await sb.auth.getUser();
+                
+                const data = {
+                    no_po,
+                    no_pi: no_pi || null,
+                    surat_jalan,
+                    tanggal_terima,
+                    supplier: supplier || null,
+                    brand,
+                    jenis,
+                    paper: paper || null,
+                    size: size || null,
+                    qty_sheet,
+                    up_per_sheet,
+                    qty_po,
+                    qty_pi,
+                    notes: notes || null,
+                    updated_by: user?.email || 'Unknown',
+                    updated_at: new Date().toISOString()
+                };
+
+                let result;
+                if (editId) {
+                    // UPDATE
+                    result = await sb
+                        .from('material_inbound')
+                        .update(data)
+                        .eq('id', editId);
+                } else {
+                    // INSERT
+                    data.status = 'DITERIMA';
+                    data.created_by = user?.email || 'Unknown';
+                    result = await sb.from('material_inbound').insert([data]);
+                }
+
+                if (result.error) throw result.error;
+
+                const actionText = editId ? 'diupdate' : 'disimpan';
+                showMessage(`✅ Material berhasil ${actionText}!`, 'success');
+                showToast(`✅ Material berhasil ${actionText}!`, 'success');
+
+                resetForm();
+                loadData();
+
+                try {
+                    await addLog('MATERIAL MASUK', `${user?.email} ${actionText} material ${brand} - ${jenis} (PO: ${no_po})`);
+                } catch(e) {}
+
+            } catch (err) {
+                showMessage('❌ Gagal: ' + err.message, 'error');
+                showToast('❌ Gagal: ' + err.message, 'error');
+            } finally {
+                isSubmitting = false;
+                btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
-    }
-    
-    // ============================================================
-    // FUNGSI LAMA (TIDAK BERUBAH)
-    // ============================================================
-    async function loadPiList() {
-        const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
-        let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
-        if (headers) {
-            for (const h of headers) {
-                options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`;
+
+        // ========== RESET FORM ==========
+        function resetForm() {
+            document.getElementById('editId').value = '';
+            document.getElementById('no_po').value = '';
+            document.getElementById('no_pi').value = '';
+            document.getElementById('surat_jalan').value = '';
+            document.getElementById('supplier').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('jenis').value = '';
+            document.getElementById('paper').value = '';
+            document.getElementById('size').value = '';
+            document.getElementById('qty_sheet').value = '';
+            document.getElementById('up_per_sheet').value = '';
+            document.getElementById('qty_po').value = '';
+            document.getElementById('qty_pi').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+            document.getElementById('msgContainer').innerHTML = '';
+            document.getElementById('editBadge').style.display = 'none';
+            document.getElementById('btnSubmit').innerHTML = '💾 Simpan Material Masuk';
+            document.getElementById('btnSubmit').onclick = saveInbound;
+            calculatePcs();
+            document.getElementById('no_po').focus();
+        }
+
+        // ========== LOAD DATA ==========
+        async function loadData() {
+            const container = document.getElementById('materialList');
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
+
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
+                return;
             }
-        }
-        document.getElementById('edit_pi_select').innerHTML = options;
-    }
-    
-    async function onSelectPiForEdit() {
-        const piId = document.getElementById('edit_pi_select').value;
-        if (!piId) return;
-        editingPiId = piId;
-        const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
-        document.getElementById('edit_no_pi').value = header.no_pi;
-        document.getElementById('edit_tanggal_pi').value = header.tanggal;
-        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
-        itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
-        renderItemForm();
-        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
-    }
-    
-    async function simpanPiBaru() {
-        const no_pi = document.getElementById('no_pi').value.trim();
-        const tanggal = document.getElementById('tanggal_pi').value;
-        if (!no_pi || !tanggal) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
-            return;
-        }
-        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-        if (validItems.length === 0) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
-            return;
-        }
-        const { data: existing } = await sb.from('pi_header').select('no_pi').eq('no_pi', no_pi).single();
-        if (existing) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI sudah ada!</div>';
-            return;
-        }
-        const { data: header, error: headerError } = await sb.from('pi_header').insert([{ no_pi, tanggal }]).select();
-        if (headerError) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
-            return;
-        }
-        const piId = header[0].id;
-        for (const item of validItems) {
-            await sb.from('pi_detail').insert({ pi_id: piId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
-        }
-        await loadMasterData();
-        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
-        resetForm();
-        // Tampilkan tombol kirim ke supply
-        document.getElementById('msgInput').innerHTML += `<div class="alert alert-info" style="margin-top:10px;">
-            💡 Klik <strong>🔄 Kirim ke Supply</strong> di daftar PI untuk mengirim ke Material Masuk
-        </div>`;
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-    }
-    
-    // ============================================================
-    // ✅ SIMPAN & KIRIM KE SUPPLY (TAMBAHAN BARU)
-    // ============================================================
-    async function simpanDanKirim() {
-        // Simpan PI dulu
-        await simpanPiBaru();
-        
-        // Ambil ID PI terakhir
-        const { data: lastPi } = await sb
-            .from('pi_header')
-            .select('id')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-        
-        if (lastPi) {
-            // Kirim ke Supply
-            await kirimKeSupply(lastPi.id);
-        }
-    }
-    
-    async function updatePi() {
-        const no_pi = document.getElementById('edit_no_pi').value.trim();
-        const tanggal = document.getElementById('edit_tanggal_pi').value;
-        if (!no_pi || !tanggal) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
-            return;
-        }
-        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-        if (validItems.length === 0) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
-            return;
-        }
-        const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
-        if (headerError) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
-            return;
-        }
-        const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
-        for (let i = 0; i < validItems.length; i++) {
-            const item = validItems[i];
-            if (existingDetails && existingDetails[i]) {
-                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
-            } else {
-                await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+
+            allData = data || [];
+
+            if (allData.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada material masuk</div>`;
+                return;
             }
-        }
-        if (existingDetails && existingDetails.length > validItems.length) {
-            for (let i = validItems.length; i < existingDetails.length; i++) {
-                const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-                const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-                if (masuk.length === 0 && keluar.length === 0) {
-                    await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
-                } else {
-                    alert(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus karena sudah memiliki transaksi.`);
-                }
-            }
-        }
-        await loadMasterData();
-        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate! Data transaksi tetap terjaga.</div>';
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-    }
-    
-    async function hapusPi() {
-        const piId = document.getElementById('edit_pi_select').value;
-        if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
-        
-        const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
-        if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
-        
-        try {
-            await sb.from('barang_masuk').delete().eq('pi_id', piId);
-            await sb.from('barang_keluar').delete().eq('pi_id', piId);
-            await sb.from('pi_detail').delete().eq('pi_id', piId);
-            await sb.from('pi_header').delete().eq('id', piId);
-            
-            alert('✅ PI berhasil dihapus!');
-            
-            document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
-            document.getElementById('edit_no_pi').value = '';
-            document.getElementById('edit_tanggal_pi').value = '';
-            document.getElementById('itemContainerEdit').innerHTML = '';
-            
-            await loadPiList();
-            
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-            
-            document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
-            
-        } catch (err) {
-            console.error('Error hapus PI:', err);
-            alert('❌ Gagal hapus PI: ' + err.message);
-        }
-    }
-    
-    function resetForm() {
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-        document.getElementById('no_pi').value = '';
-        renderItemForm();
-    }
-    
-    function switchMode(m) {
-        mode = m;
-        document.getElementById('modeNew').classList.toggle('active', m === 'new');
-        document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
-        if (m === 'new') {
-            document.getElementById('formNew').style.display = 'block';
-            document.getElementById('formEdit').style.display = 'none';
-            resetForm();
-        } else {
-            document.getElementById('formNew').style.display = 'none';
-            document.getElementById('formEdit').style.display = 'block';
-            loadPiList();
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-            renderItemForm();
-        }
-    }
-    
-    async function loadHalaman() {
-        const today = new Date().toISOString().split('T')[0];
-        await loadMasterData();
-        document.getElementById('mainContent').innerHTML = `
-            <div class="card">
-                <div class="card-title">📝 Manajemen PI</div>
-                <div class="mode-switch">
-                    <div id="modeNew" class="mode-btn active" onclick="switchMode('new')">➕ PI Baru</div>
-                    <div id="modeEdit" class="mode-btn" onclick="switchMode('edit')">✏️ Edit/Hapus PI</div>
-                </div>
-                <div id="formNew">
-                    <div id="msgInput"></div>
-                    <input type="text" id="no_pi" placeholder="No PI *">
-                    <input type="date" id="tanggal_pi" value="${today}">
-                    <div id="itemContainer"></div>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-                        <button onclick="simpanPiBaru()" style="flex:2; min-width:150px;">💾 Simpan PI Baru</button>
-                        <button onclick="simpanDanKirim()" class="btn-supply" style="flex:2; min-width:150px;">💾 Simpan & Kirim ke Supply</button>
-                    </div>
-                </div>
-                <div id="formEdit" style="display:none">
-                    <div id="msgInputEdit"></div>
-                    <select id="edit_pi_select" onchange="onSelectPiForEdit()"><option value="">-- Pilih PI --</option></select>
-                    <input type="text" id="edit_no_pi" placeholder="No PI *">
-                    <input type="date" id="edit_tanggal_pi">
-                    <div id="itemContainerEdit"></div>
-                    <button onclick="updatePi()" style="background:#f59e0b">✏️ Update PI</button>
-                    <button onclick="hapusPi()" style="background:#dc2626; margin-top:10px">🗑️ Hapus PI</button>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title">📋 Daftar PI</div>
-                <div id="piListContainer">
-                    <div class="info-text">⏳ Memuat daftar PI...</div>
-                </div>
-            </div>
-        `;
-        
-        const containerNew = document.getElementById('itemContainer');
-        const containerEdit = document.getElementById('itemContainerEdit');
-        window.renderItemForm = () => {
-            if (mode === 'new' && containerNew) {
-                let html = '';
-                for (let i = 0; i < itemList.length; i++) {
-                    html += `<div class="item-row">
-                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
-                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
-                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
-                        <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
-                        <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                    </div>`;
-                }
-                html += `<datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
-                    <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
-                    <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
-                    <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
-                containerNew.innerHTML = html;
-            } else if (mode === 'edit' && containerEdit) {
-                let html = '';
-                for (let i = 0; i < itemList.length; i++) {
-                    html += `<div class="item-row">
-                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest2">
-                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
-                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
-                        <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
-                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
-                        <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
-                    </div>`;
-                }
-                html += `<datalist id="brandSuggest2">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
-                    <datalist id="jenisSuggest2">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
-                    <datalist id="paperSuggest2">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
-                    <datalist id="sizeSuggest2">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
-                containerEdit.innerHTML = html;
-            }
-        };
-        
-        renderItemForm();
-        
-        // Load daftar PI
-        await loadPiListForDisplay();
-    }
-    
-    // ============================================================
-    // LOAD DAFTAR PI UNTUK DISPLAY (DENGAN TOMBOL SUPPLY)
-    // ============================================================
-    async function loadPiListForDisplay() {
-        const container = document.getElementById('piListContainer');
-        const { data: headers, error } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
-        
-        if (error) {
-            container.innerHTML = `<div class="alert alert-error">❌ Error: ${error.message}</div>`;
-            return;
-        }
-        
-        if (!headers || headers.length === 0) {
-            container.innerHTML = '<div class="info-text">📭 Belum ada PI</div>';
-            return;
-        }
-        
-        let html = `
-            <div class="table-wrapper">
+
+            const statusMap = {
+                'DITERIMA': '📥 Diterima',
+                'QC1': '🔬 QC #1',
+                'DIECUT': '⚙️ Diecut',
+                'QC2': '🔬 QC #2',
+                'KIRIM': '🏭 Kirim'
+            };
+
+            const statusClass = {
+                'DITERIMA': 'status-diterima',
+                'QC1': 'status-qc1',
+                'DIECUT': 'status-diecut',
+                'QC2': 'status-qc2',
+                'KIRIM': 'status-kirim'
+            };
+
+            let html = `
                 <table>
                     <thead>
                         <tr>
-                            <th>No PI</th>
-                            <th>Tanggal</th>
-                            <th>Item</th>
+                            <th>No PO</th>
+                            <th>Brand</th>
+                            <th>Jenis</th>
+                            <th>Sheet</th>
+                            <th>Pcs</th>
+                            <th>Qty PO</th>
+                            <th>Qty PI</th>
+                            <th>Status</th>
+                            <th>Tgl Terima</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-        `;
-        
-        for (const h of headers) {
-            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', h.id);
-            const itemCount = details?.length || 0;
-            
-            html += `
-                <tr>
-                    <td><strong>${h.no_pi}</strong></td>
-                    <td>${h.tanggal}</td>
-                    <td>${itemCount} item</td>
-                    <td>
-                        <button class="btn-small" onclick="editPi('${h.id}')" style="background:#f59e0b;color:white;">✏️</button>
-                        <button class="btn-small btn-supply" data-pi-id="${h.id}" onclick="kirimKeSupply('${h.id}')" style="background:#8b5cf6;color:white;">
-                            🔄 Supply
-                        </button>
-                    </td>
-                </tr>
             `;
+
+            for (const item of allData) {
+                html += `
+                    <tr>
+                        <td><strong>${item.no_po}</strong></td>
+                        <td>${item.brand}</td>
+                        <td>${item.jenis}</td>
+                        <td style="text-align:center;">${item.qty_sheet}</td>
+                        <td style="text-align:center; font-weight:bold;">${item.qty_pcs}</td>
+                        <td style="text-align:center;">${item.qty_po || '-'}</td>
+                        <td style="text-align:center;">${item.qty_pi || '-'}</td>
+                        <td><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
+                        <td style="font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
+                        <td style="min-width:250px;">
+                            <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
+                            <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')">✏️</button>
+                            
+                            ${item.status === 'DITERIMA' ? 
+                                `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬 QC</button>` : ''}
+                            
+                            ${item.status === 'QC1' ? `
+                                <button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>
+                            ` : ''}
+                            
+                            ${item.status === 'DIECUT' ? `
+                                <button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬 QC2</button>
+                            ` : ''}
+                            
+                            ${item.status === 'QC2' ? `
+                                <button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭 Kirim</button>
+                            ` : ''}
+                            
+                            <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
         }
-        
-        html += `</tbody></table></div>`;
-        container.innerHTML = html;
-    }
-    
-    // Fungsi edit PI dari daftar
-    function editPi(piId) {
-        // Switch ke mode edit
-        switchMode('edit');
-        // Pilih PI di dropdown
-        document.getElementById('edit_pi_select').value = piId;
-        // Trigger onchange
-        onSelectPiForEdit();
-        // Scroll ke form
-        document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-    function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-    
-    async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-    
-    function goToMenu(menu) {
-        const files = {
-            dashboard: 'dashboard.html',
-            'pi-input': 'pi-input.html',
-            'stock-in': 'stock-in.html',
-            'stock-out': 'stock-out.html',
-            'stock-report': 'stock-report.html',
-            'stok-pendukung': 'stok-pendukung.html',
-            'barcode-generator': 'barcode-generator.html',
-            'scan-barcode': 'scan-barcode.html',
-            'material-tracking': 'material-tracking.html',
-            'material-inbound': 'material-inbound.html',
-            'qc-inspection': 'qc-inspection.html',
-            'diecut-process': 'diecut-process.html',
-            'production-send': 'production-send.html',
-            'ng-report': 'ng-report.html',
-            executive: 'executive-report.html',
-            'manage-users': 'manage-users.html',
-            'log-aktivitas': 'log-aktivitas.html',
-            export: 'export-final3.html'
-        };
-        window.location.href = files[menu] || 'dashboard.html';
-    }
-    
-    async function checkSession() {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) window.location.href = 'login.html';
-    }
-    
-    function setupEventListeners() {
-        document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
-        document.getElementById('overlay')?.addEventListener('click', closeSidebar);
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        document.getElementById('logoutMenu')?.addEventListener('click', logout);
-        document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
-            item.addEventListener('click', (e) => { goToMenu(item.getAttribute('data-menu')); });
-        });
-        let touchStartX = 0;
-        document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
-        document.addEventListener('touchend', (e) => {
-            const diff = e.changedTouches[0].screenX - touchStartX;
-            if (diff > 50 && touchStartX < 30) openSidebar();
-            else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
-        });
-    }
-    
-    async function init() {
-        const { data: { user } } = await sb.auth.getUser();
-        if (user) {
-            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
-            if (profile?.role !== 'admin') {
-                document.getElementById('mainContent').innerHTML = `<div class="card" style="text-align:center;padding:30px"><h3>⛔ Akses Ditolak</h3><p>Halaman Input PI hanya untuk ADMIN.</p><button onclick="window.location.href='dashboard.html'">Ke Dashboard</button></div>`;
+
+        // ========== FUNGSI AKSI DENGAN PARAMETER ==========
+        function goToQC(id) {
+            window.location.href = `qc-inspection.html?material_id=${id}&qc=1`;
+        }
+
+        function goToQC2(id) {
+            window.location.href = `qc-inspection.html?material_id=${id}&qc=2`;
+        }
+
+        function goToDiecut(id) {
+            window.location.href = `diecut-process.html?material_id=${id}`;
+        }
+
+        function goToSend(id) {
+            window.location.href = `production-send.html?material_id=${id}`;
+        }
+
+        // ========== EDIT MATERIAL ==========
+        async function editMaterial(id) {
+            const { data: item } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (!item) {
+                showToast('❌ Data tidak ditemukan!', 'error');
                 return;
             }
+
+            // Isi form dengan data
+            document.getElementById('editId').value = id;
+            document.getElementById('no_po').value = item.no_po || '';
+            document.getElementById('no_pi').value = item.no_pi || '';
+            document.getElementById('surat_jalan').value = item.surat_jalan || '';
+            document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
+            document.getElementById('supplier').value = item.supplier || '';
+            document.getElementById('brand').value = item.brand || '';
+            document.getElementById('jenis').value = item.jenis || '';
+            document.getElementById('paper').value = item.paper || '';
+            document.getElementById('size').value = item.size || '';
+            document.getElementById('qty_sheet').value = item.qty_sheet || '';
+            document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
+            document.getElementById('qty_po').value = item.qty_po || '';
+            document.getElementById('qty_pi').value = item.qty_pi || '';
+            document.getElementById('notes').value = item.notes || '';
+
+            // Tampilkan badge edit
+            document.getElementById('editBadge').style.display = 'inline';
+
+            // Ubah tombol jadi Update
+            const btn = document.getElementById('btnSubmit');
+            btn.innerHTML = '✏️ Update Material';
+            btn.onclick = saveInbound;
+
+            // Scroll ke form
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+
+            showToast('📝 Mode Edit: silakan ubah data', 'info');
         }
-        await checkSession();
-        await loadHalaman();
-        setupEventListeners();
-    }
-    
-    window.tambahItem = tambahItem;
-    window.hapusItem = hapusItem;
-    window.updateItem = updateItem;
-    window.simpanPiBaru = simpanPiBaru;
-    window.simpanDanKirim = simpanDanKirim;
-    window.kirimKeSupply = kirimKeSupply;
-    window.updatePi = updatePi;
-    window.hapusPi = hapusPi;
-    window.switchMode = switchMode;
-    window.onSelectPiForEdit = onSelectPiForEdit;
-    window.renderItemForm = renderItemForm;
-    window.editPi = editPi;
-    
-    init();
-</script>
+
+        // ========== DETAIL ==========
+        async function showDetail(id) {
+            const { data: item } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (!item) return;
+
+            const statusMap = {
+                'DITERIMA': '📥 Diterima',
+                'QC1': '🔬 QC #1',
+                'DIECUT': '⚙️ Diecut',
+                'QC2': '🔬 QC #2',
+                'KIRIM': '🏭 Kirim'
+            };
+
+            const statusClass = {
+                'DITERIMA': 'status-diterima',
+                'QC1': 'status-qc1',
+                'DIECUT': 'status-diecut',
+                'QC2': 'status-qc2',
+                'KIRIM': 'status-kirim'
+            };
+
+            let html = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div><strong>No PO:</strong> ${item.no_po || '-'}</div>
+                    <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
+                    <div><strong>Surat Jalan:</strong> ${item.surat_jalan || '-'}</div>
+                    <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
+                    <div><strong>Supplier:</strong> ${item.supplier || '-'}</div>
+                    <div><strong>Brand:</strong> ${item.brand}</div>
+                    <div><strong>Jenis:</strong> ${item.jenis}</div>
+                    <div><strong>Paper:</strong> ${item.paper || '-'}</div>
+                    <div><strong>Size:</strong> ${item.size || '-'}</div>
+                    <div><strong>Qty Sheet:</strong> ${item.qty_sheet}</div>
+                    <div><strong>Up/Sheet:</strong> ${item.up_per_sheet}</div>
+                    <div><strong>Total Pcs:</strong> ${item.qty_pcs}</div>
+                    <div><strong>Qty PO:</strong> ${item.qty_po || '-'}</div>
+                    <div><strong>Qty PI:</strong> ${item.qty_pi || '-'}</div>
+                    <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
+                    <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
+                    <div><strong>Dibuat:</strong> ${item.created_by || '-'}</div>
+                    <div><strong>Diupdate:</strong> ${item.updated_by || '-'}</div>
+                </div>
+            `;
+
+            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_po} (${item.brand})`;
+            document.getElementById('detailContent').innerHTML = html;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        // ========== DELETE ==========
+        async function deleteMaterial(id) {
+            if (!confirm('Yakin ingin menghapus material ini?')) return;
+            const { error } = await sb.from('material_inbound').delete().eq('id', id);
+            if (error) {
+                showToast('❌ Gagal: ' + error.message, 'error');
+            } else {
+                showToast('✅ Material berhasil dihapus', 'success');
+                loadData();
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // ========== NAVIGASI ==========
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+
+        async function init() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            
+            setupEventListeners();
+            await loadData();
+            calculatePcs();
+        }
+
+        window.saveInbound = saveInbound;
+        window.resetForm = resetForm;
+        window.calculatePcs = calculatePcs;
+        window.loadData = loadData;
+        window.showDetail = showDetail;
+        window.editMaterial = editMaterial;
+        window.goToQC = goToQC;
+        window.goToQC2 = goToQC2;
+        window.goToDiecut = goToDiecut;
+        window.goToSend = goToSend;
+        window.deleteMaterial = deleteMaterial;
+        window.closeModal = closeModal;
+        window.confirmAction = confirmAction;
+
+        init();
+    </script>
 </body>
 </html>
