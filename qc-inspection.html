@@ -1017,65 +1017,88 @@
         // EDIT QC
         // ============================================================
         async function editQC(id) {
-            const { data: qc, error } = await sb
-                .from('qc_inspection')
-                .select('*')
-                .eq('id', id)
-                .single();
+    const { data: qc, error } = await sb
+        .from('qc_inspection')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-            if (error || !qc) {
-                showToast('❌ Data tidak ditemukan!', 'error');
-                return;
-            }
+    if (error || !qc) {
+        showToast('❌ Data tidak ditemukan!', 'error');
+        return;
+    }
 
-            isEditMode = true;
-            const editId = getEl('editId');
-            if (editId) editId.value = id;
-            
-            const editBadge = getEl('editBadge');
-            if (editBadge) editBadge.style.display = 'inline';
-            
-            const btnSubmit = getEl('btnSubmit');
-            if (btnSubmit) btnSubmit.innerHTML = '✏️ Update QC';
-            
-            const tanggalQc = getEl('tanggal_qc');
-            if (tanggalQc) tanggalQc.value = qc.tanggal_qc || '';
-            
-            const inspector = getEl('inspector');
-            if (inspector) inspector.value = qc.inspector || '';
-            
-            const qtyOk = getEl('qty_ok');
-            if (qtyOk) qtyOk.value = qc.qty_ok || '';
-            
-            const qtyNg = getEl('qty_ng');
-            if (qtyNg) qtyNg.value = qc.qty_ng || '';
-            
-            const qtyRework = getEl('qty_rework');
-            if (qtyRework) qtyRework.value = qc.qty_rework || 0;
-            
-            const hasil = getEl('hasil');
-            if (hasil) hasil.value = qc.hasil || '';
-            
-            const alasanNg = getEl('alasan_ng');
-            if (alasanNg) alasanNg.value = qc.alasan_ng || '';
-            
-            const notes = getEl('notes');
-            if (notes) notes.value = qc.notes || '';
-            
-            const alasanGroup = getEl('alasanNgGroup');
-            if (qc.hasil === 'NG') {
-                if (alasanGroup) alasanGroup.style.display = 'block';
-                if (alasanNg) alasanNg.setAttribute('required', 'required');
-            } else {
-                if (alasanGroup) alasanGroup.style.display = 'none';
-                if (alasanNg) alasanNg.removeAttribute('required');
+    // ✅ AMBIL DATA MATERIAL UNTUK MENDAPATKAN NO_PI
+    const { data: material } = await sb
+        .from('material_inbound')
+        .select('no_pi, no_po, brand, jenis, qty_sheet, up_per_sheet, status')
+        .eq('id', qc.material_inbound_id)
+        .single();
+
+    // ✅ SET DROPDOWN NO PI OTOMATIS
+    const select = getEl('selectNoPi');
+    if (select && material) {
+        // Cari option dengan value no_pi yang sesuai
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === material.no_pi) {
+                select.value = material.no_pi;
+                break;
             }
-            
-            const card = document.querySelector('.card');
-            if (card) card.scrollIntoView({ behavior: 'smooth' });
-            
-            showToast('📝 Mode Edit: silakan ubah data QC', 'info');
         }
+        // Load data material (biar info material tampil)
+        await loadMaterialByPi();
+    }
+
+    isEditMode = true;
+    const editId = getEl('editId');
+    if (editId) editId.value = id;
+    
+    const editBadge = getEl('editBadge');
+    if (editBadge) editBadge.style.display = 'inline';
+    
+    const btnSubmit = getEl('btnSubmit');
+    if (btnSubmit) btnSubmit.innerHTML = '✏️ Update QC';
+    
+    // ✅ ISI FORM DENGAN DATA QC
+    const tanggalQc = getEl('tanggal_qc');
+    if (tanggalQc) tanggalQc.value = qc.tanggal_qc || '';
+    
+    const inspector = getEl('inspector');
+    if (inspector) inspector.value = qc.inspector || '';
+    
+    const qtyOk = getEl('qty_ok');
+    if (qtyOk) qtyOk.value = qc.qty_ok || '';
+    
+    const qtyNg = getEl('qty_ng');
+    if (qtyNg) qtyNg.value = qc.qty_ng || '';
+    
+    const qtyRework = getEl('qty_rework');
+    if (qtyRework) qtyRework.value = qc.qty_rework || 0;
+    
+    const hasil = getEl('hasil');
+    if (hasil) hasil.value = qc.hasil || '';
+    
+    const alasanNg = getEl('alasan_ng');
+    if (alasanNg) alasanNg.value = qc.alasan_ng || '';
+    
+    const notes = getEl('notes');
+    if (notes) notes.value = qc.notes || '';
+    
+    const alasanGroup = getEl('alasanNgGroup');
+    if (qc.hasil === 'NG') {
+        if (alasanGroup) alasanGroup.style.display = 'block';
+        if (alasanNg) alasanNg.setAttribute('required', 'required');
+    } else {
+        if (alasanGroup) alasanGroup.style.display = 'none';
+        if (alasanNg) alasanNg.removeAttribute('required');
+    }
+    
+    // ✅ SCROLL KE FORM
+    const card = document.querySelector('.card');
+    if (card) card.scrollIntoView({ behavior: 'smooth' });
+    
+    showToast('📝 Mode Edit: silakan ubah data QC', 'info');
+}
 
         // ============================================================
         // DELETE QC
