@@ -316,6 +316,34 @@ async function kirimKeSupply(piId) {
         if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
     }
 }
+    // ============================================================
+// ✅ SIMPAN & KIRIM KE SUPPLY (FITUR BARU)
+// ============================================================
+async function simpanDanKirim() {
+    // Simpan PI dulu
+    await simpanPiBaru();
+    
+    // Ambil ID PI terakhir
+    const { data: lastPi, error } = await sb
+        .from('pi_header')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+    
+    if (error) {
+        console.error('Error ambil PI terakhir:', error);
+        alert('❌ Gagal mengambil ID PI terakhir');
+        return;
+    }
+    
+    if (lastPi) {
+        // Kirim ke Supply
+        await kirimKeSupply(lastPi.id);
+    } else {
+        alert('⚠️ Tidak ada PI yang ditemukan');
+    }
+}
     
     // ============================================================
     // FUNGSI LAMA (TIDAK BERUBAH)
