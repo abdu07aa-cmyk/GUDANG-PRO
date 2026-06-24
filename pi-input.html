@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Input PI - SUPPLY MATERIAL (NEW)</title>
+    <title>Input PI - SUPPLY MATERIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        /* ====== STYLE SAMA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -84,7 +83,7 @@
             cursor: pointer;
         }
 
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 1000px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
         
@@ -113,7 +112,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .item-row input { flex: 1; margin: 0; }
+        .item-row input { flex: 1; margin: 0; min-width: 80px; }
         .item-row .btn-remove { flex: 0; }
         
         .table-wrapper { overflow-x: auto; }
@@ -156,7 +155,7 @@
     </style>
 </head>
 <body>
-  <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h3>📦 SUPPLY MATERIAL</h3>
         <p>Manajemen Inventory</p>
@@ -203,152 +202,148 @@
 
 <div class="container" id="mainContent"></div>
 <script>
-    let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+    // ============================================================
+    // ✅ ITEM LIST DENGAN QTY_SHEET DAN UP_PER_SHEET
+    // ============================================================
+    let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' }];
     let brandList = [], jenisList = [], paperList = [], sizeList = [];
     let mode = 'new';
     let editingPiId = null;
     
     // ============================================================
-    // ✅ FUNGSI KIRIM KE SUPPLY MATERIAL (FITUR BARU)
+    // ✅ KIRIM KE SUPPLY MATERIAL
     // ============================================================
-async function kirimKeSupply(piId) {
-    if (!confirm('⚠️ Kirim PI ini ke Supply Material?\n\nData akan masuk ke menu "Material Masuk" dengan status DITERIMA.')) return;
+    async function kirimKeSupply(piId) {
+        if (!confirm('⚠️ Kirim PI ini ke Supply Material?\n\nData akan masuk ke menu "Material Masuk" dengan status DITERIMA.')) return;
+        
+        const btn = document.querySelector(`button[data-pi-id="${piId}"]`);
+        if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+        
+        try {
+            const { data: header, error: headerError } = await sb
+                .from('pi_header')
+                .select('*')
+                .eq('id', piId)
+                .single();
+            
+            if (headerError) throw headerError;
+            
+            const { data: details, error: detailError } = await sb
+                .from('pi_detail')
+                .select('*')
+                .eq('pi_id', piId);
+            
+            if (detailError) throw detailError;
+            
+            if (!details || details.length === 0) {
+                alert('⚠️ Tidak ada item di PI ini!');
+                if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
+                return;
+            }
+            
+            let berhasil = 0, gagal = 0, duplikat = 0;
+            let errorMessages = [];
+            const today = new Date().toISOString().split('T')[0];
+            
+            for (const item of details) {
+                try {
+                    // CEK DUPLIKAT
+                    const { data: existing, error: checkError } = await sb
+                        .from('material_inbound')
+                        .select('id')
+                        .eq('no_pi', header.no_pi)
+                        .eq('brand', item.brand)
+                        .eq('jenis', item.jenis)
+                        .maybeSingle();
+                    
+                    if (checkError) {
+                        console.warn('⚠️ Skip duplikat check:', checkError.message);
+                    }
+                    
+                    if (existing) { 
+                        duplikat++; 
+                        continue; 
+                    }
+                    
+                    // ✅ INSERT DENGAN QTY_SHEET DAN UP_PER_SHEET DARI PI
+                    const { error: insertError } = await sb
+                        .from('material_inbound')
+                        .insert({
+                            no_pi: header.no_pi,
+                            no_po: header.no_po || '-',
+                            brand: item.brand,
+                            jenis: item.jenis,
+                            paper: item.paper || '-',
+                            size: item.size || '-',
+                            qty_sheet: item.qty_sheet || 0,
+                            up_per_sheet: item.up_per_sheet || 1,
+                            status: 'DITERIMA',
+                            tanggal_terima: today,
+                            notes: `Dikirim dari PI ${header.no_pi}`,
+                            created_by: 'system'
+                        });
+                    
+                    if (insertError) { 
+                        gagal++; 
+                        errorMessages.push(`${item.brand} - ${item.jenis}: ${insertError.message}`);
+                    } else { 
+                        berhasil++; 
+                    }
+                    
+                } catch (err) {
+                    gagal++;
+                    errorMessages.push(`${item.brand} - ${item.jenis}: ${err.message}`);
+                }
+            }
+            
+            let msg = `✅ ${berhasil} item berhasil dikirim ke Supply Material!\n`;
+            if (duplikat > 0) msg += `⚠️ ${duplikat} item duplikat (sudah ada di Material Masuk)\n`;
+            if (gagal > 0) {
+                msg += `❌ ${gagal} item gagal dikirim:\n`;
+                msg += errorMessages.join('\n');
+            }
+            alert(msg);
+            
+            if (berhasil > 0) {
+                try { await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`); } catch(e) {}
+                loadPiListForDisplay();
+            }
+            
+        } catch (err) {
+            alert('❌ Gagal: ' + err.message);
+            console.error(err);
+        } finally {
+            if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
+        }
+    }
     
-    const btn = document.querySelector(`button[data-pi-id="${piId}"]`);
-    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-    
-    try {
-        // 1. Ambil data header PI
-        const { data: header, error: headerError } = await sb
+    // ============================================================
+    // ✅ SIMPAN & KIRIM KE SUPPLY
+    // ============================================================
+    async function simpanDanKirim() {
+        await simpanPiBaru();
+        const { data: lastPi, error } = await sb
             .from('pi_header')
-            .select('*')
-            .eq('id', piId)
+            .select('id')
+            .order('created_at', { ascending: false })
+            .limit(1)
             .single();
         
-        if (headerError) throw headerError;
-        
-        // 2. Ambil data detail PI
-        const { data: details, error: detailError } = await sb
-            .from('pi_detail')
-            .select('*')
-            .eq('pi_id', piId);
-        
-        if (detailError) throw detailError;
-        
-        if (!details || details.length === 0) {
-            alert('⚠️ Tidak ada item di PI ini!');
-            if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
+        if (error) {
+            console.error('Error ambil PI terakhir:', error);
+            alert('❌ Gagal mengambil ID PI terakhir');
             return;
         }
         
-        let berhasil = 0, gagal = 0, duplikat = 0;
-        let errorMessages = [];
-        
-        // ✅ Ambil tanggal sekarang
-        const today = new Date().toISOString().split('T')[0];
-        
-        for (const item of details) {
-            try {
-                // CEK DUPLIKAT
-                const { data: existing, error: checkError } = await sb
-                    .from('material_inbound')
-                    .select('id')
-                    .eq('no_pi', header.no_pi)
-                    .eq('brand', item.brand)
-                    .eq('jenis', item.jenis)
-                    .maybeSingle();
-                
-                if (checkError) {
-                    console.warn('⚠️ Skip duplikat check:', checkError.message);
-                }
-                
-                if (existing) { 
-                    duplikat++; 
-                    continue; 
-                }
-                
-                // ✅ INSERT - DENGAN TANGGAL_TERIMA
-                const { error: insertError } = await sb
-                    .from('material_inbound')
-                    .insert({
-                        no_pi: header.no_pi,
-                        no_po: header.no_po || '-',
-                        brand: item.brand,
-                        jenis: item.jenis,
-                        paper: item.paper || '-',
-                        size: item.size || '-',
-                        qty_sheet: item.qty_pi,
-                        up_per_sheet: 1,
-                        status: 'DITERIMA',
-                        tanggal_terima: today,  // ✅ TAMBAHKAN INI!
-                        notes: `Dikirim dari PI ${header.no_pi}`,
-                        created_by: 'system'
-                    });
-                
-                if (insertError) { 
-                    gagal++; 
-                    errorMessages.push(`${item.brand} - ${item.jenis}: ${insertError.message}`);
-                } else { 
-                    berhasil++; 
-                }
-                
-            } catch (err) {
-                gagal++;
-                errorMessages.push(`${item.brand} - ${item.jenis}: ${err.message}`);
-            }
+        if (lastPi) {
+            await kirimKeSupply(lastPi.id);
+        } else {
+            alert('⚠️ Tidak ada PI yang ditemukan');
         }
-        
-        let msg = `✅ ${berhasil} item berhasil dikirim ke Supply Material!\n`;
-        if (duplikat > 0) msg += `⚠️ ${duplikat} item duplikat (sudah ada di Material Masuk)\n`;
-        if (gagal > 0) {
-            msg += `❌ ${gagal} item gagal dikirim:\n`;
-            msg += errorMessages.join('\n');
-        }
-        alert(msg);
-        
-        if (berhasil > 0) {
-            try { await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`); } catch(e) {}
-            loadPiListForDisplay();
-        }
-        
-    } catch (err) {
-        alert('❌ Gagal: ' + err.message);
-        console.error(err);
-    } finally {
-        if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
     }
-}
-    // ============================================================
-// ✅ SIMPAN & KIRIM KE SUPPLY (FITUR BARU)
-// ============================================================
-async function simpanDanKirim() {
-    // Simpan PI dulu
-    await simpanPiBaru();
-    
-    // Ambil ID PI terakhir
-    const { data: lastPi, error } = await sb
-        .from('pi_header')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-    
-    if (error) {
-        console.error('Error ambil PI terakhir:', error);
-        alert('❌ Gagal mengambil ID PI terakhir');
-        return;
-    }
-    
-    if (lastPi) {
-        // Kirim ke Supply
-        await kirimKeSupply(lastPi.id);
-    } else {
-        alert('⚠️ Tidak ada PI yang ditemukan');
-    }
-}
     
     // ============================================================
-    // FUNGSI LAMA (TIDAK BERUBAH)
+    // ✅ LOAD MASTER DATA
     // ============================================================
     async function loadMasterData() {
         const { data: items } = await sb.from('pi_detail').select('brand, jenis, paper, size');
@@ -360,6 +355,9 @@ async function simpanDanKirim() {
         }
     }
     
+    // ============================================================
+    // ✅ RENDER ITEM FORM (DENGAN QTY SHEET & UP/SHEET)
+    // ============================================================
     function renderItemForm() {
         const container = document.getElementById('itemContainer');
         if (!container) return;
@@ -370,7 +368,9 @@ async function simpanDanKirim() {
                 <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
                 <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
                 <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                <input type="number" placeholder="Qty PI *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)" style="min-width:80px;">
+                <input type="number" placeholder="Qty Sheet" value="${itemList[i].qty_sheet}" onchange="updateItem(${i}, 'qty_sheet', this.value)" style="min-width:80px;">
+                <input type="number" placeholder="Up/Sheet" value="${itemList[i].up_per_sheet}" onchange="updateItem(${i}, 'up_per_sheet', this.value)" style="min-width:80px;">
                 <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
             </div>`;
         }
@@ -378,17 +378,25 @@ async function simpanDanKirim() {
             <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
             <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
             <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-            <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+            <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
+            <div class="info-text" style="margin-top:8px;">💡 <strong>Qty Sheet</strong> = jumlah lembar, <strong>Up/Sheet</strong> = jumlah pcs per lembar</div>`;
         container.innerHTML = html;
     }
     
-    function tambahItem() { itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '' }); renderItemForm(); }
+    function tambahItem() {
+        itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' });
+        renderItemForm();
+    }
+    
     function hapusItem(index) {
         if (itemList.length > 1) { itemList.splice(index, 1); renderItemForm(); } 
         else { alert('Minimal 1 item!'); }
     }
     function updateItem(index, field, value) { itemList[index][field] = value; }
     
+    // ============================================================
+    // ✅ LOAD PI LIST
+    // ============================================================
     async function loadPiList() {
         const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
         let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
@@ -404,11 +412,22 @@ async function simpanDanKirim() {
         document.getElementById('edit_no_pi').value = header.no_pi;
         document.getElementById('edit_tanggal_pi').value = header.tanggal;
         const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
-        itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
+        itemList = details.map(d => ({ 
+            brand: d.brand, 
+            jenis: d.jenis, 
+            paper: d.paper || '', 
+            size: d.size || '', 
+            qty: d.qty_pi,
+            qty_sheet: d.qty_sheet || '',
+            up_per_sheet: d.up_per_sheet || ''
+        }));
         renderItemForm();
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
     }
     
+    // ============================================================
+    // ✅ SIMPAN PI BARU (DENGAN QTY SHEET & UP/SHEET)
+    // ============================================================
     async function simpanPiBaru() {
         const no_pi = document.getElementById('no_pi').value.trim();
         const tanggal = document.getElementById('tanggal_pi').value;
@@ -418,7 +437,7 @@ async function simpanDanKirim() {
         }
         const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
         if (validItems.length === 0) {
-            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty PI!</div>';
             return;
         }
         const { data: existing } = await sb.from('pi_header').select('no_pi').eq('no_pi', no_pi).single();
@@ -433,7 +452,16 @@ async function simpanDanKirim() {
         }
         const piId = header[0].id;
         for (const item of validItems) {
-            await sb.from('pi_detail').insert({ pi_id: piId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+            await sb.from('pi_detail').insert({ 
+                pi_id: piId, 
+                brand: item.brand, 
+                jenis: item.jenis, 
+                paper: item.paper || null, 
+                size: item.size || null, 
+                qty_pi: parseInt(item.qty),
+                qty_sheet: parseInt(item.qty_sheet) || 0,
+                up_per_sheet: parseInt(item.up_per_sheet) || 1
+            });
         }
         await loadMasterData();
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
@@ -442,6 +470,9 @@ async function simpanDanKirim() {
         loadPiListForDisplay();
     }
     
+    // ============================================================
+    // ✅ UPDATE PI
+    // ============================================================
     async function updatePi() {
         const no_pi = document.getElementById('edit_no_pi').value.trim();
         const tanggal = document.getElementById('edit_tanggal_pi').value;
@@ -463,9 +494,26 @@ async function simpanDanKirim() {
         for (let i = 0; i < validItems.length; i++) {
             const item = validItems[i];
             if (existingDetails && existingDetails[i]) {
-                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
+                await sb.from('pi_detail').update({ 
+                    brand: item.brand, 
+                    jenis: item.jenis, 
+                    paper: item.paper || null, 
+                    size: item.size || null, 
+                    qty_pi: parseInt(item.qty),
+                    qty_sheet: parseInt(item.qty_sheet) || 0,
+                    up_per_sheet: parseInt(item.up_per_sheet) || 1
+                }).eq('id', existingDetails[i].id);
             } else {
-                await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+                await sb.from('pi_detail').insert({ 
+                    pi_id: editingPiId, 
+                    brand: item.brand, 
+                    jenis: item.jenis, 
+                    paper: item.paper || null, 
+                    size: item.size || null, 
+                    qty_pi: parseInt(item.qty),
+                    qty_sheet: parseInt(item.qty_sheet) || 0,
+                    up_per_sheet: parseInt(item.up_per_sheet) || 1
+                });
             }
         }
         if (existingDetails && existingDetails.length > validItems.length) {
@@ -484,6 +532,9 @@ async function simpanDanKirim() {
         loadPiListForDisplay();
     }
     
+    // ============================================================
+    // ✅ HAPUS PI
+    // ============================================================
     async function hapusPi() {
         const piId = document.getElementById('edit_pi_select').value;
         if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
@@ -500,7 +551,7 @@ async function simpanDanKirim() {
             document.getElementById('edit_tanggal_pi').value = '';
             document.getElementById('itemContainerEdit').innerHTML = '';
             await loadPiList();
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' }];
             document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
             loadPiListForDisplay();
         } catch (err) {
@@ -510,7 +561,7 @@ async function simpanDanKirim() {
     }
     
     function resetForm() {
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' }];
         document.getElementById('no_pi').value = '';
         renderItemForm();
     }
@@ -527,11 +578,14 @@ async function simpanDanKirim() {
             document.getElementById('formNew').style.display = 'none';
             document.getElementById('formEdit').style.display = 'block';
             loadPiList();
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '', qty_sheet: '', up_per_sheet: '' }];
             renderItemForm();
         }
     }
     
+    // ============================================================
+    // ✅ LOAD PI LIST FOR DISPLAY
+    // ============================================================
     async function loadPiListForDisplay() {
         const container = document.getElementById('piListContainer');
         const { data: headers, error } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
@@ -543,14 +597,18 @@ async function simpanDanKirim() {
             container.innerHTML = '<div class="info-text">📭 Belum ada PI</div>';
             return;
         }
-        let html = `<div class="table-wrapper"><table><thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Aksi</th></tr></thead><tbody>`;
+        let html = `<div class="table-wrapper"><table><thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Qty Sheet</th><th>Up/Sheet</th><th>Aksi</th></tr></thead><tbody>`;
         for (const h of headers) {
             const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', h.id);
             const itemCount = details?.length || 0;
+            const totalSheet = details?.reduce((sum, d) => sum + (d.qty_sheet || 0), 0) || 0;
+            const upPerSheet = details?.length > 0 ? details[0].up_per_sheet || 1 : 1;
             html += `<tr>
                 <td><strong>${h.no_pi}</strong></td>
                 <td>${h.tanggal}</td>
                 <td>${itemCount} item</td>
+                <td style="text-align:center;">${totalSheet}</td>
+                <td style="text-align:center;">${upPerSheet}</td>
                 <td>
                     <button class="btn-small" onclick="editPi('${h.id}')" style="background:#f59e0b;color:white;">✏️</button>
                     <button class="btn-small btn-supply" data-pi-id="${h.id}" onclick="kirimKeSupply('${h.id}')" style="background:#8b5cf6;color:white;">🔄 Supply</button>
@@ -568,6 +626,9 @@ async function simpanDanKirim() {
         document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
     }
     
+    // ============================================================
+    // ✅ LOAD HALAMAN
+    // ============================================================
     async function loadHalaman() {
         const today = new Date().toISOString().split('T')[0];
         await loadMasterData();
@@ -614,7 +675,9 @@ async function simpanDanKirim() {
                         <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
                         <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
                         <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
-                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                        <input type="number" placeholder="Qty PI *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)" style="min-width:80px;">
+                        <input type="number" placeholder="Qty Sheet" value="${itemList[i].qty_sheet}" onchange="updateItem(${i}, 'qty_sheet', this.value)" style="min-width:80px;">
+                        <input type="number" placeholder="Up/Sheet" value="${itemList[i].up_per_sheet}" onchange="updateItem(${i}, 'up_per_sheet', this.value)" style="min-width:80px;">
                         <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
                     </div>`;
                 }
@@ -622,7 +685,8 @@ async function simpanDanKirim() {
                     <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
                     <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
                     <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
+                    <div class="info-text" style="margin-top:8px;">💡 <strong>Qty Sheet</strong> = jumlah lembar, <strong>Up/Sheet</strong> = jumlah pcs per lembar</div>`;
                 containerNew.innerHTML = html;
             } else if (mode === 'edit' && containerEdit) {
                 let html = '';
@@ -632,7 +696,9 @@ async function simpanDanKirim() {
                         <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
                         <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
                         <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
-                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                        <input type="number" placeholder="Qty PI *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)" style="min-width:80px;">
+                        <input type="number" placeholder="Qty Sheet" value="${itemList[i].qty_sheet}" onchange="updateItem(${i}, 'qty_sheet', this.value)" style="min-width:80px;">
+                        <input type="number" placeholder="Up/Sheet" value="${itemList[i].up_per_sheet}" onchange="updateItem(${i}, 'up_per_sheet', this.value)" style="min-width:80px;">
                         <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
                     </div>`;
                 }
@@ -640,7 +706,8 @@ async function simpanDanKirim() {
                     <datalist id="jenisSuggest2">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
                     <datalist id="paperSuggest2">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
                     <datalist id="sizeSuggest2">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
-                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>
+                    <div class="info-text" style="margin-top:8px;">💡 <strong>Qty Sheet</strong> = jumlah lembar, <strong>Up/Sheet</strong> = jumlah pcs per lembar</div>`;
                 containerEdit.innerHTML = html;
             }
         };
@@ -648,6 +715,9 @@ async function simpanDanKirim() {
         await loadPiListForDisplay();
     }
     
+    // ============================================================
+    // ✅ SIDEBAR & NAVIGASI
+    // ============================================================
     function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
     function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
     function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
@@ -700,6 +770,9 @@ async function simpanDanKirim() {
         });
     }
     
+    // ============================================================
+    // ✅ INIT
+    // ============================================================
     async function init() {
         const { data: { user } } = await sb.auth.getUser();
         if (user) {
