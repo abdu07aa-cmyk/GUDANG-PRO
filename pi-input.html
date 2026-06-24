@@ -211,47 +211,61 @@
     // ============================================================
     // ✅ FUNGSI KIRIM KE SUPPLY MATERIAL (FITUR BARU)
     // ============================================================
-    async function kirimKeSupply(piId) {
-        if (!confirm('⚠️ Kirim PI ini ke Supply Material?\n\nData akan masuk ke menu "Material Masuk" dengan status DITERIMA.')) return;
+async function kirimKeSupply(piId) {
+    if (!confirm('⚠️ Kirim PI ini ke Supply Material?\n\nData akan masuk ke menu "Material Masuk" dengan status DITERIMA.')) return;
+    
+    const btn = document.querySelector(`button[data-pi-id="${piId}"]`);
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    
+    try {
+        // 1. Ambil data header PI
+        const { data: header, error: headerError } = await sb
+            .from('pi_header')
+            .select('*')
+            .eq('id', piId)
+            .single();
         
-        const btn = document.querySelector(`button[data-pi-id="${piId}"]`);
-        if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+        if (headerError) throw headerError;
         
-        try {
-            const { data: header, error: headerError } = await sb
-                .from('pi_header')
-                .select('*')
-                .eq('id', piId)
-                .single();
-            
-            if (headerError) throw headerError;
-            
-            const { data: details, error: detailError } = await sb
-                .from('pi_detail')
-                .select('*')
-                .eq('pi_id', piId);
-            
-            if (detailError) throw detailError;
-            
-            if (!details || details.length === 0) {
-                alert('⚠️ Tidak ada item di PI ini!');
-                if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
-                return;
-            }
-            
-            let berhasil = 0, gagal = 0, duplikat = 0;
-            
-            for (const item of details) {
-                const { data: existing } = await sb
+        // 2. Ambil data detail PI
+        const { data: details, error: detailError } = await sb
+            .from('pi_detail')
+            .select('*')
+            .eq('pi_id', piId);
+        
+        if (detailError) throw detailError;
+        
+        if (!details || details.length === 0) {
+            alert('⚠️ Tidak ada item di PI ini!');
+            if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
+            return;
+        }
+        
+        let berhasil = 0, gagal = 0, duplikat = 0;
+        let errorMessages = [];
+        
+        for (const item of details) {
+            try {
+                // ✅ CEK DUPLIKAT - PAKAI FILTER SEDERHANA
+                const { data: existing, error: checkError } = await sb
                     .from('material_inbound')
                     .select('id')
                     .eq('no_pi', header.no_pi)
                     .eq('brand', item.brand)
                     .eq('jenis', item.jenis)
-                    .single();
+                    .maybeSingle();
                 
-                if (existing) { duplikat++; continue; }
+                // Jika error karena karakter khusus, lanjutkan tanpa cek duplikat
+                if (checkError) {
+                    console.warn('⚠️ Skip duplikat check:', checkError.message);
+                }
                 
+                if (existing) { 
+                    duplikat++; 
+                    continue; 
+                }
+                
+                // ✅ INSERT - TANPA source_type DAN source_id
                 const { error: insertError } = await sb
                     .from('material_inbound')
                     .insert({
@@ -264,37 +278,44 @@
                         qty_sheet: item.qty_pi,
                         up_per_sheet: 1,
                         status: 'DITERIMA',
-                        source_type: 'PI',
-                        source_id: piId,
+                        notes: `Dikirim dari PI ${header.no_pi}`,
                         created_by: 'system'
                     });
                 
-                if (insertError) { gagal++; } else { berhasil++; }
+                if (insertError) { 
+                    gagal++; 
+                    errorMessages.push(`${item.brand} - ${item.jenis}: ${insertError.message}`);
+                } else { 
+                    berhasil++; 
+                }
+                
+            } catch (err) {
+                gagal++;
+                errorMessages.push(`${item.brand} - ${item.jenis}: ${err.message}`);
             }
-            
-            let msg = `✅ ${berhasil} item berhasil dikirim ke Supply Material!\n`;
-            if (duplikat > 0) msg += `⚠️ ${duplikat} item duplikat (sudah ada di Material Masuk)\n`;
-            if (gagal > 0) msg += `❌ ${gagal} item gagal dikirim`;
-            alert(msg);
-            
-            try { await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`); } catch(e) {}
-            
-        } catch (err) {
-            alert('❌ Gagal: ' + err.message);
-            console.error(err);
-        } finally {
-            if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
         }
+        
+        let msg = `✅ ${berhasil} item berhasil dikirim ke Supply Material!\n`;
+        if (duplikat > 0) msg += `⚠️ ${duplikat} item duplikat (sudah ada di Material Masuk)\n`;
+        if (gagal > 0) {
+            msg += `❌ ${gagal} item gagal dikirim:\n`;
+            msg += errorMessages.join('\n');
+        }
+        alert(msg);
+        
+        if (berhasil > 0) {
+            try { await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`); } catch(e) {}
+            // Refresh daftar
+            loadPiListForDisplay();
+        }
+        
+    } catch (err) {
+        alert('❌ Gagal: ' + err.message);
+        console.error(err);
+    } finally {
+        if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
     }
-    
-    // ============================================================
-    // ✅ SIMPAN & KIRIM KE SUPPLY (FITUR BARU)
-    // ============================================================
-    async function simpanDanKirim() {
-        await simpanPiBaru();
-        const { data: lastPi } = await sb.from('pi_header').select('id').order('created_at', { ascending: false }).limit(1).single();
-        if (lastPi) { await kirimKeSupply(lastPi.id); }
-    }
+}
     
     // ============================================================
     // FUNGSI LAMA (TIDAK BERUBAH)
