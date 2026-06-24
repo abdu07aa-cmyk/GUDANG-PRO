@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Input PI - SUPPLY MATERIAL (NEW)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        /* ====== STYLE SAMA ====== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+        
+        input, button, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        button { background: #3b82f6; color: white; border: none; cursor: pointer; }
+        button:active { transform: scale(0.98); }
+        .btn-add { background: #10b981; margin-top: 10px; }
+        .btn-remove { background: #ef4444; width: auto; padding: 5px 10px; margin: 0; }
+        .btn-supply { background: #8b5cf6; }
+        .btn-supply:hover { background: #7c3aed; }
+        .btn-edit { background: #f59e0b; width: auto; padding: 5px 10px; margin: 0; }
+        .btn-danger { background: #dc2626; }
+        
+        .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+        .alert-success { background: #d1fae5; color: #065f46; }
+        .alert-error { background: #fee2e2; color: #991b1b; }
+        .alert-warning { background: #fed7aa; color: #9a3412; }
+        .alert-info { background: #dbeafe; color: #1e40af; }
+        
+        .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
+        
+        .item-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .item-row input { flex: 1; margin: 0; }
+        .item-row .btn-remove { flex: 0; }
+        
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; }
+        
+        .mode-switch {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .mode-btn {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            background: #e2e8f0;
+            color: #1e293b;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .mode-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-small {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 2px;
+        }
+        
+        @media (max-width: 600px) {
+            .item-row { flex-direction: column; }
+            .item-row .btn-remove { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>📦 SUPPLY MATERIAL</h3>
+        <p>Manajemen Inventory</p>
+    </div>
+    <div class="sidebar-menu">
+        <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+        <div class="menu-item active" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+        <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+        <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+        <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+        <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+        <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+        <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+        <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+        <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+        <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+        <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+        <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+        <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <div class="logo">📦 SUPPLY MATERIAL</div>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
+
+<div class="container" id="mainContent"></div>
+<script>
+    let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+    let brandList = [], jenisList = [], paperList = [], sizeList = [];
+    let mode = 'new';
+    let editingPiId = null;
+    
+    // ============================================================
+    // ✅ FUNGSI KIRIM KE SUPPLY MATERIAL (FITUR BARU)
+    // ============================================================
+    async function kirimKeSupply(piId) {
+        if (!confirm('⚠️ Kirim PI ini ke Supply Material?\n\nData akan masuk ke menu "Material Masuk" dengan status DITERIMA.')) return;
+        
+        const btn = document.querySelector(`button[data-pi-id="${piId}"]`);
+        if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+        
+        try {
+            const { data: header, error: headerError } = await sb
+                .from('pi_header')
+                .select('*')
+                .eq('id', piId)
+                .single();
+            
+            if (headerError) throw headerError;
+            
+            const { data: details, error: detailError } = await sb
+                .from('pi_detail')
+                .select('*')
+                .eq('pi_id', piId);
+            
+            if (detailError) throw detailError;
+            
+            if (!details || details.length === 0) {
+                alert('⚠️ Tidak ada item di PI ini!');
+                if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
+                return;
+            }
+            
+            let berhasil = 0, gagal = 0, duplikat = 0;
+            
+            for (const item of details) {
+                const { data: existing } = await sb
+                    .from('material_inbound')
+                    .select('id')
+                    .eq('no_pi', header.no_pi)
+                    .eq('brand', item.brand)
+                    .eq('jenis', item.jenis)
+                    .single();
+                
+                if (existing) { duplikat++; continue; }
+                
+                const { error: insertError } = await sb
+                    .from('material_inbound')
+                    .insert({
+                        no_pi: header.no_pi,
+                        no_po: header.no_po || '-',
+                        brand: item.brand,
+                        jenis: item.jenis,
+                        paper: item.paper || '-',
+                        size: item.size || '-',
+                        qty_sheet: item.qty_pi,
+                        up_per_sheet: 1,
+                        status: 'DITERIMA',
+                        source_type: 'PI',
+                        source_id: piId,
+                        created_by: 'system'
+                    });
+                
+                if (insertError) { gagal++; } else { berhasil++; }
+            }
+            
+            let msg = `✅ ${berhasil} item berhasil dikirim ke Supply Material!\n`;
+            if (duplikat > 0) msg += `⚠️ ${duplikat} item duplikat (sudah ada di Material Masuk)\n`;
+            if (gagal > 0) msg += `❌ ${gagal} item gagal dikirim`;
+            alert(msg);
+            
+            try { await addLog('KIRIM PI KE SUPPLY', `${berhasil} item dari PI ${header.no_pi} dikirim ke Material Masuk`); } catch(e) {}
+            
+        } catch (err) {
+            alert('❌ Gagal: ' + err.message);
+            console.error(err);
+        } finally {
+            if (btn) { btn.textContent = '🔄 Supply'; btn.disabled = false; }
+        }
+    }
+    
+    // ============================================================
+    // ✅ SIMPAN & KIRIM KE SUPPLY (FITUR BARU)
+    // ============================================================
+    async function simpanDanKirim() {
+        await simpanPiBaru();
+        const { data: lastPi } = await sb.from('pi_header').select('id').order('created_at', { ascending: false }).limit(1).single();
+        if (lastPi) { await kirimKeSupply(lastPi.id); }
+    }
+    
+    // ============================================================
+    // FUNGSI LAMA (TIDAK BERUBAH)
+    // ============================================================
+    async function loadMasterData() {
+        const { data: items } = await sb.from('pi_detail').select('brand, jenis, paper, size');
+        if (items) {
+            brandList = [...new Set(items.map(i => i.brand).filter(b => b))];
+            jenisList = [...new Set(items.map(i => i.jenis).filter(j => j))];
+            paperList = [...new Set(items.map(i => i.paper).filter(p => p))];
+            sizeList = [...new Set(items.map(i => i.size).filter(s => s))];
+        }
+    }
+    
+    function renderItemForm() {
+        const container = document.getElementById('itemContainer');
+        if (!container) return;
+        let html = '';
+        for (let i = 0; i < itemList.length; i++) {
+            html += `<div class="item-row">
+                <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
+                <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
+                <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
+                <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
+                <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+            </div>`;
+        }
+        html += `<datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+            <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
+            <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
+            <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
+            <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+        container.innerHTML = html;
+    }
+    
+    function tambahItem() { itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '' }); renderItemForm(); }
+    function hapusItem(index) {
+        if (itemList.length > 1) { itemList.splice(index, 1); renderItemForm(); } 
+        else { alert('Minimal 1 item!'); }
+    }
+    function updateItem(index, field, value) { itemList[index][field] = value; }
+    
+    async function loadPiList() {
+        const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
+        let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
+        if (headers) { for (const h of headers) { options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`; } }
+        document.getElementById('edit_pi_select').innerHTML = options;
+    }
+    
+    async function onSelectPiForEdit() {
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) return;
+        editingPiId = piId;
+        const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
+        document.getElementById('edit_no_pi').value = header.no_pi;
+        document.getElementById('edit_tanggal_pi').value = header.tanggal;
+        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+        itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
+        renderItemForm();
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
+    }
+    
+    async function simpanPiBaru() {
+        const no_pi = document.getElementById('no_pi').value.trim();
+        const tanggal = document.getElementById('tanggal_pi').value;
+        if (!no_pi || !tanggal) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
+            return;
+        }
+        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+        if (validItems.length === 0) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
+            return;
+        }
+        const { data: existing } = await sb.from('pi_header').select('no_pi').eq('no_pi', no_pi).single();
+        if (existing) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI sudah ada!</div>';
+            return;
+        }
+        const { data: header, error: headerError } = await sb.from('pi_header').insert([{ no_pi, tanggal }]).select();
+        if (headerError) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
+            return;
+        }
+        const piId = header[0].id;
+        for (const item of validItems) {
+            await sb.from('pi_detail').insert({ pi_id: piId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+        }
+        await loadMasterData();
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
+        resetForm();
+        document.getElementById('msgInput').innerHTML += `<div class="alert alert-info" style="margin-top:10px;">💡 Klik <strong>🔄 Supply</strong> di daftar PI untuk mengirim ke Material Masuk</div>`;
+        loadPiListForDisplay();
+    }
+    
+    async function updatePi() {
+        const no_pi = document.getElementById('edit_no_pi').value.trim();
+        const tanggal = document.getElementById('edit_tanggal_pi').value;
+        if (!no_pi || !tanggal) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">No PI dan Tanggal wajib!</div>';
+            return;
+        }
+        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+        if (validItems.length === 0) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">Minimal 1 item dengan Brand, Jenis, dan Qty!</div>';
+            return;
+        }
+        const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
+        if (headerError) {
+            document.getElementById('msgInput').innerHTML = '<div class="alert alert-error">' + headerError.message + '</div>';
+            return;
+        }
+        const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
+        for (let i = 0; i < validItems.length; i++) {
+            const item = validItems[i];
+            if (existingDetails && existingDetails[i]) {
+                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
+            } else {
+                await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+            }
+        }
+        if (existingDetails && existingDetails.length > validItems.length) {
+            for (let i = validItems.length; i < existingDetails.length; i++) {
+                const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                if (masuk.length === 0 && keluar.length === 0) {
+                    await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
+                } else {
+                    alert(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus karena sudah memiliki transaksi.`);
+                }
+            }
+        }
+        await loadMasterData();
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate! Data transaksi tetap terjaga.</div>';
+        loadPiListForDisplay();
+    }
+    
+    async function hapusPi() {
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) { alert('Pilih PI yang akan dihapus!'); return; }
+        const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
+        if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
+        try {
+            await sb.from('barang_masuk').delete().eq('pi_id', piId);
+            await sb.from('barang_keluar').delete().eq('pi_id', piId);
+            await sb.from('pi_detail').delete().eq('pi_id', piId);
+            await sb.from('pi_header').delete().eq('id', piId);
+            alert('✅ PI berhasil dihapus!');
+            document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
+            document.getElementById('edit_no_pi').value = '';
+            document.getElementById('edit_tanggal_pi').value = '';
+            document.getElementById('itemContainerEdit').innerHTML = '';
+            await loadPiList();
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
+            loadPiListForDisplay();
+        } catch (err) {
+            console.error('Error hapus PI:', err);
+            alert('❌ Gagal hapus PI: ' + err.message);
+        }
+    }
+    
+    function resetForm() {
+        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        document.getElementById('no_pi').value = '';
+        renderItemForm();
+    }
+    
+    function switchMode(m) {
+        mode = m;
+        document.getElementById('modeNew').classList.toggle('active', m === 'new');
+        document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
+        if (m === 'new') {
+            document.getElementById('formNew').style.display = 'block';
+            document.getElementById('formEdit').style.display = 'none';
+            resetForm();
+        } else {
+            document.getElementById('formNew').style.display = 'none';
+            document.getElementById('formEdit').style.display = 'block';
+            loadPiList();
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            renderItemForm();
+        }
+    }
+    
+    async function loadPiListForDisplay() {
+        const container = document.getElementById('piListContainer');
+        const { data: headers, error } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
+        if (error) {
+            container.innerHTML = `<div class="alert alert-error">❌ Error: ${error.message}</div>`;
+            return;
+        }
+        if (!headers || headers.length === 0) {
+            container.innerHTML = '<div class="info-text">📭 Belum ada PI</div>';
+            return;
+        }
+        let html = `<div class="table-wrapper"><table><thead><tr><th>No PI</th><th>Tanggal</th><th>Item</th><th>Aksi</th></tr></thead><tbody>`;
+        for (const h of headers) {
+            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', h.id);
+            const itemCount = details?.length || 0;
+            html += `<tr>
+                <td><strong>${h.no_pi}</strong></td>
+                <td>${h.tanggal}</td>
+                <td>${itemCount} item</td>
+                <td>
+                    <button class="btn-small" onclick="editPi('${h.id}')" style="background:#f59e0b;color:white;">✏️</button>
+                    <button class="btn-small btn-supply" data-pi-id="${h.id}" onclick="kirimKeSupply('${h.id}')" style="background:#8b5cf6;color:white;">🔄 Supply</button>
+                </td>
+            </tr>`;
+        }
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+    
+    function editPi(piId) {
+        switchMode('edit');
+        document.getElementById('edit_pi_select').value = piId;
+        onSelectPiForEdit();
+        document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    async function loadHalaman() {
+        const today = new Date().toISOString().split('T')[0];
+        await loadMasterData();
+        document.getElementById('mainContent').innerHTML = `
+            <div class="card">
+                <div class="card-title">📝 Manajemen PI <span style="font-size:11px;background:#8b5cf6;color:white;padding:2px 10px;border-radius:12px;">NEW</span></div>
+                <div class="mode-switch">
+                    <div id="modeNew" class="mode-btn active" onclick="switchMode('new')">➕ PI Baru</div>
+                    <div id="modeEdit" class="mode-btn" onclick="switchMode('edit')">✏️ Edit/Hapus PI</div>
+                </div>
+                <div id="formNew">
+                    <div id="msgInput"></div>
+                    <input type="text" id="no_pi" placeholder="No PI *">
+                    <input type="date" id="tanggal_pi" value="${today}">
+                    <div id="itemContainer"></div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                        <button onclick="simpanPiBaru()" style="flex:2; min-width:150px;">💾 Simpan PI Baru</button>
+                        <button onclick="simpanDanKirim()" class="btn-supply" style="flex:2; min-width:150px;">💾 Simpan & Kirim ke Supply</button>
+                    </div>
+                </div>
+                <div id="formEdit" style="display:none">
+                    <div id="msgInputEdit"></div>
+                    <select id="edit_pi_select" onchange="onSelectPiForEdit()"><option value="">-- Pilih PI --</option></select>
+                    <input type="text" id="edit_no_pi" placeholder="No PI *">
+                    <input type="date" id="edit_tanggal_pi">
+                    <div id="itemContainerEdit"></div>
+                    <button onclick="updatePi()" style="background:#f59e0b">✏️ Update PI</button>
+                    <button onclick="hapusPi()" style="background:#dc2626; margin-top:10px">🗑️ Hapus PI</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 Daftar PI</div>
+                <div id="piListContainer"><div class="info-text">⏳ Memuat daftar PI...</div></div>
+            </div>
+        `;
+        const containerNew = document.getElementById('itemContainer');
+        const containerEdit = document.getElementById('itemContainerEdit');
+        window.renderItemForm = () => {
+            if (mode === 'new' && containerNew) {
+                let html = '';
+                for (let i = 0; i < itemList.length; i++) {
+                    html += `<div class="item-row">
+                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest">
+                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest">
+                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest">
+                        <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest">
+                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                        <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                    </div>`;
+                }
+                html += `<datalist id="brandSuggest">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+                    <datalist id="jenisSuggest">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
+                    <datalist id="paperSuggest">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
+                    <datalist id="sizeSuggest">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
+                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+                containerNew.innerHTML = html;
+            } else if (mode === 'edit' && containerEdit) {
+                let html = '';
+                for (let i = 0; i < itemList.length; i++) {
+                    html += `<div class="item-row">
+                        <input type="text" placeholder="Brand *" value="${itemList[i].brand}" onchange="updateItem(${i}, 'brand', this.value)" list="brandSuggest2">
+                        <input type="text" placeholder="Jenis *" value="${itemList[i].jenis}" onchange="updateItem(${i}, 'jenis', this.value)" list="jenisSuggest2">
+                        <input type="text" placeholder="Paper" value="${itemList[i].paper}" onchange="updateItem(${i}, 'paper', this.value)" list="paperSuggest2">
+                        <input type="text" placeholder="Size" value="${itemList[i].size}" onchange="updateItem(${i}, 'size', this.value)" list="sizeSuggest2">
+                        <input type="number" placeholder="Qty *" value="${itemList[i].qty}" onchange="updateItem(${i}, 'qty', this.value)">
+                        <button class="btn-remove" onclick="hapusItem(${i})">✖</button>
+                    </div>`;
+                }
+                html += `<datalist id="brandSuggest2">${brandList.map(b => `<option value="${b}">`).join('')}</datalist>
+                    <datalist id="jenisSuggest2">${jenisList.map(j => `<option value="${j}">`).join('')}</datalist>
+                    <datalist id="paperSuggest2">${paperList.map(p => `<option value="${p}">`).join('')}</datalist>
+                    <datalist id="sizeSuggest2">${sizeList.map(s => `<option value="${s}">`).join('')}</datalist>
+                    <button type="button" class="btn-add" onclick="tambahItem()">+ Tambah Item Barang</button>`;
+                containerEdit.innerHTML = html;
+            }
+        };
+        renderItemForm();
+        await loadPiListForDisplay();
+    }
+    
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+    function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+    
+    async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+    
+    function goToMenu(menu) {
+        const files = {
+            dashboard: 'dashboard.html',
+            'pi-input': 'pi-input.html',
+            'stock-in': 'stock-in.html',
+            'stock-out': 'stock-out.html',
+            'stock-report': 'stock-report.html',
+            'stok-pendukung': 'stok-pendukung.html',
+            'barcode-generator': 'barcode-generator.html',
+            'scan-barcode': 'scan-barcode.html',
+            'material-tracking': 'material-tracking.html',
+            'material-inbound': 'material-inbound.html',
+            'qc-inspection': 'qc-inspection.html',
+            'diecut-process': 'diecut-process.html',
+            'production-send': 'production-send.html',
+            'ng-report': 'ng-report.html',
+            executive: 'executive-report.html',
+            'manage-users': 'manage-users.html',
+            'log-aktivitas': 'log-aktivitas.html',
+            export: 'export-final3.html'
+        };
+        window.location.href = files[menu] || 'dashboard.html';
+    }
+    
+    async function checkSession() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) window.location.href = 'login.html';
+    }
+    
+    function setupEventListeners() {
+        document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
+        document.getElementById('overlay')?.addEventListener('click', closeSidebar);
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        document.getElementById('logoutMenu')?.addEventListener('click', logout);
+        document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+            item.addEventListener('click', (e) => { goToMenu(item.getAttribute('data-menu')); });
+        });
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', (e) => {
+            const diff = e.changedTouches[0].screenX - touchStartX;
+            if (diff > 50 && touchStartX < 30) openSidebar();
+            else if (diff < -50 && document.getElementById('sidebar')?.classList.contains('open')) closeSidebar();
+        });
+    }
+    
+    async function init() {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+            if (profile?.role !== 'admin') {
+                document.getElementById('mainContent').innerHTML = `<div class="card" style="text-align:center;padding:30px"><h3>⛔ Akses Ditolak</h3><p>Halaman Input PI hanya untuk ADMIN.</p><button onclick="window.location.href='dashboard.html'">Ke Dashboard</button></div>`;
+                return;
+            }
+        }
+        await checkSession();
+        await loadHalaman();
+        setupEventListeners();
+    }
+    
+    window.tambahItem = tambahItem;
+    window.hapusItem = hapusItem;
+    window.updateItem = updateItem;
+    window.simpanPiBaru = simpanPiBaru;
+    window.simpanDanKirim = simpanDanKirim;
+    window.kirimKeSupply = kirimKeSupply;
+    window.updatePi = updatePi;
+    window.hapusPi = hapusPi;
+    window.switchMode = switchMode;
+    window.onSelectPiForEdit = onSelectPiForEdit;
+    window.renderItemForm = renderItemForm;
+    window.editPi = editPi;
+    
+    init();
+</script>
+</body>
+</html>
