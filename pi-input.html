@@ -183,7 +183,7 @@
             <span class="text">Input PI</span>
         </div>
         <div class="menu-item" data-menu="stock-in">
-            <span class">📥</span>
+            <span class="icon">📥</span>
             <span class="text">Barang Masuk</span>
         </div>
         <div class="menu-item" data-menu="stock-out">
@@ -367,24 +367,23 @@
     }
     
     async function onSelectPiForEdit() {
-    const piId = document.getElementById('edit_pi_select').value;
-    if (!piId) {
-        // ✅ RESET FORM JIKA PILIHAN KOSONG
-        document.getElementById('edit_no_pi').value = '';
-        document.getElementById('edit_tanggal_pi').value = '';
-        document.getElementById('itemContainerEdit').innerHTML = '';
-        document.getElementById('msgInput').innerHTML = '';
-        return;
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) {
+            document.getElementById('edit_no_pi').value = '';
+            document.getElementById('edit_tanggal_pi').value = '';
+            document.getElementById('itemContainerEdit').innerHTML = '';
+            document.getElementById('msgInput').innerHTML = '';
+            return;
+        }
+        editingPiId = piId;
+        const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
+        document.getElementById('edit_no_pi').value = header.no_pi;
+        document.getElementById('edit_tanggal_pi').value = header.tanggal;
+        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+        itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
+        renderItemForm();
+        document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
     }
-    editingPiId = piId;
-    const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
-    document.getElementById('edit_no_pi').value = header.no_pi;
-    document.getElementById('edit_tanggal_pi').value = header.tanggal;
-    const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
-    itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
-    renderItemForm();
-    document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
-}
     
     async function simpanPiBaru() {
         const no_pi = document.getElementById('no_pi').value.trim();
@@ -416,104 +415,98 @@
         showToast('✅ PI baru berhasil disimpan!', 'success');
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI baru dan ' + validItems.length + ' item berhasil disimpan!</div>';
         resetForm();
-        // ✅ TIDAK REDIRECT, TETAP DI HALAMAN
-        // Refresh daftar PI (jika ada)
         loadPiList();
     }
     
     async function updatePi() {
-    const no_pi = document.getElementById('edit_no_pi').value.trim();
-    const tanggal = document.getElementById('edit_tanggal_pi').value;
-    if (!no_pi || !tanggal) {
-        showToast('❌ No PI dan Tanggal wajib!', 'error');
-        return;
-    }
-    const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
-    if (validItems.length === 0) {
-        showToast('❌ Minimal 1 item dengan Brand, Jenis, dan Qty!', 'error');
-        return;
-    }
-    const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
-    if (headerError) {
-        showToast('❌ ' + headerError.message, 'error');
-        return;
-    }
-    const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
-    for (let i = 0; i < validItems.length; i++) {
-        const item = validItems[i];
-        if (existingDetails && existingDetails[i]) {
-            await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
-        } else {
-            await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
+        const no_pi = document.getElementById('edit_no_pi').value.trim();
+        const tanggal = document.getElementById('edit_tanggal_pi').value;
+        if (!no_pi || !tanggal) {
+            showToast('❌ No PI dan Tanggal wajib!', 'error');
+            return;
         }
-    }
-    if (existingDetails && existingDetails.length > validItems.length) {
-        for (let i = validItems.length; i < existingDetails.length; i++) {
-            const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-            const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-            if (masuk.length === 0 && keluar.length === 0) {
-                await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
+        const validItems = itemList.filter(item => item.brand && item.jenis && item.qty && parseInt(item.qty) > 0);
+        if (validItems.length === 0) {
+            showToast('❌ Minimal 1 item dengan Brand, Jenis, dan Qty!', 'error');
+            return;
+        }
+        const { error: headerError } = await sb.from('pi_header').update({ no_pi, tanggal }).eq('id', editingPiId);
+        if (headerError) {
+            showToast('❌ ' + headerError.message, 'error');
+            return;
+        }
+        const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
+        for (let i = 0; i < validItems.length; i++) {
+            const item = validItems[i];
+            if (existingDetails && existingDetails[i]) {
+                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
             } else {
-                showToast(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus (ada transaksi)`, 'warning');
+                await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
             }
         }
-    }
-    await loadMasterData();
-    showToast('✅ PI berhasil diupdate!', 'success');
-    document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate!</div>';
-    
-    // ✅ REFRESH DROPDOWN
-    await loadPiList();
-    
-    // ✅ RESET FORM EDIT
-    document.getElementById('edit_pi_select').value = '';
-    document.getElementById('edit_no_pi').value = '';
-    document.getElementById('edit_tanggal_pi').value = '';
-    document.getElementById('itemContainerEdit').innerHTML = '';
-    document.getElementById('msgInputEdit').innerHTML = '';
-    switchMode('new');
-}
+        if (existingDetails && existingDetails.length > validItems.length) {
+            for (let i = validItems.length; i < existingDetails.length; i++) {
+                const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
+                if (masuk.length === 0 && keluar.length === 0) {
+                    await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
+                } else {
+                    showToast(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus (ada transaksi)`, 'warning');
+                }
+            }
+        }
         await loadMasterData();
         showToast('✅ PI berhasil diupdate!', 'success');
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ PI berhasil diupdate!</div>';
-        // ✅ TIDAK REDIRECT, TETAP DI HALAMAN
-        loadPiList();
-    }
-    
-   async function hapusPi() {
-    const piId = document.getElementById('edit_pi_select').value;
-    if (!piId) { showToast('❌ Pilih PI yang akan dihapus!', 'error'); return; }
-    
-    const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
-    if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
-    
-    try {
-        await sb.from('barang_masuk').delete().eq('pi_id', piId);
-        await sb.from('barang_keluar').delete().eq('pi_id', piId);
-        await sb.from('pi_detail').delete().eq('pi_id', piId);
-        await sb.from('pi_header').delete().eq('id', piId);
-        
-        showToast('✅ PI berhasil dihapus!', 'success');
-        document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
-        document.getElementById('edit_no_pi').value = '';
-        document.getElementById('edit_tanggal_pi').value = '';
-        document.getElementById('itemContainerEdit').innerHTML = '';
-        document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
         
         // ✅ REFRESH DROPDOWN
         await loadPiList();
         
-        // ✅ RESET ITEM LIST
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        // ✅ RESET FORM EDIT
+        document.getElementById('edit_pi_select').value = '';
+        document.getElementById('edit_no_pi').value = '';
+        document.getElementById('edit_tanggal_pi').value = '';
+        document.getElementById('itemContainerEdit').innerHTML = '';
+        document.getElementById('msgInputEdit').innerHTML = '';
         
         // ✅ SWITCH KE MODE NEW
         switchMode('new');
-        
-    } catch (err) {
-        showToast('❌ Gagal hapus PI: ' + err.message, 'error');
-        console.error(err);
     }
-}
+    
+    async function hapusPi() {
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) { showToast('❌ Pilih PI yang akan dihapus!', 'error'); return; }
+        
+        const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
+        if (!confirm(`Hapus PI "${header?.no_pi || piId}" dan semua item di dalamnya?`)) return;
+        
+        try {
+            await sb.from('barang_masuk').delete().eq('pi_id', piId);
+            await sb.from('barang_keluar').delete().eq('pi_id', piId);
+            await sb.from('pi_detail').delete().eq('pi_id', piId);
+            await sb.from('pi_header').delete().eq('id', piId);
+            
+            showToast('✅ PI berhasil dihapus!', 'success');
+            document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
+            document.getElementById('edit_no_pi').value = '';
+            document.getElementById('edit_tanggal_pi').value = '';
+            document.getElementById('itemContainerEdit').innerHTML = '';
+            document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
+            
+            // ✅ REFRESH DROPDOWN
+            await loadPiList();
+            
+            // ✅ RESET ITEM LIST
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            
+            // ✅ SWITCH KE MODE NEW
+            switchMode('new');
+            
+        } catch (err) {
+            showToast('❌ Gagal hapus PI: ' + err.message, 'error');
+            console.error(err);
+        }
+    }
     
     function resetForm() {
         itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
@@ -522,27 +515,26 @@
     }
     
     function switchMode(m) {
-    mode = m;
-    document.getElementById('modeNew').classList.toggle('active', m === 'new');
-    document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
-    if (m === 'new') {
-        document.getElementById('formNew').style.display = 'block';
-        document.getElementById('formEdit').style.display = 'none';
-        resetForm();
-    } else {
-        document.getElementById('formNew').style.display = 'none';
-        document.getElementById('formEdit').style.display = 'block';
-        // ✅ RESET FORM EDIT
-        document.getElementById('edit_no_pi').value = '';
-        document.getElementById('edit_tanggal_pi').value = '';
-        document.getElementById('itemContainerEdit').innerHTML = '';
-        document.getElementById('msgInputEdit').innerHTML = '';
-        document.getElementById('msgInput').innerHTML = '';
-        loadPiList();
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-        renderItemForm();
+        mode = m;
+        document.getElementById('modeNew').classList.toggle('active', m === 'new');
+        document.getElementById('modeEdit').classList.toggle('active', m === 'edit');
+        if (m === 'new') {
+            document.getElementById('formNew').style.display = 'block';
+            document.getElementById('formEdit').style.display = 'none';
+            resetForm();
+        } else {
+            document.getElementById('formNew').style.display = 'none';
+            document.getElementById('formEdit').style.display = 'block';
+            document.getElementById('edit_no_pi').value = '';
+            document.getElementById('edit_tanggal_pi').value = '';
+            document.getElementById('itemContainerEdit').innerHTML = '';
+            document.getElementById('msgInputEdit').innerHTML = '';
+            document.getElementById('msgInput').innerHTML = '';
+            loadPiList();
+            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+            renderItemForm();
+        }
     }
-}
     
     async function loadHalaman() {
         const today = new Date().toISOString().split('T')[0];
