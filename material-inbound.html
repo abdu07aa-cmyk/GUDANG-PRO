@@ -84,52 +84,23 @@
         }
 
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
-        .form-group label .required { color: #ef4444; font-weight: 700; }
-        .form-group label .optional { color: #94a3b8; font-weight: 400; font-size: 11px; background: #f1f5f9; padding: 1px 8px; border-radius: 10px; }
+        .form-group label .required { color: #ef4444; }
+        .form-group label .optional { color: #64748b; font-weight: 400; font-size: 11px; }
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
-            transition: border-color 0.2s;
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        }
-        .form-group input.required-field { border-color: #3b82f6; border-width: 2px; }
         .form-group textarea { min-height: 60px; resize: vertical; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1e293b;
-            margin: 18px 0 12px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .section-title .badge {
-            font-size: 10px;
-            background: #dbeafe;
-            color: #1e40af;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-weight: 500;
-        }
-        .section-title .badge-wajib { background: #fee2e2; color: #991b1b; }
-        .section-title .badge-opsi { background: #f1f5f9; color: #64748b; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
         .btn {
             padding: 10px 20px;
@@ -151,6 +122,8 @@
         .btn-primary:hover { background: #2563eb; }
         .btn-danger { background: #ef4444; color: white; }
         .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
 
         .alert {
             padding: 12px 16px;
@@ -195,7 +168,7 @@
         }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
 
@@ -257,21 +230,26 @@
             padding: 25px;
         }
         .modal-content h3 { margin-bottom: 15px; }
-        .modal-content .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
-        .modal-footer button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .modal-content .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .modal-footer button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
         .btn-cancel { background: #e2e8f0; color: #1e293b; }
 
-        .small-text { font-size: 11px; color: #94a3b8; margin-top: 2px; display: block; }
-
-        .edit-badge {
-            background: #f59e0b;
-            color: white;
-            padding: 2px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin-left: 8px;
-        }
+        .small-text { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
 
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
@@ -329,7 +307,7 @@
         <!-- FORM INPUT -->
         <div class="card">
             <div class="card-title">
-                <span>📥 MATERIAL MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
+                <span>📥 MATERIAL MASUK DARI SUPPLIER</span>
                 <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">
                     📊 Tracking
                 </button>
@@ -340,109 +318,93 @@
             <form id="inboundForm" onsubmit="return false;">
                 <input type="hidden" id="editId" value="">
 
-                <!-- ====== BAGIAN 1: DOKUMEN ====== -->
-                <div class="section-title">
-                    📋 Dokumen <span class="badge badge-wajib">WAJIB: No PI & Tanggal</span>
-                </div>
-
+                <!-- No PO - OPSIONAL -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>No PO <span class="optional">Opsional</span></label>
+                        <label>No PO <span class="optional">(opsional)</span></label>
                         <input type="text" id="no_po" placeholder="Contoh: PO-2024-001">
                     </div>
                     <div class="form-group">
-                        <label>No PI <span class="required">* Wajib</span></label>
-                        <input type="text" id="no_pi" class="required-field" placeholder="Contoh: PI-2024-001" required>
+                        <label>No PI <span class="required">*</span></label>
+                        <input type="text" id="no_pi" placeholder="Contoh: PI-2024-001" required>
                     </div>
                 </div>
 
+                <!-- Surat Jalan - OPSIONAL -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Surat Jalan / DO <span class="optional">Opsional</span></label>
+                        <label>Surat Jalan / DO <span class="optional">(opsional)</span></label>
                         <input type="text" id="surat_jalan" placeholder="Contoh: SJ-001">
                     </div>
                     <div class="form-group">
-                        <label>Tanggal Terima <span class="required">* Wajib</span></label>
-                        <input type="date" id="tanggal_terima" class="required-field" required>
+                        <label>Tanggal Terima <span class="required">*</span></label>
+                        <input type="date" id="tanggal_terima" required>
                     </div>
                 </div>
 
+                <!-- Supplier - OPSIONAL -->
                 <div class="form-group">
-                    <label>Supplier <span class="optional">Opsional</span></label>
+                    <label>Supplier <span class="optional">(opsional)</span></label>
                     <input type="text" id="supplier" placeholder="Nama Supplier">
                 </div>
 
-                <!-- ====== BAGIAN 2: PRODUK ====== -->
-                <div class="section-title">
-                    🏷️ Produk <span class="badge badge-wajib">WAJIB: Brand, Jenis, Qty Sheet, Up/Sheet</span>
-                </div>
-
+                <!-- Produk - WAJIB -->
                 <div class="form-row-3">
                     <div class="form-group">
-                        <label>Brand <span class="required">* Wajib</span></label>
-                        <input type="text" id="brand" class="required-field" placeholder="Contoh: Straight cones tubes" required>
+                        <label>Brand <span class="required">*</span></label>
+                        <input type="text" id="brand" placeholder="Contoh: Straight cones tubes" required>
                     </div>
                     <div class="form-group">
-                        <label>Jenis <span class="required">* Wajib</span></label>
-                        <input type="text" id="jenis" class="required-field" placeholder="Contoh: Glass Tips 11x30mm" required>
+                        <label>Jenis <span class="required">*</span></label>
+                        <input type="text" id="jenis" placeholder="Contoh: Glass Tips 11x30mm" required>
                     </div>
                     <div class="form-group">
-                        <label>Paper <span class="optional">Opsional</span></label>
+                        <label>Paper <span class="optional">(opsional)</span></label>
                         <input type="text" id="paper" placeholder="Contoh: Art Paper 250gsm">
                     </div>
                 </div>
 
                 <div class="form-row-3">
                     <div class="form-group">
-                        <label>Size <span class="optional">Opsional</span></label>
+                        <label>Size <span class="optional">(opsional)</span></label>
                         <input type="text" id="size" placeholder="Contoh: 10x10 cm">
                     </div>
                     <div class="form-group">
-                        <label>Qty Sheet (Lembar) <span class="required">* Wajib</span></label>
-                        <input type="number" id="qty_sheet" class="required-field" placeholder="Jumlah lembar" min="1" required>
+                        <label>Qty Sheet (Lembar) <span class="required">*</span></label>
+                        <input type="number" id="qty_sheet" placeholder="Jumlah lembar" min="1" required>
                     </div>
                     <div class="form-group">
-                        <label>Up per Sheet (Pcs/Lembar) <span class="required">* Wajib</span></label>
-                        <input type="number" id="up_per_sheet" class="required-field" placeholder="4-12 pcs" min="1" max="99" required>
+                        <label>Up per Sheet (Pcs/Lembar) <span class="required">*</span></label>
+                        <input type="number" id="up_per_sheet" placeholder="4-12 pcs" min="1" max="99" required>
                     </div>
                 </div>
 
-                <!-- ====== BAGIAN 3: QTY PI ====== -->
-                <div class="section-title">
-                    📊 Qty PI <span class="badge badge-opsi">OPSIONAL</span>
-                </div>
-
+                <!-- ✅ QTY PI - 2 KOLOM (SHEET & PCS) -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Qty PI (Sheet) <span class="optional">Opsional</span></label>
+                        <label>Qty PI (Sheet) <span class="optional">(opsional)</span></label>
                         <input type="number" id="qty_pi_sheet" placeholder="Jumlah sheet di PI" min="0">
                         <span class="small-text">📌 Jumlah sheet sesuai Proforma Invoice</span>
                     </div>
                     <div class="form-group">
-                        <label>Qty PI (Pcs) <span class="optional">Opsional</span></label>
+                        <label>Qty PI (Pcs) <span class="optional">(opsional)</span></label>
                         <input type="number" id="qty_pi_pcs" placeholder="Jumlah pcs di PI" min="0">
                         <span class="small-text">📌 Jumlah pcs sesuai Proforma Invoice</span>
                     </div>
                 </div>
 
-                <!-- ====== PERHITUNGAN OTOMATIS ====== -->
                 <div class="info-box" id="calcInfo">
                     <strong>📊 Perhitungan Otomatis:</strong><br>
-                    <span id="calcResult" style="font-size:15px;">Qty Sheet: 0 × Up: 0 = <strong style="color:#3b82f6;">0 Pcs</strong></span>
+                    <span id="calcResult">Qty Sheet: 0 × Up: 0 = <strong>0 Pcs</strong></span>
                 </div>
 
-                <!-- ====== BAGIAN 4: CATATAN ====== -->
-                <div class="section-title">
-                    📝 Catatan <span class="badge badge-opsi">OPSIONAL</span>
-                </div>
-
+                <!-- Catatan - OPSIONAL -->
                 <div class="form-group">
-                    <label>Catatan / Keterangan <span class="optional">Opsional</span></label>
+                    <label>Catatan / Keterangan <span class="optional">(opsional)</span></label>
                     <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
                 </div>
 
-                <!-- ====== TOMBOL ====== -->
-                <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">
                         💾 Simpan Material Masuk
                     </button>
@@ -509,7 +471,7 @@
             const up = parseInt(document.getElementById('up_per_sheet').value) || 0;
             const total = sheet * up;
             document.getElementById('calcResult').innerHTML = 
-                `Qty Sheet: ${sheet} × Up: ${up} = <strong style="color:#3b82f6;">${total.toLocaleString()} Pcs</strong>`;
+                `Qty Sheet: ${sheet} × Up: ${up} = <strong>${total.toLocaleString()} Pcs</strong>`;
             return total;
         }
 
@@ -631,10 +593,6 @@
 
         function resetForm() {
             document.getElementById('editId').value = '';
-            document.getElementById('editBadge').style.display = 'none';
-            document.getElementById('btnSubmit').innerHTML = '💾 Simpan Material Masuk';
-            document.getElementById('btnSubmit').onclick = saveInbound;
-            
             document.getElementById('no_po').value = '';
             document.getElementById('no_pi').value = '';
             document.getElementById('surat_jalan').value = '';
@@ -650,6 +608,8 @@
             document.getElementById('notes').value = '';
             document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
             document.getElementById('msgContainer').innerHTML = '';
+            document.getElementById('btnSubmit').innerHTML = '💾 Simpan Material Masuk';
+            document.getElementById('editBadge').style.display = 'none';
             calculatePcs();
             document.getElementById('no_pi').focus();
         }
@@ -668,10 +628,6 @@
             }
 
             document.getElementById('editId').value = id;
-            document.getElementById('editBadge').style.display = 'inline';
-            document.getElementById('btnSubmit').innerHTML = '✏️ Update Material';
-            document.getElementById('btnSubmit').onclick = saveInbound;
-            
             document.getElementById('no_po').value = item.no_po || '';
             document.getElementById('no_pi').value = item.no_pi || '';
             document.getElementById('surat_jalan').value = item.surat_jalan || '';
@@ -686,6 +642,10 @@
             document.getElementById('qty_pi_sheet').value = item.qty_pi_sheet || '';
             document.getElementById('qty_pi_pcs').value = item.qty_pi_pcs || '';
             document.getElementById('notes').value = item.notes || '';
+
+            document.getElementById('editBadge').style.display = 'inline';
+            document.getElementById('btnSubmit').innerHTML = '✏️ Update Material';
+            document.getElementById('btnSubmit').onclick = saveInbound;
 
             document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
             showToast('📝 Mode Edit: silakan ubah data', 'info');
@@ -736,13 +696,13 @@
                             <th>No PI</th>
                             <th>Brand</th>
                             <th>Jenis</th>
-                            <th style="text-align:center;">Sheet</th>
-                            <th style="text-align:center;">Pcs</th>
-                            <th style="text-align:center;">Qty PI Sheet</th>
-                            <th style="text-align:center;">Qty PI Pcs</th>
-                            <th style="text-align:center;">Status</th>
-                            <th style="text-align:center;">Tgl Terima</th>
-                            <th style="text-align:center;">Aksi</th>
+                            <th>Sheet</th>
+                            <th>Pcs</th>
+                            <th>Qty PI Sheet</th>
+                            <th>Qty PI Pcs</th>
+                            <th>Status</th>
+                            <th>Tgl Terima</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -755,28 +715,28 @@
                         <td>${item.brand}</td>
                         <td>${item.jenis}</td>
                         <td style="text-align:center;">${item.qty_sheet}</td>
-                        <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_pcs}</td>
-                        <td style="text-align:center; color:#64748b;">${item.qty_pi_sheet || '-'}</td>
-                        <td style="text-align:center; color:#64748b;">${item.qty_pi_pcs || '-'}</td>
-                        <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
-                        <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
-                        <td style="min-width:200px; text-align:center;">
+                        <td style="text-align:center; font-weight:bold;">${item.qty_pcs}</td>
+                        <td style="text-align:center;">${item.qty_pi_sheet || '-'}</td>
+                        <td style="text-align:center;">${item.qty_pi_pcs || '-'}</td>
+                        <td><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
+                        <td style="font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
+                        <td style="min-width:250px;">
                             <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
                             <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')">✏️</button>
                             
                             ${item.status === 'DITERIMA' ? 
-                                `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬</button>` : ''}
+                                `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬 QC</button>` : ''}
                             
                             ${item.status === 'QC1' ? `
                                 <button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>
                             ` : ''}
                             
                             ${item.status === 'DIECUT' ? `
-                                <button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬</button>
+                                <button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬 QC2</button>
                             ` : ''}
                             
                             ${item.status === 'QC2' ? `
-                                <button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭</button>
+                                <button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭 Kirim</button>
                             ` : ''}
                             
                             <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')">🗑️</button>
@@ -864,6 +824,7 @@
         async function deleteMaterial(id) {
             if (!confirm('Yakin ingin menghapus material ini?')) return;
             
+            // Hapus data terkait
             await sb.from('ng_tracking').delete().eq('material_inbound_id', id);
             await sb.from('qc_inspection').delete().eq('material_inbound_id', id);
             await sb.from('diecut_process').delete().eq('material_inbound_id', id);
