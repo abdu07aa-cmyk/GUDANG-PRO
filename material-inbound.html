@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
+        /* ====== STYLE SAMA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -321,7 +322,6 @@
             <form id="inboundForm" onsubmit="return false;">
                 <input type="hidden" id="editId" value="">
 
-                <!-- ====== BAGIAN 1: PILIH NO PI ====== -->
                 <div class="section-title">
                     📋 Pilih PI <span class="badge badge-wajib">WAJIB</span>
                 </div>
@@ -334,7 +334,6 @@
                     <span class="small-text">📌 Pilih PI yang sudah dibuat di menu Input PI</span>
                 </div>
 
-                <!-- ====== BAGIAN 2: DATA DARI PI (AUTO) ====== -->
                 <div class="section-title">
                     📋 Data dari PI <span class="badge badge-auto">AUTO</span>
                 </div>
@@ -366,7 +365,6 @@
                     </div>
                 </div>
 
-                <!-- ====== BAGIAN 3: INPUT USER ====== -->
                 <div class="section-title">
                     ✏️ Input Barang Masuk <span class="badge badge-wajib">WAJIB: Tanggal & Qty</span>
                 </div>
@@ -398,7 +396,6 @@
                     </div>
                 </div>
 
-                <!-- Auto Calculate -->
                 <div class="info-box" id="calcInfo">
                     <strong>📊 Perhitungan Otomatis:</strong><br>
                     <span id="calcResult">Qty Masuk: 0 × Up: 0 = <strong>0 Pcs</strong></span>
@@ -409,7 +406,6 @@
                     <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
                 </div>
 
-                <!-- ====== TOMBOL ====== -->
                 <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">
                         💾 Simpan Barang Masuk
@@ -424,7 +420,6 @@
             </form>
         </div>
 
-        <!-- LIST MATERIAL + TOMBOL AKSI -->
         <div class="card">
             <div class="card-title">
                 <span>📋 Daftar Barang Masuk</span>
@@ -436,7 +431,6 @@
         </div>
     </div>
 
-    <!-- Modal Detail -->
     <div id="detailModal" class="modal">
         <div class="modal-content">
             <h3 id="detailTitle">📋 Detail Barang Masuk</h3>
@@ -448,4 +442,603 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    
+
+    <script>
+        let allData = [];
+        let isSubmitting = false;
+        let selectedPiDetail = null;
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function showMessage(msg, type = 'info') {
+            const container = document.getElementById('msgContainer');
+            const map = { success: 'alert-success', error: 'alert-error', info: 'alert-info' };
+            container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // ============================================================
+        // ✅ TOGGLE BENTUK BARANG
+        // ============================================================
+        function toggleBentuk() {
+            const bentuk = document.querySelector('input[name="bentuk"]:checked');
+            if (!bentuk) return;
+            
+            const value = bentuk.value;
+            const qtyLabel = document.getElementById('qtyLabel');
+            const qtyHint = document.getElementById('qtyHint');
+            const upRow = document.getElementById('upRow');
+            const upInput = document.getElementById('up_per_sheet');
+
+            if (value === 'sheet') {
+                qtyLabel.innerHTML = 'Qty Masuk (Sheet) <span class="required">*</span>';
+                qtyHint.textContent = '📌 Masukkan jumlah sheet yang diterima';
+                upRow.style.display = 'block';
+                upInput.required = true;
+            } else {
+                qtyLabel.innerHTML = 'Qty Masuk (Pcs) <span class="required">*</span>';
+                qtyHint.textContent = '📌 Masukkan jumlah pcs yang diterima';
+                upRow.style.display = 'none';
+                upInput.required = false;
+                upInput.value = 1;
+            }
+            calculatePcs();
+        }
+
+        // ============================================================
+        // AUTO CALCULATE
+        // ============================================================
+        function calculatePcs() {
+            const qty = parseInt(document.getElementById('qty_masuk').value) || 0;
+            const up = parseInt(document.getElementById('up_per_sheet').value) || 1;
+            const bentuk = document.querySelector('input[name="bentuk"]:checked');
+            const value = bentuk ? bentuk.value : 'sheet';
+            
+            let totalPcs = 0;
+            if (value === 'sheet') {
+                totalPcs = qty * up;
+            } else {
+                totalPcs = qty;
+            }
+
+            document.getElementById('calcResult').innerHTML = 
+                `Qty Masuk: ${qty} × Up: ${value === 'sheet' ? up : '-'} = <strong style="color:#3b82f6;">${totalPcs.toLocaleString()} Pcs</strong>`;
+            
+            return totalPcs;
+        }
+
+        document.getElementById('qty_masuk').addEventListener('input', calculatePcs);
+        document.getElementById('up_per_sheet').addEventListener('input', calculatePcs);
+
+        // ============================================================
+        // ✅ LOAD DAFTAR PI (DROPDOWN) - FIXED
+        // ============================================================
+        async function loadPiList() {
+            const select = document.getElementById('selectNoPi');
+            if (!select) return;
+
+            try {
+                const { data: headers, error } = await sb
+                    .from('pi_header')
+                    .select('id, no_pi')
+                    .order('no_pi', { ascending: true });
+
+                if (error) {
+                    console.error('Error load PI:', error);
+                    showMessage('❌ Gagal memuat daftar PI: ' + error.message, 'error');
+                    return;
+                }
+
+                console.log('📋 Data PI ditemukan:', headers?.length || 0);
+
+                select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+                
+                if (!headers || headers.length === 0) {
+                    select.innerHTML += '<option value="" disabled>Belum ada PI</option>';
+                    showMessage('⚠️ Belum ada data PI. Buat PI dulu di menu Input PI.', 'warning');
+                    return;
+                }
+
+                for (const h of headers) {
+                    const option = document.createElement('option');
+                    option.value = h.id;
+                    option.textContent = h.no_pi;
+                    option.dataset.noPi = h.no_pi;
+                    select.appendChild(option);
+                }
+
+                showToast(`✅ ${headers.length} PI tersedia`, 'success');
+
+            } catch (err) {
+                console.error('Error:', err);
+                showMessage('❌ Error: ' + err.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // LOAD DATA PI SAAT DIPILIH
+        // ============================================================
+        async function loadPiData() {
+            const select = document.getElementById('selectNoPi');
+            const piId = select.value;
+            const container = document.getElementById('piDataContainer');
+
+            if (!piId) {
+                container.style.display = 'none';
+                document.getElementById('brand').value = '';
+                document.getElementById('jenis').value = '';
+                document.getElementById('paper').value = '';
+                document.getElementById('size').value = '';
+                document.getElementById('qty_pi').value = '';
+                selectedPiDetail = null;
+                return;
+            }
+
+            const { data: details, error } = await sb
+                .from('pi_detail')
+                .select('*')
+                .eq('pi_id', piId);
+
+            if (error || !details || details.length === 0) {
+                showMessage('❌ Tidak ada item di PI ini!', 'error');
+                container.style.display = 'none';
+                return;
+            }
+
+            const item = details[0];
+            selectedPiDetail = item;
+
+            container.style.display = 'block';
+            document.getElementById('brand').value = item.brand || '-';
+            document.getElementById('jenis').value = item.jenis || '-';
+            document.getElementById('paper').value = item.paper || '-';
+            document.getElementById('size').value = item.size || '-';
+            document.getElementById('qty_pi').value = item.qty_pi || 0;
+
+            document.getElementById('qty_masuk').value = '';
+            document.getElementById('up_per_sheet').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+            
+            document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+            toggleBentuk();
+            calculatePcs();
+
+            showToast(`✅ Data PI ${select.options[select.selectedIndex].text} dimuat`, 'success');
+        }
+
+        // ============================================================
+        // SAVE INBOUND
+        // ============================================================
+        async function saveInbound() {
+            if (isSubmitting) return;
+
+            const piId = document.getElementById('selectNoPi').value;
+            const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
+            const tanggal_terima = document.getElementById('tanggal_terima').value;
+            const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
+            const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
+            const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
+            const notes = document.getElementById('notes').value.trim();
+            const editId = document.getElementById('editId').value;
+
+            if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+            if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
+            if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
+            if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
+                showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmit');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
+            btn.disabled = true;
+
+            isSubmitting = true;
+
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                
+                const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
+
+                const data = {
+                    no_pi: noPi,
+                    brand: selectedPiDetail?.brand || '',
+                    jenis: selectedPiDetail?.jenis || '',
+                    paper: selectedPiDetail?.paper || '',
+                    size: selectedPiDetail?.size || '',
+                    qty_pi: selectedPiDetail?.qty_pi || 0,
+                    qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
+                    qty_masuk_pcs: qty_pcs,
+                    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+                    bentuk: bentuk,
+                    status: 'DITERIMA',
+                    tanggal_terima: tanggal_terima,
+                    notes: notes || null,
+                    pi_detail_id: selectedPiDetail?.id || null,
+                    created_by: user?.email || 'Unknown'
+                };
+
+                let result;
+                if (editId) {
+                    data.updated_by = user?.email || 'Unknown';
+                    data.updated_at = new Date().toISOString();
+                    result = await sb
+                        .from('material_inbound')
+                        .update(data)
+                        .eq('id', editId);
+                } else {
+                    result = await sb.from('material_inbound').insert([data]);
+                }
+
+                if (result.error) throw result.error;
+
+                const actionText = editId ? 'diupdate' : 'disimpan';
+                showMessage(`✅ Barang masuk berhasil ${actionText}! Status: DITERIMA (siap QC)`, 'success');
+                showToast(`✅ Barang masuk berhasil ${actionText}!`, 'success');
+
+                resetForm();
+                loadData();
+
+                try {
+                    await addLog('BARANG MASUK', `${user?.email} ${actionText} barang masuk ${selectedPiDetail?.brand} - ${selectedPiDetail?.jenis} (PI: ${noPi})`);
+                } catch(e) {}
+
+            } catch (err) {
+                showMessage('❌ Gagal: ' + err.message, 'error');
+                showToast('❌ Gagal: ' + err.message, 'error');
+                console.error('Save error:', err);
+            } finally {
+                isSubmitting = false;
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ============================================================
+        // RESET FORM
+        // ============================================================
+        function resetForm() {
+            document.getElementById('editId').value = '';
+            document.getElementById('editBadge').style.display = 'none';
+            document.getElementById('btnSubmit').innerHTML = '💾 Simpan Barang Masuk';
+            
+            document.getElementById('selectNoPi').value = '';
+            document.getElementById('piDataContainer').style.display = 'none';
+            document.getElementById('brand').value = '';
+            document.getElementById('jenis').value = '';
+            document.getElementById('paper').value = '';
+            document.getElementById('size').value = '';
+            document.getElementById('qty_pi').value = '';
+            document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+            document.getElementById('qty_masuk').value = '';
+            document.getElementById('up_per_sheet').value = '';
+            document.getElementById('notes').value = '';
+            document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+            toggleBentuk();
+            calculatePcs();
+            document.getElementById('msgContainer').innerHTML = '';
+            selectedPiDetail = null;
+        }
+
+        // ============================================================
+        // EDIT MATERIAL
+        // ============================================================
+        async function editMaterial(id) {
+            const { data: item } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (!item) {
+                showToast('❌ Data tidak ditemukan!', 'error');
+                return;
+            }
+
+            const select = document.getElementById('selectNoPi');
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].dataset.noPi === item.no_pi) {
+                    select.value = select.options[i].value;
+                    break;
+                }
+            }
+            await loadPiData();
+
+            document.getElementById('editId').value = id;
+            document.getElementById('editBadge').style.display = 'inline';
+            document.getElementById('btnSubmit').innerHTML = '✏️ Update Barang Masuk';
+            
+            document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
+            document.getElementById('qty_masuk').value = item.qty_sheet || item.qty_masuk_pcs || '';
+            document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
+            document.getElementById('notes').value = item.notes || '';
+            
+            if (item.bentuk === 'pcs') {
+                document.querySelector('input[name="bentuk"][value="pcs"]').checked = true;
+            } else {
+                document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+            }
+            toggleBentuk();
+            calculatePcs();
+
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+            showToast('📝 Mode Edit: silakan ubah data', 'info');
+        }
+
+        // ============================================================
+        // LOAD DATA
+        // ============================================================
+        async function loadData() {
+            const container = document.getElementById('materialList');
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
+
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
+                return;
+            }
+
+            allData = data || [];
+
+            if (allData.length === 0) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada barang masuk</div>`;
+                return;
+            }
+
+            const statusMap = {
+                'DITERIMA': '📥 Diterima',
+                'QC1': '🔬 QC #1',
+                'DIECUT': '⚙️ Diecut',
+                'QC2': '🔬 QC #2',
+                'KIRIM': '🏭 Kirim'
+            };
+
+            const statusClass = {
+                'DITERIMA': 'status-diterima',
+                'QC1': 'status-qc1',
+                'DIECUT': 'status-diecut',
+                'QC2': 'status-qc2',
+                'KIRIM': 'status-kirim'
+            };
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No PI</th>
+                            <th>Brand</th>
+                            <th>Jenis</th>
+                            <th style="text-align:center;">Sheet</th>
+                            <th style="text-align:center;">Up</th>
+                            <th style="text-align:center;">Pcs</th>
+                            <th style="text-align:center;">Status</th>
+                            <th style="text-align:center;">Tgl Terima</th>
+                            <th style="text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const item of allData) {
+                const bentuk = item.bentuk || 'sheet';
+                
+                html += `
+                    <tr>
+                        <td><strong>${item.no_pi}</strong></td>
+                        <td>${item.brand}</td>
+                        <td>${item.jenis}</td>
+                        <td style="text-align:center;">${bentuk === 'sheet' ? item.qty_sheet : '-'}</td>
+                        <td style="text-align:center;">${bentuk === 'sheet' ? item.up_per_sheet : '-'}</td>
+                        <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || item.qty_sheet || 0}</td>
+                        <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
+                        <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
+                        <td style="min-width:200px; text-align:center;">
+                            <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
+                            <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')">✏️</button>
+                            
+                            ${item.status === 'DITERIMA' ? 
+                                `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬</button>` : ''}
+                            
+                            ${item.status === 'QC1' ? `
+                                <button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>
+                            ` : ''}
+                            
+                            ${item.status === 'DIECUT' ? `
+                                <button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬</button>
+                            ` : ''}
+                            
+                            ${item.status === 'QC2' ? `
+                                <button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭</button>
+                            ` : ''}
+                            
+                            <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // FUNGSI AKSI
+        // ============================================================
+        function goToQC(id) {
+            window.location.href = `qc-inspection.html?material_id=${id}&qc=1`;
+        }
+
+        function goToQC2(id) {
+            window.location.href = `qc-inspection.html?material_id=${id}&qc=2`;
+        }
+
+        function goToDiecut(id) {
+            window.location.href = `diecut-process.html?material_id=${id}`;
+        }
+
+        function goToSend(id) {
+            window.location.href = `production-send.html?material_id=${id}`;
+        }
+
+        // ============================================================
+        // DETAIL
+        // ============================================================
+        async function showDetail(id) {
+            const { data: item } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (!item) return;
+
+            const statusMap = {
+                'DITERIMA': '📥 Diterima',
+                'QC1': '🔬 QC #1',
+                'DIECUT': '⚙️ Diecut',
+                'QC2': '🔬 QC #2',
+                'KIRIM': '🏭 Kirim'
+            };
+
+            const statusClass = {
+                'DITERIMA': 'status-diterima',
+                'QC1': 'status-qc1',
+                'DIECUT': 'status-diecut',
+                'QC2': 'status-qc2',
+                'KIRIM': 'status-kirim'
+            };
+
+            const bentuk = item.bentuk || 'sheet';
+
+            let html = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
+                    <div><strong>Brand:</strong> ${item.brand || '-'}</div>
+                    <div><strong>Jenis:</strong> ${item.jenis || '-'}</div>
+                    <div><strong>Paper:</strong> ${item.paper || '-'}</div>
+                    <div><strong>Size:</strong> ${item.size || '-'}</div>
+                    <div><strong>Qty PI (Pcs):</strong> ${item.qty_pi || '-'}</div>
+                    <div><strong>Bentuk:</strong> ${bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
+                    <div><strong>Qty Masuk:</strong> ${bentuk === 'sheet' ? item.qty_sheet + ' Sheet' : item.qty_masuk_pcs + ' Pcs'}</div>
+                    ${bentuk === 'sheet' ? `<div><strong>Up/Sheet:</strong> ${item.up_per_sheet}</div>` : ''}
+                    <div><strong>Total Pcs:</strong> ${item.qty_masuk_pcs || item.qty_sheet || 0} Pcs</div>
+                    <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
+                    <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
+                    <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
+                </div>
+            `;
+
+            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_pi} (${item.brand})`;
+            document.getElementById('detailContent').innerHTML = html;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        // ============================================================
+        // DELETE
+        // ============================================================
+        async function deleteMaterial(id) {
+            if (!confirm('Yakin ingin menghapus material ini?')) return;
+            
+            await sb.from('ng_tracking').delete().eq('material_inbound_id', id);
+            await sb.from('qc_inspection').delete().eq('material_inbound_id', id);
+            await sb.from('diecut_process').delete().eq('material_inbound_id', id);
+            await sb.from('production_send').delete().eq('material_inbound_id', id);
+            
+            const { error } = await sb.from('material_inbound').delete().eq('id', id);
+            if (error) {
+                showToast('❌ Gagal: ' + error.message, 'error');
+            } else {
+                showToast('✅ Material berhasil dihapus', 'success');
+                loadData();
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // ============================================================
+        // NAVIGASI
+        // ============================================================
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+
+        async function init() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            
+            setupEventListeners();
+            await loadPiList();
+            await loadData();
+            toggleBentuk();
+            calculatePcs();
+        }
+
+        window.loadPiList = loadPiList;
+        window.loadPiData = loadPiData;
+        window.saveInbound = saveInbound;
+        window.resetForm = resetForm;
+        window.editMaterial = editMaterial;
+        window.showDetail = showDetail;
+        window.goToQC = goToQC;
+        window.goToQC2 = goToQC2;
+        window.goToDiecut = goToDiecut;
+        window.goToSend = goToSend;
+        window.deleteMaterial = deleteMaterial;
+        window.closeModal = closeModal;
+        window.toggleBentuk = toggleBentuk;
+        window.calculatePcs = calculatePcs;
+
+        init();
+    </script>
+</body>
+</html>
