@@ -6,132 +6,47 @@
     <title>Barang Masuk - SUPPLY MATERIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* [STYLE SAMA SEPERTI SEBELUMNYA] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: #1e293b;
-            color: white;
-            transition: 0.3s;
-            z-index: 1000;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-        }
+        /* ... (saya singkat karena panjang, gunakan style dari kode Anda) ... */
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #1e293b; color: white; transition: 0.3s; z-index: 1000; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
         .sidebar.open { left: 0; }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
         .sidebar-header h3 { font-size: 18px; }
         .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
         .sidebar-menu { padding: 10px 0; }
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
-            cursor: pointer;
-        }
+        .menu-item { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; cursor: pointer; }
         .menu-item:hover { background: #334155; color: white; }
         .menu-item.active { background: #3b82f6; color: white; }
         .menu-item .icon { width: 30px; font-size: 20px; }
         .menu-item .text { font-size: 14px; }
         .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
         .overlay.show { display: block; }
-
-        .header {
-            background: white;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-        }
+        .header { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .menu-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px 10px; border-radius: 8px; }
         .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
         .form-group label .required { color: #ef4444; font-weight: 700; }
         .form-group label .optional { color: #94a3b8; font-weight: 400; font-size: 11px; background: #f1f5f9; padding: 1px 8px; border-radius: 10px; }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         .form-group input:disabled { background: #f1f5f9; cursor: not-allowed; }
         .form-group textarea { min-height: 60px; resize: vertical; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1e293b;
-            margin: 18px 0 12px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .section-title { font-size: 14px; font-weight: 600; color: #1e293b; margin: 18px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
         .section-title .badge { font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: 500; }
         .badge-wajib { background: #fee2e2; color: #991b1b; }
         .badge-opsi { background: #f1f5f9; color: #64748b; }
         .badge-auto { background: #dbeafe; color: #1e40af; }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .btn:active { transform: scale(0.97); }
         .btn-success { background: #10b981; color: white; }
         .btn-success:hover { background: #059669; }
@@ -141,128 +56,50 @@
         .btn-back:hover { background: #475569; }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
-
         .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
         .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
         .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-
-        .info-box {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 10px 0;
-            border-left: 4px solid #3b82f6;
-            font-size: 13px;
-        }
+        .info-box { background: #f8fafc; border-radius: 8px; padding: 12px 16px; margin: 10px 0; border-left: 4px solid #3b82f6; font-size: 13px; }
         .info-box strong { color: #1e293b; }
-
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 9999;
-            display: none;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; z-index: 9999; display: none; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .toast.show { display: block; animation: fadeInUp 0.3s ease; }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
+        @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
-
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
         .status-diterima { background: #e0f2fe; color: #0369a1; }
         .status-qc1 { background: #fef3c7; color: #92400e; }
         .status-diecut { background: #dbeafe; color: #1e40af; }
         .status-qc2 { background: #fce7f3; color: #9d174d; }
         .status-kirim { background: #d1fae5; color: #065f46; }
-
-        .btn-small {
-            padding: 4px 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 11px;
-            margin: 2px;
-            white-space: nowrap;
-        }
-        .btn-qc { background: #f59e0b; color: white; }
-        .btn-qc:hover { background: #d97706; }
-        .btn-diecut { background: #3b82f6; color: white; }
-        .btn-diecut:hover { background: #2563eb; }
-        .btn-send { background: #10b981; color: white; }
-        .btn-send:hover { background: #059669; }
+        .btn-small { padding: 4px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; margin: 2px; white-space: nowrap; }
         .btn-detail { background: #8b5cf6; color: white; }
         .btn-detail:hover { background: #7c3aed; }
         .btn-delete { background: #ef4444; color: white; }
         .btn-delete:hover { background: #dc2626; }
         .btn-edit-small { background: #f59e0b; color: white; }
         .btn-edit-small:hover { background: #d97706; }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1001;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            max-width: 700px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 25px;
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; border-radius: 12px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 25px; }
         .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
         .modal-footer button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn-cancel { background: #e2e8f0; color: #1e293b; }
-
         .small-text { font-size: 11px; color: #94a3b8; margin-top: 2px; display: block; }
         .edit-badge { background: #f59e0b; color: white; padding: 2px 12px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
-
         .radio-group { display: flex; gap: 20px; margin-top: 5px; }
         .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 14px; cursor: pointer; }
         .radio-group input[type="radio"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
-
-        @media (max-width: 600px) {
-            .form-row { grid-template-columns: 1fr; }
-            .form-row-3 { grid-template-columns: 1fr; }
-            .modal-content .row { grid-template-columns: 1fr; }
-            .btn-small { font-size: 9px; padding: 2px 6px; }
-            .radio-group { flex-direction: column; gap: 8px; }
-        }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .form-row-3 { grid-template-columns: 1fr; } .modal-content .row { grid-template-columns: 1fr; } .btn-small { font-size: 9px; padding: 2px 6px; } .radio-group { flex-direction: column; gap: 8px; } }
     </style>
 </head>
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h3>📦 SUPPLY MATERIAL</h3>
@@ -277,15 +114,12 @@
         <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
         <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
         <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
-
         <div class="menu-divider"></div>
-
         <div class="menu-item active" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
         <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
         <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
         <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
         <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
-
         <div class="menu-divider"></div>
         <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
         <div class="menu-divider"></div>
@@ -299,22 +133,21 @@
         <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
     </div>
 </div>
-
 <div class="overlay" id="overlay"></div>
 
+<!-- HEADER -->
 <div class="header">
     <button class="menu-toggle" id="menuToggle">☰</button>
     <div class="logo">📦 SUPPLY MATERIAL</div>
     <button class="logout-btn" id="logoutBtn">Logout</button>
 </div>
 
+<!-- MAIN CONTENT -->
 <div class="container" id="mainContent">
     <div class="card">
         <div class="card-title">
             <span>📥 BARANG MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
-            <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">
-                📊 Tracking
-            </button>
+            <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">📊 Tracking</button>
         </div>
         
         <div id="msgContainer"></div>
@@ -322,10 +155,8 @@
         <form id="inboundForm" onsubmit="return false;">
             <input type="hidden" id="editId" value="">
 
-            <!-- ====== BAGIAN 1: PILIH PI & ITEM ====== -->
-            <div class="section-title">
-                📋 Pilih PI & Item <span class="badge badge-wajib">WAJIB</span>
-            </div>
+            <!-- BAGIAN 1: PILIH PI & ITEM -->
+            <div class="section-title">📋 Pilih PI & Item <span class="badge badge-wajib">WAJIB</span></div>
 
             <div class="form-group">
                 <label>Pilih No PI <span class="required">*</span></label>
@@ -343,10 +174,8 @@
                 <span class="small-text">📌 Pilih item dari PI yang dipilih</span>
             </div>
 
-            <!-- ====== BAGIAN 2: DATA DARI PI (AUTO) ====== -->
-            <div class="section-title">
-                📋 Data dari PI <span class="badge badge-auto">AUTO</span>
-            </div>
+            <!-- BAGIAN 2: DATA DARI PI (AUTO) -->
+            <div class="section-title">📋 Data dari PI <span class="badge badge-auto">AUTO</span></div>
 
             <div id="piDataContainer" style="display:none;">
                 <div class="form-row-3">
@@ -375,10 +204,8 @@
                 </div>
             </div>
 
-            <!-- ====== BAGIAN 3: INPUT USER ====== -->
-            <div class="section-title">
-                ✏️ Input Barang Masuk <span class="badge badge-wajib">WAJIB: Tanggal & Qty</span>
-            </div>
+            <!-- BAGIAN 3: INPUT USER -->
+            <div class="section-title">✏️ Input Barang Masuk <span class="badge badge-wajib">WAJIB: Tanggal & Qty</span></div>
 
             <div class="form-row">
                 <div class="form-group">
@@ -418,22 +245,16 @@
                 <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
             </div>
 
-            <!-- ====== TOMBOL ====== -->
+            <!-- TOMBOL -->
             <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-                <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">
-                    💾 Simpan Barang Masuk
-                </button>
-                <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
-                    🔄 Reset
-                </button>
-                <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
-                    ⬅ Kembali
-                </button>
+                <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">💾 Simpan Barang Masuk</button>
+                <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">🔄 Reset</button>
+                <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">⬅ Kembali</button>
             </div>
         </form>
     </div>
 
-    <!-- LIST MATERIAL + TOMBOL AKSI -->
+    <!-- LIST MATERIAL -->
     <div class="card">
         <div class="card-title">
             <span>📋 Daftar Barang Masuk</span>
@@ -445,7 +266,7 @@
     </div>
 </div>
 
-<!-- Modal Detail -->
+<!-- MODAL DETAIL -->
 <div id="detailModal" class="modal">
     <div class="modal-content">
         <h3 id="detailTitle">📋 Detail Barang Masuk</h3>
@@ -460,7 +281,7 @@
 
 <script>
     // ============================================================
-    // KONFIGURASI SUPABASE (SUDAH DIISI DENGAN KREDENSIAL ANDA)
+    // KONFIGURASI SUPABASE
     // ============================================================
     const supabaseUrl = 'https://txvgclavcmhyxamxgvsi.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dmdjbGF2Y21oeXhhbXhndnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzEyMDgsImV4cCI6MjA5MzEwNzIwOH0.oq3lH7_mRR-TIUV0sW8EtbYqS2SjmKOzneSrV3n45mY';
@@ -693,274 +514,264 @@
     }
 
     // ============================================================
-    // SAVE INBOUND
+    // SAVE INBOUND (VERSI FIX - TANPA qty_pcs)
     // ============================================================
-    // ============================================================
-// SAVE INBOUND (VERSI TERBARU - SESUAI STRUKTUR TABEL)
-// ============================================================
-async function saveInbound() {
-    if (isSubmitting) return;
+    async function saveInbound() {
+        if (isSubmitting) return;
 
-    const piId = document.getElementById('selectNoPi').value;
-    const itemId = document.getElementById('selectItem').value;
-    const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
-    const tanggal_terima = document.getElementById('tanggal_terima').value;
-    const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
-    const qty_sheet = parseInt(document.getElementById('qty_masuk').value); // qty_masuk → qty_sheet
-    const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
-    const notes = document.getElementById('notes').value.trim();
-    const editId = document.getElementById('editId').value;
+        const piId = document.getElementById('selectNoPi').value;
+        const itemId = document.getElementById('selectItem').value;
+        const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
+        const tanggal_terima = document.getElementById('tanggal_terima').value;
+        const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
+        const qty_sheet = parseInt(document.getElementById('qty_masuk').value);
+        const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
+        const notes = document.getElementById('notes').value.trim();
+        const editId = document.getElementById('editId').value;
 
-    // Validasi
-    if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
-    if (!itemId) { showMessage('❌ Pilih Item terlebih dahulu!', 'error'); return; }
-    if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
-    if (!qty_sheet || qty_sheet < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
-    if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
-        showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
-        return;
-    }
-
-    // Loading state
-    const btn = document.getElementById('btnSubmit');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
-    btn.disabled = true;
-    isSubmitting = true;
-
-    try {
-        const { data: { user } } = await sb.auth.getUser();
-        
-        // Hitung qty_pcs
-        const qty_pcs = bentuk === 'sheet' ? qty_sheet * up_per_sheet : qty_sheet;
-
-        // Data sesuai struktur tabel
-        const data = {
-            no_pi: noPi,
-            brand: selectedPiDetail?.brand || '',
-            jenis: selectedPiDetail?.jenis || '',
-            paper: selectedPiDetail?.paper || '',
-            size: selectedPiDetail?.size || '',
-            qty_po: selectedPiDetail?.qty_pi || 0, // qty_pi → qty_po
-            qty_sheet: qty_sheet, // qty_masuk → qty_sheet
-            qty_pcs: qty_pcs,
-            up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
-            bentuk: bentuk,
-            tanggal_terima: tanggal_terima,
-            notes: notes,
-            status: 'diterima',
-            pi_detail_id: itemId,
-            pi_id: piId,
-            created_by: user?.email || 'system',
-            updated_at: new Date().toISOString(),
-            updated_by: user?.email || 'system'
-        };
-
-        let result;
-        if (editId) {
-            // Update
-            result = await sb
-                .from('material_inbound')
-                .update(data)
-                .eq('id', editId);
-        } else {
-            // Insert
-            data.created_at = new Date().toISOString();
-            result = await sb
-                .from('material_inbound')
-                .insert([data]);
-        }
-
-        if (result.error) {
-            console.error('Error save:', result.error);
-            showMessage(`❌ Gagal ${editId ? 'update' : 'simpan'}: ${result.error.message}`, 'error');
+        // Validasi
+        if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+        if (!itemId) { showMessage('❌ Pilih Item terlebih dahulu!', 'error'); return; }
+        if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
+        if (!qty_sheet || qty_sheet < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
+        if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
+            showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
             return;
         }
 
-        showToast(`✅ ${editId ? 'Berhasil diupdate' : 'Berhasil disimpan'}! ${qty_pcs.toLocaleString()} pcs`, 'success');
-        
-        // Reset form
-        resetForm();
-        loadData();
-        document.getElementById('editId').value = '';
-        document.getElementById('editBadge').style.display = 'none';
-        
-    } catch (err) {
-        console.error('Error:', err);
-        showMessage('❌ Error: ' + err.message, 'error');
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        isSubmitting = false;
+        // Loading state
+        const btn = document.getElementById('btnSubmit');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
+        btn.disabled = true;
+        isSubmitting = true;
+
+        try {
+            const { data: { user } } = await sb.auth.getUser();
+            
+            // HITUNG qty_pcs untuk ditampilkan di UI, tapi TIDAK dikirim ke database
+            const qty_pcs = bentuk === 'sheet' ? qty_sheet * up_per_sheet : qty_sheet;
+            console.log('📊 Total Pcs (hanya untuk tampilan):', qty_pcs);
+
+            // Data sesuai struktur tabel - TANPA qty_pcs!
+            const data = {
+                no_pi: noPi,
+                brand: selectedPiDetail?.brand || '',
+                jenis: selectedPiDetail?.jenis || '',
+                paper: selectedPiDetail?.paper || '',
+                size: selectedPiDetail?.size || '',
+                qty_po: selectedPiDetail?.qty_pi || 0,
+                qty_sheet: qty_sheet,
+                up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+                bentuk: bentuk,
+                tanggal_terima: tanggal_terima,
+                notes: notes,
+                status: 'diterima',
+                pi_detail_id: itemId,
+                pi_id: piId,
+                created_by: user?.email || 'system',
+                updated_at: new Date().toISOString(),
+                updated_by: user?.email || 'system'
+            };
+
+            let result;
+            if (editId) {
+                // Update - HAPUS qty_pcs dari update
+                result = await sb
+                    .from('material_inbound')
+                    .update(data)
+                    .eq('id', editId);
+            } else {
+                // Insert - TANPA qty_pcs
+                data.created_at = new Date().toISOString();
+                result = await sb
+                    .from('material_inbound')
+                    .insert([data]);
+            }
+
+            if (result.error) {
+                console.error('Error save:', result.error);
+                showMessage(`❌ Gagal ${editId ? 'update' : 'simpan'}: ${result.error.message}`, 'error');
+                return;
+            }
+
+            showToast(`✅ ${editId ? 'Berhasil diupdate' : 'Berhasil disimpan'}! ${qty_pcs.toLocaleString()} pcs`, 'success');
+            
+            // Reset form
+            resetForm();
+            await loadData();
+            document.getElementById('editId').value = '';
+            document.getElementById('editBadge').style.display = 'none';
+            
+        } catch (err) {
+            console.error('Error:', err);
+            showMessage('❌ Error: ' + err.message, 'error');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            isSubmitting = false;
+        }
     }
-}
 
     // ============================================================
     // LOAD DATA MATERIAL INBOUND
     // ============================================================
-    function loadItemData() {
-    const select = document.getElementById('selectItem');
-    const selected = select.options[select.selectedIndex];
-    
-    if (!select.value || !selected) {
-        document.getElementById('brand').value = '';
-        document.getElementById('jenis').value = '';
-        document.getElementById('paper').value = '';
-        document.getElementById('size').value = '';
-        document.getElementById('qty_pi').value = '';
-        selectedPiDetail = null;
-        return;
+    async function loadData() {
+        const container = document.getElementById('materialList');
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat data...</div>';
+
+        try {
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<div class="alert alert-error">❌ Gagal memuat data: ${error.message}</div>`;
+                return;
+            }
+
+            allData = data || [];
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:#94a3b8;">
+                        <div style="font-size:48px;margin-bottom:10px;">📭</div>
+                        <p>Belum ada barang masuk</p>
+                        <p style="font-size:12px;">Silakan input barang masuk di form di atas</p>
+                    </div>
+                `;
+                return;
+            }
+
+            renderTable(data);
+
+        } catch (err) {
+            container.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
+        }
     }
 
-    selectedPiDetail = {
-        id: select.value,
-        brand: selected.dataset.brand,
-        jenis: selected.dataset.jenis,
-        paper: selected.dataset.paper,
-        size: selected.dataset.size,
-        qty_pi: parseInt(selected.dataset.qtyPi) // Tetap pakai qty_pi untuk internal
-    };
-
-    document.getElementById('brand').value = selected.dataset.brand || '-';
-    document.getElementById('jenis').value = selected.dataset.jenis || '-';
-    document.getElementById('paper').value = selected.dataset.paper || '-';
-    document.getElementById('size').value = selected.dataset.size || '-';
-    document.getElementById('qty_pi').value = selected.dataset.qtyPi || 0;
-
-    // Reset form input
-    document.getElementById('qty_masuk').value = '';
-    document.getElementById('up_per_sheet').value = '';
-    document.getElementById('notes').value = '';
-    document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
-    
-    // Reset radio ke Sheet
-    document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
-    toggleBentuk();
-    calculatePcs();
-
-    showToast(`✅ Item ${selected.dataset.jenis} dipilih`, 'success');
-}
     // ============================================================
     // RENDER TABLE
     // ============================================================
     function renderTable(data) {
-    const container = document.getElementById('materialList');
-    
-    let html = `
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>No PI</th>
-                        <th>Brand</th>
-                        <th>Jenis</th>
-                        <th>Qty PO</th>
-                        <th>Qty Sheet</th>
-                        <th>Bentuk</th>
-                        <th>Total Pcs</th>
-                        <th>Status</th>
-                        <th>Tanggal</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+        const container = document.getElementById('materialList');
+        
+        let html = `
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No PI</th>
+                            <th>Brand</th>
+                            <th>Jenis</th>
+                            <th>Qty PO</th>
+                            <th>Qty Sheet</th>
+                            <th>Bentuk</th>
+                            <th>Total Pcs</th>
+                            <th>Status</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
 
-    for (const item of data) {
-        const statusMap = {
-            'diterima': '<span class="status-badge status-diterima">📥 Diterima</span>',
-            'qc': '<span class="status-badge status-qc1">🔬 QC</span>',
-            'diecut': '<span class="status-badge status-diecut">⚙️ Diecut</span>',
-            'qc2': '<span class="status-badge status-qc2">🔬 QC2</span>',
-            'kirim': '<span class="status-badge status-kirim">🏭 Kirim</span>'
-        };
+        for (const item of data) {
+            const statusMap = {
+                'diterima': '<span class="status-badge status-diterima">📥 Diterima</span>',
+                'qc': '<span class="status-badge status-qc1">🔬 QC</span>',
+                'diecut': '<span class="status-badge status-diecut">⚙️ Diecut</span>',
+                'qc2': '<span class="status-badge status-qc2">🔬 QC2</span>',
+                'kirim': '<span class="status-badge status-kirim">🏭 Kirim</span>'
+            };
 
-        const statusText = statusMap[item.status] || `<span class="status-badge">${item.status}</span>`;
+            const statusText = statusMap[item.status] || `<span class="status-badge">${item.status}</span>`;
+
+            html += `
+                <tr>
+                    <td><strong>${item.no_pi || '-'}</strong></td>
+                    <td>${item.brand || '-'}</td>
+                    <td>${item.jenis || '-'}</td>
+                    <td>${(item.qty_po || 0).toLocaleString()}</td>
+                    <td>${(item.qty_sheet || 0).toLocaleString()}</td>
+                    <td>${item.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</td>
+                    <td><strong style="color:#3b82f6;">${(item.qty_pcs || 0).toLocaleString()}</strong></td>
+                    <td>${statusText}</td>
+                    <td style="font-size:11px;">${item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-'}</td>
+                    <td>
+                        <button class="btn-small btn-detail" onclick="viewDetail('${item.id}')">📋</button>
+                        <button class="btn-small btn-edit-small" onclick="editInbound('${item.id}')">✏️</button>
+                        <button class="btn-small btn-delete" onclick="deleteInbound('${item.id}')">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }
 
         html += `
-            <tr>
-                <td><strong>${item.no_pi || '-'}</strong></td>
-                <td>${item.brand || '-'}</td>
-                <td>${item.jenis || '-'}</td>
-                <td>${(item.qty_po || 0).toLocaleString()}</td> <!-- qty_pi → qty_po -->
-                <td>${(item.qty_sheet || 0).toLocaleString()}</td> <!-- qty_masuk → qty_sheet -->
-                <td>${item.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</td>
-                <td><strong style="color:#3b82f6;">${(item.qty_pcs || 0).toLocaleString()}</strong></td>
-                <td>${statusText}</td>
-                <td style="font-size:11px;">${item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-'}</td>
-                <td>
-                    <button class="btn-small btn-detail" onclick="viewDetail('${item.id}')">📋</button>
-                    <button class="btn-small btn-edit-small" onclick="editInbound('${item.id}')">✏️</button>
-                    <button class="btn-small btn-delete" onclick="deleteInbound('${item.id}')">🗑️</button>
-                </td>
-            </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
+                Total: <strong>${data.length}</strong> data
+            </div>
         `;
+
+        container.innerHTML = html;
     }
-
-    html += `
-                </tbody>
-            </table>
-        </div>
-        <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
-            Total: <strong>${data.length}</strong> data
-        </div>
-    `;
-
-    container.innerHTML = html;
-}
 
     // ============================================================
     // VIEW DETAIL
     // ============================================================
     async function viewDetail(id) {
-    const modal = document.getElementById('detailModal');
-    const content = document.getElementById('detailContent');
-    const title = document.getElementById('detailTitle');
+        const modal = document.getElementById('detailModal');
+        const content = document.getElementById('detailContent');
+        const title = document.getElementById('detailTitle');
 
-    try {
-        const { data, error } = await sb
-            .from('material_inbound')
-            .select('*')
-            .eq('id', id)
-            .single();
+        try {
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
 
-        if (error || !data) {
-            content.innerHTML = '<div class="alert alert-error">❌ Data tidak ditemukan</div>';
-            modal.style.display = 'flex';
-            return;
-        }
+            if (error || !data) {
+                content.innerHTML = '<div class="alert alert-error">❌ Data tidak ditemukan</div>';
+                modal.style.display = 'flex';
+                return;
+            }
 
-        title.textContent = `📋 Detail Barang Masuk - ${data.no_pi || 'No PI'}`;
+            title.textContent = `📋 Detail Barang Masuk - ${data.no_pi || 'No PI'}`;
 
-        content.innerHTML = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
-                <div><strong>No PI:</strong> ${data.no_pi || '-'}</div>
-                <div><strong>Brand:</strong> ${data.brand || '-'}</div>
-                <div><strong>Jenis:</strong> ${data.jenis || '-'}</div>
-                <div><strong>Paper:</strong> ${data.paper || '-'}</div>
-                <div><strong>Size:</strong> ${data.size || '-'}</div>
-                <div><strong>Qty PO:</strong> ${(data.qty_po || 0).toLocaleString()} pcs</div> <!-- qty_pi → qty_po -->
-                <div><strong>Qty Sheet:</strong> ${(data.qty_sheet || 0).toLocaleString()}</div> <!-- qty_masuk → qty_sheet -->
-                <div><strong>Bentuk:</strong> ${data.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
-                <div><strong>Up/Sheet:</strong> ${data.up_per_sheet || 1}</div>
-                <div><strong>Total Pcs:</strong> <strong style="color:#3b82f6;">${(data.qty_pcs || 0).toLocaleString()}</strong></div>
-                <div><strong>Status:</strong> ${data.status || '-'}</div>
-                <div><strong>Tanggal Terima:</strong> ${data.tanggal_terima ? new Date(data.tanggal_terima).toLocaleDateString('id-ID') : '-'}</div>
-                <div style="grid-column:1/-1;"><strong>Catatan:</strong> ${data.notes || '-'}</div>
-                <div style="grid-column:1/-1;font-size:11px;color:#94a3b8;">
-                    Dibuat: ${data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
-                    ${data.created_by ? ` oleh ${data.created_by}` : ''}
+            content.innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                    <div><strong>No PI:</strong> ${data.no_pi || '-'}</div>
+                    <div><strong>Brand:</strong> ${data.brand || '-'}</div>
+                    <div><strong>Jenis:</strong> ${data.jenis || '-'}</div>
+                    <div><strong>Paper:</strong> ${data.paper || '-'}</div>
+                    <div><strong>Size:</strong> ${data.size || '-'}</div>
+                    <div><strong>Qty PO:</strong> ${(data.qty_po || 0).toLocaleString()} pcs</div>
+                    <div><strong>Qty Sheet:</strong> ${(data.qty_sheet || 0).toLocaleString()}</div>
+                    <div><strong>Bentuk:</strong> ${data.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
+                    <div><strong>Up/Sheet:</strong> ${data.up_per_sheet || 1}</div>
+                    <div><strong>Total Pcs:</strong> <strong style="color:#3b82f6;">${(data.qty_pcs || 0).toLocaleString()}</strong></div>
+                    <div><strong>Status:</strong> ${data.status || '-'}</div>
+                    <div><strong>Tanggal Terima:</strong> ${data.tanggal_terima ? new Date(data.tanggal_terima).toLocaleDateString('id-ID') : '-'}</div>
+                    <div style="grid-column:1/-1;"><strong>Catatan:</strong> ${data.notes || '-'}</div>
+                    <div style="grid-column:1/-1;font-size:11px;color:#94a3b8;">
+                        Dibuat: ${data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
+                        ${data.created_by ? ` oleh ${data.created_by}` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
 
-        modal.style.display = 'flex';
+            modal.style.display = 'flex';
 
-    } catch (err) {
-        content.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
-        modal.style.display = 'flex';
+        } catch (err) {
+            content.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
+            modal.style.display = 'flex';
+        }
     }
-}
 
     // ============================================================
     // EDIT INBOUND
@@ -1002,9 +813,9 @@ async function saveInbound() {
             }
             loadItemData();
 
-            // Isi form
+            // Isi form - gunakan qty_sheet
             document.getElementById('tanggal_terima').value = data.tanggal_terima || new Date().toISOString().split('T')[0];
-            document.getElementById('qty_masuk').value = data.qty_masuk || '';
+            document.getElementById('qty_masuk').value = data.qty_sheet || '';
             document.getElementById('up_per_sheet').value = data.up_per_sheet || '';
             document.getElementById('notes').value = data.notes || '';
 
@@ -1191,6 +1002,5 @@ async function saveInbound() {
 
     console.log('✅ Script barang masuk siap!');
 </script>
-
 </body>
 </html>
