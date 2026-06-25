@@ -483,33 +483,55 @@
     try {
         console.log('🗑️ Menghapus PI ID:', piId);
         
-        const { error: err1 } = await sb.from('barang_masuk').delete().eq('pi_id', piId);
-        if (err1) console.error('Error barang_masuk:', err1);
+        // ✅ 1. Hapus scan_log (foreign key constraint)
+        await sb.from('scan_log').delete().eq('pi_id', piId);
         
-        const { error: err2 } = await sb.from('barang_keluar').delete().eq('pi_id', piId);
-        if (err2) console.error('Error barang_keluar:', err2);
+        // ✅ 2. Ambil semua detail_id dari PI ini
+        const { data: details } = await sb.from('pi_detail').select('id').eq('pi_id', piId);
         
-        const { error: err3 } = await sb.from('pi_detail').delete().eq('pi_id', piId);
-        if (err3) console.error('Error pi_detail:', err3);
-        
-        const { error: err4 } = await sb.from('pi_header').delete().eq('id', piId);
-        if (err4) console.error('Error pi_header:', err4);
-        
-        if (!err1 && !err2 && !err3 && !err4) {
-            showToast('✅ PI berhasil dihapus!', 'success');
-            document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
-            document.getElementById('edit_no_pi').value = '';
-            document.getElementById('edit_tanggal_pi').value = '';
-            document.getElementById('itemContainerEdit').innerHTML = '';
-            document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
-
-            await loadPiList();
-            itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
-            await switchMode('new');
-            window.location.reload();
-        } else {
-            showToast('❌ Gagal hapus PI, cek console', 'error');
+        if (details && details.length > 0) {
+            for (const d of details) {
+                // ✅ 3. Hapus barang_masuk berdasarkan detail_id
+                await sb.from('barang_masuk').delete().eq('detail_id', d.id);
+                
+                // ✅ 4. Hapus barang_keluar berdasarkan detail_id
+                await sb.from('barang_keluar').delete().eq('detail_id', d.id);
+            }
         }
+        
+        // ✅ 5. Hapus dari sistem SUPPLY MATERIAL (material_inbound)
+        const { data: materials } = await sb
+            .from('material_inbound')
+            .select('id')
+            .eq('no_pi', header.no_pi);
+        
+        if (materials && materials.length > 0) {
+            for (const mat of materials) {
+                await sb.from('ng_tracking').delete().eq('material_inbound_id', mat.id);
+                await sb.from('qc_inspection').delete().eq('material_inbound_id', mat.id);
+                await sb.from('diecut_process').delete().eq('material_inbound_id', mat.id);
+                await sb.from('production_send').delete().eq('material_inbound_id', mat.id);
+                await sb.from('material_inbound').delete().eq('id', mat.id);
+            }
+        }
+        
+        // ✅ 6. Hapus pi_detail
+        await sb.from('pi_detail').delete().eq('pi_id', piId);
+        
+        // ✅ 7. Hapus pi_header
+        await sb.from('pi_header').delete().eq('id', piId);
+        
+        showToast('✅ PI dan semua data terkait berhasil dihapus!', 'success');
+        document.getElementById('edit_pi_select').innerHTML = '<option value="">-- Pilih PI --</option>';
+        document.getElementById('edit_no_pi').value = '';
+        document.getElementById('edit_tanggal_pi').value = '';
+        document.getElementById('itemContainerEdit').innerHTML = '';
+        document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
+
+        await loadPiList();
+        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        await switchMode('new');
+        window.location.reload();
         
     } catch (err) {
         showToast('❌ Gagal hapus PI: ' + err.message, 'error');
