@@ -250,21 +250,9 @@
         .small-text { font-size: 11px; color: #94a3b8; margin-top: 2px; display: block; }
         .edit-badge { background: #f59e0b; color: white; padding: 2px 12px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
 
-        .radio-group { display: flex; gap: 20px; margin-top: 5px; flex-wrap: wrap; }
+        .radio-group { display: flex; gap: 20px; margin-top: 5px; }
         .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 14px; cursor: pointer; }
         .radio-group input[type="radio"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
-
-        .item-selector {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-        }
-        .item-selector .item-count {
-            font-size: 12px;
-            color: #64748b;
-            margin-left: 8px;
-        }
 
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
@@ -276,7 +264,7 @@
     </style>
 </head>
 <body>
-    <div class="sidebar" id="sidebar">
+        <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 SUPPLY MATERIAL</h3>
             <p>Manajemen Inventory</p>
@@ -320,8 +308,7 @@
         <div class="logo">📦 SUPPLY MATERIAL</div>
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
-
-    <div class="container" id="mainContent">
+        <div class="container" id="mainContent">
         <div class="card">
             <div class="card-title">
                 <span>📥 BARANG MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
@@ -336,27 +323,15 @@
                 <input type="hidden" id="editId" value="">
 
                 <div class="section-title">
-                    📋 Pilih PI & Item <span class="badge badge-wajib">WAJIB</span>
+                    📋 Pilih PI <span class="badge badge-wajib">WAJIB</span>
                 </div>
 
                 <div class="form-group">
                     <label>Pilih No PI <span class="required">*</span></label>
-                    <select id="selectNoPi" onchange="loadPiItems()">
+                    <select id="selectNoPi" onchange="loadPiData()">
                         <option value="">-- Pilih No PI --</option>
                     </select>
                     <span class="small-text">📌 Pilih PI yang sudah dibuat di menu Input PI</span>
-                </div>
-
-                <!-- DROPDOWN ITEM BARU! -->
-                <div class="form-group" id="itemSelectorGroup" style="display:none;">
-                    <label>Pilih Item dari PI <span class="required">*</span></label>
-                    <div class="item-selector">
-                        <select id="selectItem" onchange="loadItemData()">
-                            <option value="">-- Pilih Item --</option>
-                        </select>
-                        <span class="item-count" id="itemCount">0 item</span>
-                    </div>
-                    <span class="small-text">📌 Pilih salah satu item dari PI yang akan dimasukkan</span>
                 </div>
 
                 <div class="section-title">
@@ -388,9 +363,6 @@
                             <input type="text" id="qty_pi" disabled>
                         </div>
                     </div>
-                    <div class="info-box" id="bentukInfo">
-                        <strong>📦 Bentuk Item PI:</strong> <span id="bentukPiDisplay">-</span>
-                    </div>
                 </div>
 
                 <div class="section-title">
@@ -403,39 +375,24 @@
                         <input type="date" id="tanggal_terima" required>
                     </div>
                     <div class="form-group">
-                        <label>Bentuk Barang Masuk <span class="required">*</span></label>
+                        <label>Bentuk Barang <span class="required">*</span></label>
                         <div class="radio-group" id="bentukGroup">
                             <label><input type="radio" name="bentuk" value="sheet" checked onchange="toggleBentuk()"> 📄 Sheet</label>
                             <label><input type="radio" name="bentuk" value="pcs" onchange="toggleBentuk()"> 📦 Pcs</label>
-                            <label><input type="radio" name="bentuk" value="filter" onchange="toggleBentuk()"> 🔲 Filter</label>
-                            <label><input type="radio" name="bentuk" value="booklet" onchange="toggleBentuk()"> 📘 Booklet</label>
                         </div>
-                        <span class="small-text">📌 Pilih bentuk barang yang diterima</span>
                     </div>
                 </div>
 
                 <div class="form-row" id="qtyRow">
                     <div class="form-group">
                         <label id="qtyLabel">Qty Masuk (Sheet) <span class="required">*</span></label>
-                        <input type="number" id="qty_masuk" placeholder="Jumlah masuk" min="0" required>
-                        <span class="small-text" id="qtyHint">📌 Masukkan jumlah yang diterima</span>
+                        <input type="number" id="qty_masuk" placeholder="Jumlah sheet masuk" min="0" required>
+                        <span class="small-text" id="qtyHint">📌 Masukkan jumlah sheet yang diterima</span>
                     </div>
                     <div class="form-group" id="upRow">
-                        <label>Up / Unit <span class="required">*</span></label>
-                        <input type="number" id="up_per_unit" placeholder="Jumlah pcs per unit" min="1" required>
-                        <span class="small-text" id="upHint">📌 Jumlah pcs dalam 1 unit (sheet/filter/booklet)</span>
-                    </div>
-                </div>
-
-                <!-- Field tambahan untuk dimensi -->
-                <div class="form-row" id="dimensiRow" style="display:none;">
-                    <div class="form-group">
-                        <label>Panjang (cm) <span class="optional">Opsional</span></label>
-                        <input type="number" id="panjang" placeholder="Panjang" step="0.1" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Lebar (cm) <span class="optional">Opsional</span></label>
-                        <input type="number" id="lebar" placeholder="Lebar" step="0.1" min="0">
+                        <label>Up / Sheet <span class="required">*</span></label>
+                        <input type="number" id="up_per_sheet" placeholder="Jumlah pcs per sheet" min="1" required>
+                        <span class="small-text">📌 Jumlah pcs dalam 1 sheet</span>
                     </div>
                 </div>
 
@@ -490,7 +447,6 @@
         let allData = [];
         let isSubmitting = false;
         let selectedPiDetail = null;
-        let allPiItems = []; // Menyimpan semua item dari PI yang dipilih
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -518,39 +474,19 @@
             const qtyLabel = document.getElementById('qtyLabel');
             const qtyHint = document.getElementById('qtyHint');
             const upRow = document.getElementById('upRow');
-            const upInput = document.getElementById('up_per_unit');
-            const upHint = document.getElementById('upHint');
-            const dimensiRow = document.getElementById('dimensiRow');
+            const upInput = document.getElementById('up_per_sheet');
 
-            // Update label berdasarkan bentuk
-            const bentukNames = {
-                'sheet': 'Sheet',
-                'pcs': 'Pcs',
-                'filter': 'Filter',
-                'booklet': 'Booklet'
-            };
-
-            const name = bentukNames[value] || 'Unit';
-            qtyLabel.innerHTML = `Qty Masuk (${name}) <span class="required">*</span>`;
-            
-            if (value === 'pcs') {
+            if (value === 'sheet') {
+                qtyLabel.innerHTML = 'Qty Masuk (Sheet) <span class="required">*</span>';
+                qtyHint.textContent = '📌 Masukkan jumlah sheet yang diterima';
+                upRow.style.display = 'block';
+                upInput.required = true;
+            } else {
+                qtyLabel.innerHTML = 'Qty Masuk (Pcs) <span class="required">*</span>';
                 qtyHint.textContent = '📌 Masukkan jumlah pcs yang diterima';
                 upRow.style.display = 'none';
                 upInput.required = false;
                 upInput.value = 1;
-                upHint.textContent = '📌 Tidak berlaku untuk Pcs';
-                dimensiRow.style.display = 'none';
-            } else {
-                qtyHint.textContent = `📌 Masukkan jumlah ${name.toLowerCase()} yang diterima`;
-                upRow.style.display = 'block';
-                upInput.required = true;
-                upHint.textContent = `📌 Jumlah pcs dalam 1 ${name.toLowerCase()}`;
-                // Tampilkan dimensi untuk filter/booklet
-                if (value === 'filter' || value === 'booklet') {
-                    dimensiRow.style.display = 'grid';
-                } else {
-                    dimensiRow.style.display = 'none';
-                }
             }
             calculatePcs();
         }
@@ -560,35 +496,28 @@
         // ============================================================
         function calculatePcs() {
             const qty = parseInt(document.getElementById('qty_masuk').value) || 0;
-            const up = parseInt(document.getElementById('up_per_unit').value) || 1;
+            const up = parseInt(document.getElementById('up_per_sheet').value) || 1;
             const bentuk = document.querySelector('input[name="bentuk"]:checked');
             const value = bentuk ? bentuk.value : 'sheet';
             
             let totalPcs = 0;
-            if (value === 'pcs') {
-                totalPcs = qty;
-            } else {
+            if (value === 'sheet') {
                 totalPcs = qty * up;
+            } else {
+                totalPcs = qty;
             }
 
-            const bentukNames = {
-                'sheet': 'Sheet',
-                'pcs': 'Pcs', 
-                'filter': 'Filter',
-                'booklet': 'Booklet'
-            };
-
             document.getElementById('calcResult').innerHTML = 
-                `Qty Masuk: ${qty} × Up: ${value === 'pcs' ? '-' : up} = <strong style="color:#3b82f6;">${totalPcs.toLocaleString()} Pcs</strong>`;
+                `Qty Masuk: ${qty} × Up: ${value === 'sheet' ? up : '-'} = <strong style="color:#3b82f6;">${totalPcs.toLocaleString()} Pcs</strong>`;
             
             return totalPcs;
         }
 
         document.getElementById('qty_masuk').addEventListener('input', calculatePcs);
-        document.getElementById('up_per_unit').addEventListener('input', calculatePcs);
+        document.getElementById('up_per_sheet').addEventListener('input', calculatePcs);
 
         // ============================================================
-        // ✅ LOAD DAFTAR PI (DROPDOWN)
+        // ✅ LOAD DAFTAR PI (DROPDOWN) - FIXED
         // ============================================================
         async function loadPiList() {
             const select = document.getElementById('selectNoPi');
@@ -633,127 +562,55 @@
         }
 
         // ============================================================
-        // LOAD ITEMS DARI PI YANG DIPILIH (BARU!)
+        // LOAD DATA PI SAAT DIPILIH
         // ============================================================
-        async function loadPiItems() {
+        async function loadPiData() {
             const select = document.getElementById('selectNoPi');
             const piId = select.value;
-            const itemSelect = document.getElementById('selectItem');
-            const itemGroup = document.getElementById('itemSelectorGroup');
             const container = document.getElementById('piDataContainer');
-
-            // Reset item dropdown
-            itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
-            document.getElementById('itemCount').textContent = '0 item';
-            container.style.display = 'none';
-            allPiItems = [];
 
             if (!piId) {
-                itemGroup.style.display = 'none';
-                return;
-            }
-
-            try {
-                const { data: details, error } = await sb
-                    .from('pi_detail')
-                    .select('*')
-                    .eq('pi_id', piId);
-
-                if (error) {
-                    showMessage('❌ Gagal memuat item PI: ' + error.message, 'error');
-                    return;
-                }
-
-                if (!details || details.length === 0) {
-                    showMessage('⚠️ Tidak ada item di PI ini!', 'warning');
-                    itemGroup.style.display = 'none';
-                    return;
-                }
-
-                allPiItems = details;
-                itemGroup.style.display = 'block';
-                document.getElementById('itemCount').textContent = `${details.length} item`;
-
-                // Isi dropdown item
-                for (const item of details) {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    const bentukLabel = item.bentuk || 'Sheet';
-                    option.textContent = `${item.jenis || 'Item'} (${bentukLabel}) - ${item.qty_pi || 0} Pcs`;
-                    option.dataset.item = JSON.stringify(item);
-                    itemSelect.appendChild(option);
-                }
-
-                showToast(`✅ ${details.length} item ditemukan di PI ini`, 'success');
-
-            } catch (err) {
-                console.error('Error:', err);
-                showMessage('❌ Error: ' + err.message, 'error');
-            }
-        }
-
-        // ============================================================
-        // LOAD DATA ITEM SAAT DIPILIH
-        // ============================================================
-        async function loadItemData() {
-            const itemSelect = document.getElementById('selectItem');
-            const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-            const container = document.getElementById('piDataContainer');
-
-            if (!selectedOption || !selectedOption.value) {
                 container.style.display = 'none';
+                document.getElementById('brand').value = '';
+                document.getElementById('jenis').value = '';
+                document.getElementById('paper').value = '';
+                document.getElementById('size').value = '';
+                document.getElementById('qty_pi').value = '';
                 selectedPiDetail = null;
                 return;
             }
 
-            try {
-                const itemData = JSON.parse(selectedOption.dataset.item);
-                selectedPiDetail = itemData;
+            const { data: details, error } = await sb
+                .from('pi_detail')
+                .select('*')
+                .eq('pi_id', piId);
 
-                container.style.display = 'block';
-                document.getElementById('brand').value = itemData.brand || '-';
-                document.getElementById('jenis').value = itemData.jenis || '-';
-                document.getElementById('paper').value = itemData.paper || '-';
-                document.getElementById('size').value = itemData.size || '-';
-                document.getElementById('qty_pi').value = itemData.qty_pi || 0;
-
-                // Tampilkan bentuk dari PI
-                const bentukPi = itemData.bentuk || 'sheet';
-                document.getElementById('bentukPiDisplay').innerHTML = 
-                    `<span style="font-weight:bold;color:#3b82f6;">${bentukPi.toUpperCase()}</span>`;
-
-                // Set radio button sesuai bentuk PI
-                const radioButtons = document.querySelectorAll('input[name="bentuk"]');
-                let found = false;
-                for (const radio of radioButtons) {
-                    if (radio.value === bentukPi) {
-                        radio.checked = true;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    // Jika bentuk tidak dikenal, set ke sheet
-                    document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
-                }
-                toggleBentuk();
-
-                // Reset input
-                document.getElementById('qty_masuk').value = '';
-                document.getElementById('up_per_unit').value = '';
-                document.getElementById('panjang').value = itemData.panjang || '';
-                document.getElementById('lebar').value = itemData.lebar || '';
-                document.getElementById('notes').value = '';
-                document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
-
-                calculatePcs();
-
-                showToast(`✅ Data item ${itemData.jenis} dimuat`, 'success');
-
-            } catch (err) {
-                console.error('Error parsing item data:', err);
-                showMessage('❌ Gagal memuat data item', 'error');
+            if (error || !details || details.length === 0) {
+                showMessage('❌ Tidak ada item di PI ini!', 'error');
+                container.style.display = 'none';
+                return;
             }
+
+            const item = details[0];
+            selectedPiDetail = item;
+
+            container.style.display = 'block';
+            document.getElementById('brand').value = item.brand || '-';
+            document.getElementById('jenis').value = item.jenis || '-';
+            document.getElementById('paper').value = item.paper || '-';
+            document.getElementById('size').value = item.size || '-';
+            document.getElementById('qty_pi').value = item.qty_pi || 0;
+
+            document.getElementById('qty_masuk').value = '';
+            document.getElementById('up_per_sheet').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+            
+            document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+            toggleBentuk();
+            calculatePcs();
+
+            showToast(`✅ Data PI ${select.options[select.selectedIndex].text} dimuat`, 'success');
         }
 
         // ============================================================
@@ -764,32 +621,18 @@
 
             const piId = document.getElementById('selectNoPi').value;
             const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
-            const itemId = document.getElementById('selectItem').value;
-            const itemName = document.getElementById('selectItem').selectedOptions[0]?.text || '';
             const tanggal_terima = document.getElementById('tanggal_terima').value;
             const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
             const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
-            const up_per_unit = parseInt(document.getElementById('up_per_unit').value) || 1;
-            const panjang = parseFloat(document.getElementById('panjang').value) || null;
-            const lebar = parseFloat(document.getElementById('lebar').value) || null;
+            const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
             const notes = document.getElementById('notes').value.trim();
             const editId = document.getElementById('editId').value;
 
-            // Validasi
             if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
-            if (!itemId) { showMessage('❌ Pilih Item dari PI!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
             if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
-            
-            // Validasi up untuk bentuk non-pcs
-            if (bentuk !== 'pcs' && (!up_per_unit || up_per_unit < 1)) {
-                showMessage(`❌ Up/Unit harus lebih dari 0 untuk bentuk ${bentuk}!`, 'error');
-                return;
-            }
-
-            // Validasi dimensi untuk filter/booklet
-            if ((bentuk === 'filter' || bentuk === 'booklet') && (!panjang || !lebar)) {
-                showMessage(`❌ Panjang dan Lebar wajib diisi untuk bentuk ${bentuk}!`, 'error');
+            if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
+                showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
                 return;
             }
 
@@ -803,25 +646,23 @@
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 
-                const qty_pcs = bentuk === 'pcs' ? qty_masuk : qty_masuk * up_per_unit;
+                const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
 
                 const data = {
                     no_pi: noPi,
-                    pi_detail_id: parseInt(itemId),
                     brand: selectedPiDetail?.brand || '',
                     jenis: selectedPiDetail?.jenis || '',
                     paper: selectedPiDetail?.paper || '',
                     size: selectedPiDetail?.size || '',
                     qty_pi: selectedPiDetail?.qty_pi || 0,
-                    qty_unit: qty_masuk,
+                    qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
                     qty_masuk_pcs: qty_pcs,
-                    up_per_unit: bentuk !== 'pcs' ? up_per_unit : 1,
+                    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
                     bentuk: bentuk,
-                    panjang: panjang,
-                    lebar: lebar,
                     status: 'DITERIMA',
                     tanggal_terima: tanggal_terima,
                     notes: notes || null,
+                    pi_detail_id: selectedPiDetail?.id || null,
                     created_by: user?.email || 'Unknown'
                 };
 
@@ -847,7 +688,7 @@
                 loadData();
 
                 try {
-                    await addLog('BARANG MASUK', `${user?.email} ${actionText} barang masuk ${selectedPiDetail?.jenis} (PI: ${noPi})`);
+                    await addLog('BARANG MASUK', `${user?.email} ${actionText} barang masuk ${selectedPiDetail?.brand} - ${selectedPiDetail?.jenis} (PI: ${noPi})`);
                 } catch(e) {}
 
             } catch (err) {
@@ -870,8 +711,6 @@
             document.getElementById('btnSubmit').innerHTML = '💾 Simpan Barang Masuk';
             
             document.getElementById('selectNoPi').value = '';
-            document.getElementById('selectItem').innerHTML = '<option value="">-- Pilih Item --</option>';
-            document.getElementById('itemSelectorGroup').style.display = 'none';
             document.getElementById('piDataContainer').style.display = 'none';
             document.getElementById('brand').value = '';
             document.getElementById('jenis').value = '';
@@ -880,16 +719,13 @@
             document.getElementById('qty_pi').value = '';
             document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
             document.getElementById('qty_masuk').value = '';
-            document.getElementById('up_per_unit').value = '';
-            document.getElementById('panjang').value = '';
-            document.getElementById('lebar').value = '';
+            document.getElementById('up_per_sheet').value = '';
             document.getElementById('notes').value = '';
             document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
             toggleBentuk();
             calculatePcs();
             document.getElementById('msgContainer').innerHTML = '';
             selectedPiDetail = null;
-            allPiItems = [];
         }
 
         // ============================================================
@@ -907,54 +743,28 @@
                 return;
             }
 
-            // Cari dan pilih PI
-            const selectPi = document.getElementById('selectNoPi');
-            for (let i = 0; i < selectPi.options.length; i++) {
-                if (selectPi.options[i].dataset.noPi === item.no_pi) {
-                    selectPi.value = selectPi.options[i].value;
+            const select = document.getElementById('selectNoPi');
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].dataset.noPi === item.no_pi) {
+                    select.value = select.options[i].value;
                     break;
                 }
             }
-            
-            // Load items dari PI
-            await loadPiItems();
-            
-            // Pilih item yang sesuai
-            const selectItem = document.getElementById('selectItem');
-            for (let i = 0; i < selectItem.options.length; i++) {
-                const optionData = selectItem.options[i].dataset.item;
-                if (optionData) {
-                    try {
-                        const parsed = JSON.parse(optionData);
-                        if (parsed.id === item.pi_detail_id) {
-                            selectItem.value = parsed.id;
-                            break;
-                        }
-                    } catch(e) {}
-                }
-            }
-            
-            await loadItemData();
+            await loadPiData();
 
             document.getElementById('editId').value = id;
             document.getElementById('editBadge').style.display = 'inline';
             document.getElementById('btnSubmit').innerHTML = '✏️ Update Barang Masuk';
             
             document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
-            document.getElementById('qty_masuk').value = item.qty_unit || item.qty_masuk_pcs || '';
-            document.getElementById('up_per_unit').value = item.up_per_unit || '';
-            document.getElementById('panjang').value = item.panjang || '';
-            document.getElementById('lebar').value = item.lebar || '';
+            document.getElementById('qty_masuk').value = item.qty_sheet || item.qty_masuk_pcs || '';
+            document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
             document.getElementById('notes').value = item.notes || '';
             
-            // Set bentuk
-            const bentuk = item.bentuk || 'sheet';
-            const radioButtons = document.querySelectorAll('input[name="bentuk"]');
-            for (const radio of radioButtons) {
-                if (radio.value === bentuk) {
-                    radio.checked = true;
-                    break;
-                }
+            if (item.bentuk === 'pcs') {
+                document.querySelector('input[name="bentuk"][value="pcs"]').checked = true;
+            } else {
+                document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
             }
             toggleBentuk();
             calculatePcs();
@@ -1008,9 +818,9 @@
                     <thead>
                         <tr>
                             <th>No PI</th>
-                            <th>Item</th>
-                            <th>Bentuk</th>
-                            <th style="text-align:center;">Qty Unit</th>
+                            <th>Brand</th>
+                            <th>Jenis</th>
+                            <th style="text-align:center;">Sheet</th>
                             <th style="text-align:center;">Up</th>
                             <th style="text-align:center;">Pcs</th>
                             <th style="text-align:center;">Status</th>
@@ -1023,21 +833,15 @@
 
             for (const item of allData) {
                 const bentuk = item.bentuk || 'sheet';
-                const bentukEmoji = {
-                    'sheet': '📄',
-                    'pcs': '📦',
-                    'filter': '🔲',
-                    'booklet': '📘'
-                }[bentuk] || '📄';
                 
                 html += `
                     <tr>
                         <td><strong>${item.no_pi}</strong></td>
-                        <td>${item.jenis || '-'}</td>
-                        <td>${bentukEmoji} ${bentuk.toUpperCase()}</td>
-                        <td style="text-align:center;">${bentuk !== 'pcs' ? item.qty_unit || '-' : '-'}</td>
-                        <td style="text-align:center;">${bentuk !== 'pcs' ? item.up_per_unit || '-' : '-'}</td>
-                        <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || 0}</td>
+                        <td>${item.brand}</td>
+                        <td>${item.jenis}</td>
+                        <td style="text-align:center;">${bentuk === 'sheet' ? item.qty_sheet : '-'}</td>
+                        <td style="text-align:center;">${bentuk === 'sheet' ? item.up_per_sheet : '-'}</td>
+                        <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || item.qty_sheet || 0}</td>
                         <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
                         <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
                         <td style="min-width:200px; text-align:center;">
@@ -1117,34 +921,26 @@
             };
 
             const bentuk = item.bentuk || 'sheet';
-            const bentukEmoji = {
-                'sheet': '📄',
-                'pcs': '📦',
-                'filter': '🔲',
-                'booklet': '📘'
-            }[bentuk] || '📄';
 
             let html = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
-                    <div><strong>Item:</strong> ${item.jenis || '-'}</div>
                     <div><strong>Brand:</strong> ${item.brand || '-'}</div>
+                    <div><strong>Jenis:</strong> ${item.jenis || '-'}</div>
                     <div><strong>Paper:</strong> ${item.paper || '-'}</div>
                     <div><strong>Size:</strong> ${item.size || '-'}</div>
                     <div><strong>Qty PI (Pcs):</strong> ${item.qty_pi || '-'}</div>
-                    <div><strong>Bentuk:</strong> ${bentukEmoji} ${bentuk.toUpperCase()}</div>
-                    <div><strong>Qty Unit:</strong> ${bentuk !== 'pcs' ? item.qty_unit : '-'}</div>
-                    ${bentuk !== 'pcs' ? `<div><strong>Up/Unit:</strong> ${item.up_per_unit}</div>` : ''}
-                    ${(bentuk === 'filter' || bentuk === 'booklet') ? `<div><strong>Dimensi:</strong> ${item.panjang || '-'} x ${item.lebar || '-'} cm</div>` : ''}
-                    <div><strong>Total Pcs:</strong> ${item.qty_masuk_pcs || 0} Pcs</div>
+                    <div><strong>Bentuk:</strong> ${bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
+                    <div><strong>Qty Masuk:</strong> ${bentuk === 'sheet' ? item.qty_sheet + ' Sheet' : item.qty_masuk_pcs + ' Pcs'}</div>
+                    ${bentuk === 'sheet' ? `<div><strong>Up/Sheet:</strong> ${item.up_per_sheet}</div>` : ''}
+                    <div><strong>Total Pcs:</strong> ${item.qty_masuk_pcs || item.qty_sheet || 0} Pcs</div>
                     <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
                     <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
                     <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
-                    <div><strong>Dibuat oleh:</strong> ${item.created_by || '-'}</div>
                 </div>
             `;
 
-            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.jenis} (${item.no_pi})`;
+            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_pi} (${item.brand})`;
             document.getElementById('detailContent').innerHTML = html;
             document.getElementById('detailModal').style.display = 'flex';
         }
@@ -1227,10 +1023,8 @@
             calculatePcs();
         }
 
-        // Export functions for inline onclick
         window.loadPiList = loadPiList;
-        window.loadPiItems = loadPiItems;
-        window.loadItemData = loadItemData;
+        window.loadPiData = loadPiData;
         window.saveInbound = saveInbound;
         window.resetForm = resetForm;
         window.editMaterial = editMaterial;
