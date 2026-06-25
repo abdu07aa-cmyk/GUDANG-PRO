@@ -713,24 +713,24 @@
             const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
 
             const data = {
-                no_pi: noPi,
-                brand: selectedPiDetail?.brand || '',
-                jenis: selectedPiDetail?.jenis || '',
-                paper: selectedPiDetail?.paper || '',
-                size: selectedPiDetail?.                size: selectedPiDetail?.size || '',
-                qty_pi: selectedPiDetail?.qty_pi || 0,
-                pi_id: parseInt(piId),
-                pi_detail_id: parseInt(itemId),
-                tanggal_terima: tanggal_terima,
-                bentuk: bentuk,
-                qty_masuk: qty_masuk,
-                up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
-                qty_pcs: qty_pcs,
-                notes: notes,
-                status: 'diterima',
-                created_by: user?.email || 'system',
-                updated_at: new Date().toISOString()
-            };
+    no_pi: noPi,
+    brand: selectedPiDetail?.brand || '',
+    jenis: selectedPiDetail?.jenis || '',
+    paper: selectedPiDetail?.paper || '',
+    size: selectedPiDetail?.size || '',  // ✅ SUDAH BENAR
+    qty_pi: selectedPiDetail?.qty_pi || 0,
+    pi_id: parseInt(piId),
+    pi_detail_id: parseInt(itemId),
+    tanggal_terima: tanggal_terima,
+    bentuk: bentuk,
+    qty_masuk: qty_masuk,
+    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+    qty_pcs: qty_pcs,
+    notes: notes,
+    status: 'diterima',
+    created_by: user?.email || 'system',
+    updated_at: new Date().toISOString()
+};
 
             let result;
             let isEdit = false;
