@@ -90,6 +90,7 @@
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
         .form-group label .required { color: #ef4444; }
+        .form-group label .optional { color: #64748b; font-weight: 400; font-size: 11px; }
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px 12px;
@@ -111,7 +112,6 @@
             transition: all 0.2s;
         }
         .btn:active { transform: scale(0.97); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-success { background: #10b981; color: white; }
         .btn-success:hover { background: #059669; }
         .btn-secondary { background: #e2e8f0; color: #1e293b; }
@@ -124,8 +124,6 @@
         .btn-danger:hover { background: #dc2626; }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-warning:hover { background: #d97706; }
-        .btn-edit { background: #f59e0b; color: white; }
-        .btn-edit:hover { background: #d97706; }
 
         .alert {
             padding: 12px 16px;
@@ -136,7 +134,6 @@
         .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
         .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-        .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 
         .info-box {
             background: #f8fafc;
@@ -165,14 +162,13 @@
         .toast.show { display: block; animation: fadeInUp 0.3s ease; }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
-        .toast.info { background: #3b82f6; }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
 
@@ -253,14 +249,7 @@
         }
         .btn-cancel { background: #e2e8f0; color: #1e293b; }
 
-        .edit-badge {
-            background: #f59e0b;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            margin-left: 8px;
-        }
+        .small-text { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
 
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
@@ -318,7 +307,7 @@
         <!-- FORM INPUT -->
         <div class="card">
             <div class="card-title">
-                <span>📥 MATERIAL MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
+                <span>📥 MATERIAL MASUK DARI SUPPLIER</span>
                 <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">
                     📊 Tracking
                 </button>
@@ -329,21 +318,23 @@
             <form id="inboundForm" onsubmit="return false;">
                 <input type="hidden" id="editId" value="">
 
+                <!-- No PO - OPSIONAL -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>No PO <span class="required">*</span></label>
-                        <input type="text" id="no_po" placeholder="Contoh: PO-2024-001" required>
+                        <label>No PO <span class="optional">(opsional)</span></label>
+                        <input type="text" id="no_po" placeholder="Contoh: PO-2024-001">
                     </div>
                     <div class="form-group">
-                        <label>No PI</label>
-                        <input type="text" id="no_pi" placeholder="Contoh: PI-2024-001">
+                        <label>No PI <span class="required">*</span></label>
+                        <input type="text" id="no_pi" placeholder="Contoh: PI-2024-001" required>
                     </div>
                 </div>
 
+                <!-- Surat Jalan - OPSIONAL -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Surat Jalan / DO <span class="required">*</span></label>
-                        <input type="text" id="surat_jalan" placeholder="Contoh: SJ-001" required>
+                        <label>Surat Jalan / DO <span class="optional">(opsional)</span></label>
+                        <input type="text" id="surat_jalan" placeholder="Contoh: SJ-001">
                     </div>
                     <div class="form-group">
                         <label>Tanggal Terima <span class="required">*</span></label>
@@ -351,11 +342,13 @@
                     </div>
                 </div>
 
+                <!-- Supplier - OPSIONAL -->
                 <div class="form-group">
-                    <label>Supplier</label>
+                    <label>Supplier <span class="optional">(opsional)</span></label>
                     <input type="text" id="supplier" placeholder="Nama Supplier">
                 </div>
 
+                <!-- Produk - WAJIB -->
                 <div class="form-row-3">
                     <div class="form-group">
                         <label>Brand <span class="required">*</span></label>
@@ -366,14 +359,14 @@
                         <input type="text" id="jenis" placeholder="Contoh: Glass Tips 11x30mm" required>
                     </div>
                     <div class="form-group">
-                        <label>Paper</label>
+                        <label>Paper <span class="optional">(opsional)</span></label>
                         <input type="text" id="paper" placeholder="Contoh: Art Paper 250gsm">
                     </div>
                 </div>
 
                 <div class="form-row-3">
                     <div class="form-group">
-                        <label>Size</label>
+                        <label>Size <span class="optional">(opsional)</span></label>
                         <input type="text" id="size" placeholder="Contoh: 10x10 cm">
                     </div>
                     <div class="form-group">
@@ -386,15 +379,17 @@
                     </div>
                 </div>
 
-                <!-- ✅ TAMBAHAN: QTY PO & QTY PI -->
+                <!-- ✅ QTY PI - 2 KOLOM (SHEET & PCS) -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Qty PO <span class="required">*</span></label>
-                        <input type="number" id="qty_po" placeholder="Jumlah sesuai PO" min="1" required>
+                        <label>Qty PI (Sheet) <span class="optional">(opsional)</span></label>
+                        <input type="number" id="qty_pi_sheet" placeholder="Jumlah sheet di PI" min="0">
+                        <span class="small-text">📌 Jumlah sheet sesuai Proforma Invoice</span>
                     </div>
                     <div class="form-group">
-                        <label>Qty PI <span class="required">*</span></label>
-                        <input type="number" id="qty_pi" placeholder="Jumlah sesuai PI" min="1" required>
+                        <label>Qty PI (Pcs) <span class="optional">(opsional)</span></label>
+                        <input type="number" id="qty_pi_pcs" placeholder="Jumlah pcs di PI" min="0">
+                        <span class="small-text">📌 Jumlah pcs sesuai Proforma Invoice</span>
                     </div>
                 </div>
 
@@ -403,8 +398,9 @@
                     <span id="calcResult">Qty Sheet: 0 × Up: 0 = <strong>0 Pcs</strong></span>
                 </div>
 
+                <!-- Catatan - OPSIONAL -->
                 <div class="form-group">
-                    <label>Catatan / Keterangan</label>
+                    <label>Catatan / Keterangan <span class="optional">(opsional)</span></label>
                     <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
                 </div>
 
@@ -445,24 +441,10 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi -->
-    <div id="confirmModal" class="modal">
-        <div class="modal-content">
-            <h3>⚠️ Konfirmasi</h3>
-            <div id="confirmContent"></div>
-            <div class="modal-footer">
-                <button class="btn btn-success" id="confirmYes" onclick="confirmAction()">✅ Ya, Lanjutkan</button>
-                <button class="btn btn-cancel" onclick="closeModal('confirmModal')">❌ Batal</button>
-            </div>
-        </div>
-    </div>
-
     <div id="toast" class="toast"></div>
         <script>
         let allData = [];
         let isSubmitting = false;
-        let pendingAction = null;
-        let pendingData = null;
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -477,8 +459,7 @@
             const map = {
                 success: 'alert-success',
                 error: 'alert-error',
-                info: 'alert-info',
-                warning: 'alert-warning'
+                info: 'alert-info'
             };
             container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
             setTimeout(() => container.innerHTML = '', 5000);
@@ -500,23 +481,6 @@
         // Set today's date
         document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
 
-        // ========== SHOW CONFIRMATION ==========
-        function showConfirmation(message, action, data) {
-            document.getElementById('confirmContent').innerHTML = `<p>${message}</p>`;
-            pendingAction = action;
-            pendingData = data;
-            document.getElementById('confirmModal').style.display = 'flex';
-        }
-
-        function confirmAction() {
-            closeModal('confirmModal');
-            if (pendingAction) {
-                pendingAction(pendingData);
-                pendingAction = null;
-                pendingData = null;
-            }
-        }
-
         // ========== SAVE INBOUND ==========
         async function saveInbound() {
             if (isSubmitting) return;
@@ -532,33 +496,29 @@
             const size = document.getElementById('size').value.trim();
             const qty_sheet = parseInt(document.getElementById('qty_sheet').value);
             const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value);
-            const qty_po = parseInt(document.getElementById('qty_po').value);
-            const qty_pi = parseInt(document.getElementById('qty_pi').value);
+            const qty_pi_sheet = parseInt(document.getElementById('qty_pi_sheet').value);
+            const qty_pi_pcs = parseInt(document.getElementById('qty_pi_pcs').value);
             const notes = document.getElementById('notes').value.trim();
             const editId = document.getElementById('editId').value;
 
-            // Validasi
-            if (!no_po) { showMessage('❌ No PO wajib diisi!', 'error'); return; }
-            if (!surat_jalan) { showMessage('❌ Surat Jalan wajib diisi!', 'error'); return; }
+            // ✅ VALIDASI - Hanya field WAJIB
+            if (!no_pi) { showMessage('❌ No PI wajib diisi!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
             if (!brand) { showMessage('❌ Brand wajib diisi!', 'error'); return; }
             if (!jenis) { showMessage('❌ Jenis wajib diisi!', 'error'); return; }
             if (!qty_sheet || qty_sheet < 1) { showMessage('❌ Qty Sheet harus lebih dari 0!', 'error'); return; }
             if (!up_per_sheet || up_per_sheet < 1) { showMessage('❌ Up per Sheet harus lebih dari 0!', 'error'); return; }
-            if (!qty_po || qty_po < 1) { showMessage('❌ Qty PO harus lebih dari 0!', 'error'); return; }
-            if (!qty_pi || qty_pi < 1) { showMessage('❌ Qty PI harus lebih dari 0!', 'error'); return; }
 
-            // Cek duplikat (hanya untuk tambah baru)
+            // ✅ CEK DUPLIKAT (hanya untuk tambah baru)
             if (!editId) {
                 const { data: existing } = await sb
                     .from('material_inbound')
                     .select('id')
-                    .eq('no_po', no_po)
-                    .eq('surat_jalan', surat_jalan)
-                    .single();
+                    .eq('no_pi', no_pi)
+                    .maybeSingle();
 
                 if (existing) {
-                    showMessage(`⚠️ Material dengan No PO "${no_po}" dan Surat Jalan "${surat_jalan}" sudah ada!`, 'error');
+                    showMessage(`⚠️ Material dengan No PI "${no_pi}" sudah ada!`, 'error');
                     return;
                 }
             }
@@ -575,54 +535,55 @@
                 const { data: { user } } = await sb.auth.getUser();
                 
                 const data = {
-                    no_po,
-                    no_pi: no_pi || null,
-                    surat_jalan,
-                    tanggal_terima,
-                    supplier: supplier || null,
+                    no_pi,
                     brand,
                     jenis,
-                    paper: paper || null,
-                    size: size || null,
                     qty_sheet,
                     up_per_sheet,
-                    qty_po,
-                    qty_pi,
-                    notes: notes || null,
-                    updated_by: user?.email || 'Unknown',
-                    updated_at: new Date().toISOString()
+                    status: 'DITERIMA',
+                    tanggal_terima,
+                    created_by: user?.email || 'Unknown'
                 };
+
+                // Field OPSIONAL (hanya ditambahkan jika ada nilai)
+                if (no_po) data.no_po = no_po;
+                if (surat_jalan) data.surat_jalan = surat_jalan;
+                if (supplier) data.supplier = supplier;
+                if (paper) data.paper = paper;
+                if (size) data.size = size;
+                if (notes) data.notes = notes;
+                if (qty_pi_sheet) data.qty_pi_sheet = qty_pi_sheet;
+                if (qty_pi_pcs) data.qty_pi_pcs = qty_pi_pcs;
 
                 let result;
                 if (editId) {
-                    // UPDATE
+                    data.updated_by = user?.email || 'Unknown';
+                    data.updated_at = new Date().toISOString();
                     result = await sb
                         .from('material_inbound')
                         .update(data)
                         .eq('id', editId);
                 } else {
-                    // INSERT
-                    data.status = 'DITERIMA';
-                    data.created_by = user?.email || 'Unknown';
                     result = await sb.from('material_inbound').insert([data]);
                 }
 
                 if (result.error) throw result.error;
 
                 const actionText = editId ? 'diupdate' : 'disimpan';
-                showMessage(`✅ Material berhasil ${actionText}!`, 'success');
+                showMessage(`✅ Material berhasil ${actionText}! Status: DITERIMA (siap QC)`, 'success');
                 showToast(`✅ Material berhasil ${actionText}!`, 'success');
 
                 resetForm();
                 loadData();
 
                 try {
-                    await addLog('MATERIAL MASUK', `${user?.email} ${actionText} material ${brand} - ${jenis} (PO: ${no_po})`);
+                    await addLog('MATERIAL MASUK', `${user?.email} ${actionText} material ${brand} - ${jenis} (PI: ${no_pi})`);
                 } catch(e) {}
 
             } catch (err) {
                 showMessage('❌ Gagal: ' + err.message, 'error');
                 showToast('❌ Gagal: ' + err.message, 'error');
+                console.error('Save error:', err);
             } finally {
                 isSubmitting = false;
                 btn.innerHTML = originalText;
@@ -630,7 +591,6 @@
             }
         }
 
-        // ========== RESET FORM ==========
         function resetForm() {
             document.getElementById('editId').value = '';
             document.getElementById('no_po').value = '';
@@ -643,16 +603,52 @@
             document.getElementById('size').value = '';
             document.getElementById('qty_sheet').value = '';
             document.getElementById('up_per_sheet').value = '';
-            document.getElementById('qty_po').value = '';
-            document.getElementById('qty_pi').value = '';
+            document.getElementById('qty_pi_sheet').value = '';
+            document.getElementById('qty_pi_pcs').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
             document.getElementById('msgContainer').innerHTML = '';
-            document.getElementById('editBadge').style.display = 'none';
             document.getElementById('btnSubmit').innerHTML = '💾 Simpan Material Masuk';
-            document.getElementById('btnSubmit').onclick = saveInbound;
+            document.getElementById('editBadge').style.display = 'none';
             calculatePcs();
-            document.getElementById('no_po').focus();
+            document.getElementById('no_pi').focus();
+        }
+
+        // ========== EDIT MATERIAL ==========
+        async function editMaterial(id) {
+            const { data: item } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (!item) {
+                showToast('❌ Data tidak ditemukan!', 'error');
+                return;
+            }
+
+            document.getElementById('editId').value = id;
+            document.getElementById('no_po').value = item.no_po || '';
+            document.getElementById('no_pi').value = item.no_pi || '';
+            document.getElementById('surat_jalan').value = item.surat_jalan || '';
+            document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
+            document.getElementById('supplier').value = item.supplier || '';
+            document.getElementById('brand').value = item.brand || '';
+            document.getElementById('jenis').value = item.jenis || '';
+            document.getElementById('paper').value = item.paper || '';
+            document.getElementById('size').value = item.size || '';
+            document.getElementById('qty_sheet').value = item.qty_sheet || '';
+            document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
+            document.getElementById('qty_pi_sheet').value = item.qty_pi_sheet || '';
+            document.getElementById('qty_pi_pcs').value = item.qty_pi_pcs || '';
+            document.getElementById('notes').value = item.notes || '';
+
+            document.getElementById('editBadge').style.display = 'inline';
+            document.getElementById('btnSubmit').innerHTML = '✏️ Update Material';
+            document.getElementById('btnSubmit').onclick = saveInbound;
+
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+            showToast('📝 Mode Edit: silakan ubah data', 'info');
         }
 
         // ========== LOAD DATA ==========
@@ -697,13 +693,13 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>No PO</th>
+                            <th>No PI</th>
                             <th>Brand</th>
                             <th>Jenis</th>
                             <th>Sheet</th>
                             <th>Pcs</th>
-                            <th>Qty PO</th>
-                            <th>Qty PI</th>
+                            <th>Qty PI Sheet</th>
+                            <th>Qty PI Pcs</th>
                             <th>Status</th>
                             <th>Tgl Terima</th>
                             <th>Aksi</th>
@@ -715,13 +711,13 @@
             for (const item of allData) {
                 html += `
                     <tr>
-                        <td><strong>${item.no_po}</strong></td>
+                        <td><strong>${item.no_pi}</strong></td>
                         <td>${item.brand}</td>
                         <td>${item.jenis}</td>
                         <td style="text-align:center;">${item.qty_sheet}</td>
                         <td style="text-align:center; font-weight:bold;">${item.qty_pcs}</td>
-                        <td style="text-align:center;">${item.qty_po || '-'}</td>
-                        <td style="text-align:center;">${item.qty_pi || '-'}</td>
+                        <td style="text-align:center;">${item.qty_pi_sheet || '-'}</td>
+                        <td style="text-align:center;">${item.qty_pi_pcs || '-'}</td>
                         <td><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
                         <td style="font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
                         <td style="min-width:250px;">
@@ -753,7 +749,7 @@
             container.innerHTML = html;
         }
 
-        // ========== FUNGSI AKSI DENGAN PARAMETER ==========
+        // ========== FUNGSI AKSI ==========
         function goToQC(id) {
             window.location.href = `qc-inspection.html?material_id=${id}&qc=1`;
         }
@@ -768,50 +764,6 @@
 
         function goToSend(id) {
             window.location.href = `production-send.html?material_id=${id}`;
-        }
-
-        // ========== EDIT MATERIAL ==========
-        async function editMaterial(id) {
-            const { data: item } = await sb
-                .from('material_inbound')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (!item) {
-                showToast('❌ Data tidak ditemukan!', 'error');
-                return;
-            }
-
-            // Isi form dengan data
-            document.getElementById('editId').value = id;
-            document.getElementById('no_po').value = item.no_po || '';
-            document.getElementById('no_pi').value = item.no_pi || '';
-            document.getElementById('surat_jalan').value = item.surat_jalan || '';
-            document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
-            document.getElementById('supplier').value = item.supplier || '';
-            document.getElementById('brand').value = item.brand || '';
-            document.getElementById('jenis').value = item.jenis || '';
-            document.getElementById('paper').value = item.paper || '';
-            document.getElementById('size').value = item.size || '';
-            document.getElementById('qty_sheet').value = item.qty_sheet || '';
-            document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
-            document.getElementById('qty_po').value = item.qty_po || '';
-            document.getElementById('qty_pi').value = item.qty_pi || '';
-            document.getElementById('notes').value = item.notes || '';
-
-            // Tampilkan badge edit
-            document.getElementById('editBadge').style.display = 'inline';
-
-            // Ubah tombol jadi Update
-            const btn = document.getElementById('btnSubmit');
-            btn.innerHTML = '✏️ Update Material';
-            btn.onclick = saveInbound;
-
-            // Scroll ke form
-            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
-
-            showToast('📝 Mode Edit: silakan ubah data', 'info');
         }
 
         // ========== DETAIL ==========
@@ -854,8 +806,8 @@
                     <div><strong>Qty Sheet:</strong> ${item.qty_sheet}</div>
                     <div><strong>Up/Sheet:</strong> ${item.up_per_sheet}</div>
                     <div><strong>Total Pcs:</strong> ${item.qty_pcs}</div>
-                    <div><strong>Qty PO:</strong> ${item.qty_po || '-'}</div>
-                    <div><strong>Qty PI:</strong> ${item.qty_pi || '-'}</div>
+                    <div><strong>Qty PI Sheet:</strong> ${item.qty_pi_sheet || '-'}</div>
+                    <div><strong>Qty PI Pcs:</strong> ${item.qty_pi_pcs || '-'}</div>
                     <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
                     <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
                     <div><strong>Dibuat:</strong> ${item.created_by || '-'}</div>
@@ -863,7 +815,7 @@
                 </div>
             `;
 
-            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_po} (${item.brand})`;
+            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_pi} (${item.brand})`;
             document.getElementById('detailContent').innerHTML = html;
             document.getElementById('detailModal').style.display = 'flex';
         }
@@ -871,6 +823,13 @@
         // ========== DELETE ==========
         async function deleteMaterial(id) {
             if (!confirm('Yakin ingin menghapus material ini?')) return;
+            
+            // Hapus data terkait
+            await sb.from('ng_tracking').delete().eq('material_inbound_id', id);
+            await sb.from('qc_inspection').delete().eq('material_inbound_id', id);
+            await sb.from('diecut_process').delete().eq('material_inbound_id', id);
+            await sb.from('production_send').delete().eq('material_inbound_id', id);
+            
             const { error } = await sb.from('material_inbound').delete().eq('id', id);
             if (error) {
                 showToast('❌ Gagal: ' + error.message, 'error');
@@ -884,7 +843,7 @@
             document.getElementById(id).style.display = 'none';
         }
 
-        // ========== NAVIGASI ==========
+        // ============ NAVIGASI ============
         function goToMenu(menu) {
             const files = {
                 dashboard: 'dashboard.html',
@@ -938,15 +897,14 @@
         window.resetForm = resetForm;
         window.calculatePcs = calculatePcs;
         window.loadData = loadData;
-        window.showDetail = showDetail;
         window.editMaterial = editMaterial;
+        window.showDetail = showDetail;
         window.goToQC = goToQC;
         window.goToQC2 = goToQC2;
         window.goToDiecut = goToDiecut;
         window.goToSend = goToSend;
         window.deleteMaterial = deleteMaterial;
         window.closeModal = closeModal;
-        window.confirmAction = confirmAction;
 
         init();
     </script>
