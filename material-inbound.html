@@ -695,259 +695,272 @@
     // ============================================================
     // SAVE INBOUND
     // ============================================================
-    async function saveInbound() {
-        if (isSubmitting) return;
+    // ============================================================
+// SAVE INBOUND (VERSI TERBARU - SESUAI STRUKTUR TABEL)
+// ============================================================
+async function saveInbound() {
+    if (isSubmitting) return;
 
-        const piId = document.getElementById('selectNoPi').value;
-        const itemId = document.getElementById('selectItem').value;
-        const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
-        const tanggal_terima = document.getElementById('tanggal_terima').value;
-        const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
-        const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
-        const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
-        const notes = document.getElementById('notes').value.trim();
-        const editId = document.getElementById('editId').value;
+    const piId = document.getElementById('selectNoPi').value;
+    const itemId = document.getElementById('selectItem').value;
+    const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
+    const tanggal_terima = document.getElementById('tanggal_terima').value;
+    const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
+    const qty_sheet = parseInt(document.getElementById('qty_masuk').value); // qty_masuk → qty_sheet
+    const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
+    const notes = document.getElementById('notes').value.trim();
+    const editId = document.getElementById('editId').value;
 
-        // Validasi
-        if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
-        if (!itemId) { showMessage('❌ Pilih Item terlebih dahulu!', 'error'); return; }
-        if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
-        if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
-        if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
-            showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
+    // Validasi
+    if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+    if (!itemId) { showMessage('❌ Pilih Item terlebih dahulu!', 'error'); return; }
+    if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
+    if (!qty_sheet || qty_sheet < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
+    if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
+        showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
+        return;
+    }
+
+    // Loading state
+    const btn = document.getElementById('btnSubmit');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
+    btn.disabled = true;
+    isSubmitting = true;
+
+    try {
+        const { data: { user } } = await sb.auth.getUser();
+        
+        // Hitung qty_pcs
+        const qty_pcs = bentuk === 'sheet' ? qty_sheet * up_per_sheet : qty_sheet;
+
+        // Data sesuai struktur tabel
+        const data = {
+            no_pi: noPi,
+            brand: selectedPiDetail?.brand || '',
+            jenis: selectedPiDetail?.jenis || '',
+            paper: selectedPiDetail?.paper || '',
+            size: selectedPiDetail?.size || '',
+            qty_po: selectedPiDetail?.qty_pi || 0, // qty_pi → qty_po
+            qty_sheet: qty_sheet, // qty_masuk → qty_sheet
+            qty_pcs: qty_pcs,
+            up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+            bentuk: bentuk,
+            tanggal_terima: tanggal_terima,
+            notes: notes,
+            status: 'diterima',
+            pi_detail_id: itemId,
+            pi_id: piId,
+            created_by: user?.email || 'system',
+            updated_at: new Date().toISOString(),
+            updated_by: user?.email || 'system'
+        };
+
+        let result;
+        if (editId) {
+            // Update
+            result = await sb
+                .from('material_inbound')
+                .update(data)
+                .eq('id', editId);
+        } else {
+            // Insert
+            data.created_at = new Date().toISOString();
+            result = await sb
+                .from('material_inbound')
+                .insert([data]);
+        }
+
+        if (result.error) {
+            console.error('Error save:', result.error);
+            showMessage(`❌ Gagal ${editId ? 'update' : 'simpan'}: ${result.error.message}`, 'error');
             return;
         }
 
-        // Loading state
-        const btn = document.getElementById('btnSubmit');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
-        btn.disabled = true;
-        isSubmitting = true;
-
-        try {
-            const { data: { user } } = await sb.auth.getUser();
-            
-            const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
-
-            const data = {
-                no_pi: noPi,
-                brand: selectedPiDetail?.brand || '',
-                jenis: selectedPiDetail?.jenis || '',
-                paper: selectedPiDetail?.paper || '',
-                size: selectedPiDetail?.size || '',
-                qty_pi: selectedPiDetail?.qty_pi || 0,
-                qty_masuk: qty_masuk,
-                qty_pcs: qty_pcs,
-                up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
-                bentuk: bentuk,
-                tanggal_terima: tanggal_terima,
-                notes: notes,
-                status: 'diterima',
-                pi_detail_id: itemId,
-                pi_id: piId,
-                created_by: user?.email || 'system',
-                updated_at: new Date().toISOString()
-            };
-
-            let result;
-            if (editId) {
-                // Update
-                result = await sb
-                    .from('material_inbound')
-                    .update(data)
-                    .eq('id', editId);
-            } else {
-                // Insert
-                data.created_at = new Date().toISOString();
-                result = await sb
-                    .from('material_inbound')
-                    .insert([data]);
-            }
-
-            if (result.error) {
-                console.error('Error save:', result.error);
-                showMessage(`❌ Gagal ${editId ? 'update' : 'simpan'}: ${result.error.message}`, 'error');
-                return;
-            }
-
-            showToast(`✅ ${editId ? 'Berhasil diupdate' : 'Berhasil disimpan'}! ${qty_pcs.toLocaleString()} pcs`, 'success');
-            
-            // Reset form
-            resetForm();
-            loadData();
-            document.getElementById('editId').value = '';
-            document.getElementById('editBadge').style.display = 'none';
-            
-        } catch (err) {
-            console.error('Error:', err);
-            showMessage('❌ Error: ' + err.message, 'error');
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            isSubmitting = false;
-        }
+        showToast(`✅ ${editId ? 'Berhasil diupdate' : 'Berhasil disimpan'}! ${qty_pcs.toLocaleString()} pcs`, 'success');
+        
+        // Reset form
+        resetForm();
+        loadData();
+        document.getElementById('editId').value = '';
+        document.getElementById('editBadge').style.display = 'none';
+        
+    } catch (err) {
+        console.error('Error:', err);
+        showMessage('❌ Error: ' + err.message, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        isSubmitting = false;
     }
+}
 
     // ============================================================
     // LOAD DATA MATERIAL INBOUND
     // ============================================================
-    async function loadData() {
-        const container = document.getElementById('materialList');
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat data...</div>';
-
-        try {
-            const { data, error } = await sb
-                .from('material_inbound')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                container.innerHTML = `<div class="alert alert-error">❌ Gagal memuat data: ${error.message}</div>`;
-                return;
-            }
-
-            allData = data || [];
-
-            if (!data || data.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center;padding:40px;color:#94a3b8;">
-                        <div style="font-size:48px;margin-bottom:10px;">📭</div>
-                        <p>Belum ada barang masuk</p>
-                        <p style="font-size:12px;">Silakan input barang masuk di form di atas</p>
-                    </div>
-                `;
-                return;
-            }
-
-            renderTable(data);
-
-        } catch (err) {
-            container.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
-        }
+    function loadItemData() {
+    const select = document.getElementById('selectItem');
+    const selected = select.options[select.selectedIndex];
+    
+    if (!select.value || !selected) {
+        document.getElementById('brand').value = '';
+        document.getElementById('jenis').value = '';
+        document.getElementById('paper').value = '';
+        document.getElementById('size').value = '';
+        document.getElementById('qty_pi').value = '';
+        selectedPiDetail = null;
+        return;
     }
 
+    selectedPiDetail = {
+        id: select.value,
+        brand: selected.dataset.brand,
+        jenis: selected.dataset.jenis,
+        paper: selected.dataset.paper,
+        size: selected.dataset.size,
+        qty_pi: parseInt(selected.dataset.qtyPi) // Tetap pakai qty_pi untuk internal
+    };
+
+    document.getElementById('brand').value = selected.dataset.brand || '-';
+    document.getElementById('jenis').value = selected.dataset.jenis || '-';
+    document.getElementById('paper').value = selected.dataset.paper || '-';
+    document.getElementById('size').value = selected.dataset.size || '-';
+    document.getElementById('qty_pi').value = selected.dataset.qtyPi || 0;
+
+    // Reset form input
+    document.getElementById('qty_masuk').value = '';
+    document.getElementById('up_per_sheet').value = '';
+    document.getElementById('notes').value = '';
+    document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+    
+    // Reset radio ke Sheet
+    document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+    toggleBentuk();
+    calculatePcs();
+
+    showToast(`✅ Item ${selected.dataset.jenis} dipilih`, 'success');
+}
     // ============================================================
     // RENDER TABLE
     // ============================================================
     function renderTable(data) {
-        const container = document.getElementById('materialList');
-        
-        let html = `
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No PI</th>
-                            <th>Brand</th>
-                            <th>Jenis</th>
-                            <th>Qty PI</th>
-                            <th>Qty Masuk</th>
-                            <th>Bentuk</th>
-                            <th>Total Pcs</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+    const container = document.getElementById('materialList');
+    
+    let html = `
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No PI</th>
+                        <th>Brand</th>
+                        <th>Jenis</th>
+                        <th>Qty PO</th>
+                        <th>Qty Sheet</th>
+                        <th>Bentuk</th>
+                        <th>Total Pcs</th>
+                        <th>Status</th>
+                        <th>Tanggal</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
-        for (const item of data) {
-            const statusMap = {
-                'diterima': '<span class="status-badge status-diterima">📥 Diterima</span>',
-                'qc': '<span class="status-badge status-qc1">🔬 QC</span>',
-                'diecut': '<span class="status-badge status-diecut">⚙️ Diecut</span>',
-                'qc2': '<span class="status-badge status-qc2">🔬 QC2</span>',
-                'kirim': '<span class="status-badge status-kirim">🏭 Kirim</span>'
-            };
+    for (const item of data) {
+        const statusMap = {
+            'diterima': '<span class="status-badge status-diterima">📥 Diterima</span>',
+            'qc': '<span class="status-badge status-qc1">🔬 QC</span>',
+            'diecut': '<span class="status-badge status-diecut">⚙️ Diecut</span>',
+            'qc2': '<span class="status-badge status-qc2">🔬 QC2</span>',
+            'kirim': '<span class="status-badge status-kirim">🏭 Kirim</span>'
+        };
 
-            const statusText = statusMap[item.status] || `<span class="status-badge">${item.status}</span>`;
-
-            html += `
-                <tr>
-                    <td><strong>${item.no_pi || '-'}</strong></td>
-                    <td>${item.brand || '-'}</td>
-                    <td>${item.jenis || '-'}</td>
-                    <td>${(item.qty_pi || 0).toLocaleString()}</td>
-                    <td>${(item.qty_masuk || 0).toLocaleString()}</td>
-                    <td>${item.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</td>
-                    <td><strong style="color:#3b82f6;">${(item.qty_pcs || 0).toLocaleString()}</strong></td>
-                    <td>${statusText}</td>
-                    <td style="font-size:11px;">${item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-'}</td>
-                    <td>
-                        <button class="btn-small btn-detail" onclick="viewDetail('${item.id}')">📋</button>
-                        <button class="btn-small btn-edit-small" onclick="editInbound('${item.id}')">✏️</button>
-                        <button class="btn-small btn-delete" onclick="deleteInbound('${item.id}')">🗑️</button>
-                    </td>
-                </tr>
-            `;
-        }
+        const statusText = statusMap[item.status] || `<span class="status-badge">${item.status}</span>`;
 
         html += `
-                    </tbody>
-                </table>
-            </div>
-            <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
-                Total: <strong>${data.length}</strong> data
-            </div>
+            <tr>
+                <td><strong>${item.no_pi || '-'}</strong></td>
+                <td>${item.brand || '-'}</td>
+                <td>${item.jenis || '-'}</td>
+                <td>${(item.qty_po || 0).toLocaleString()}</td> <!-- qty_pi → qty_po -->
+                <td>${(item.qty_sheet || 0).toLocaleString()}</td> <!-- qty_masuk → qty_sheet -->
+                <td>${item.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</td>
+                <td><strong style="color:#3b82f6;">${(item.qty_pcs || 0).toLocaleString()}</strong></td>
+                <td>${statusText}</td>
+                <td style="font-size:11px;">${item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-'}</td>
+                <td>
+                    <button class="btn-small btn-detail" onclick="viewDetail('${item.id}')">📋</button>
+                    <button class="btn-small btn-edit-small" onclick="editInbound('${item.id}')">✏️</button>
+                    <button class="btn-small btn-delete" onclick="deleteInbound('${item.id}')">🗑️</button>
+                </td>
+            </tr>
         `;
-
-        container.innerHTML = html;
     }
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
+            Total: <strong>${data.length}</strong> data
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
 
     // ============================================================
     // VIEW DETAIL
     // ============================================================
     async function viewDetail(id) {
-        const modal = document.getElementById('detailModal');
-        const content = document.getElementById('detailContent');
-        const title = document.getElementById('detailTitle');
+    const modal = document.getElementById('detailModal');
+    const content = document.getElementById('detailContent');
+    const title = document.getElementById('detailTitle');
 
-        try {
-            const { data, error } = await sb
-                .from('material_inbound')
-                .select('*')
-                .eq('id', id)
-                .single();
+    try {
+        const { data, error } = await sb
+            .from('material_inbound')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-            if (error || !data) {
-                content.innerHTML = '<div class="alert alert-error">❌ Data tidak ditemukan</div>';
-                modal.style.display = 'flex';
-                return;
-            }
-
-            title.textContent = `📋 Detail Barang Masuk - ${data.no_pi || 'No PI'}`;
-
-            content.innerHTML = `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
-                    <div><strong>No PI:</strong> ${data.no_pi || '-'}</div>
-                    <div><strong>Brand:</strong> ${data.brand || '-'}</div>
-                    <div><strong>Jenis:</strong> ${data.jenis || '-'}</div>
-                    <div><strong>Paper:</strong> ${data.paper || '-'}</div>
-                    <div><strong>Size:</strong> ${data.size || '-'}</div>
-                    <div><strong>Qty PI:</strong> ${(data.qty_pi || 0).toLocaleString()} pcs</div>
-                    <div><strong>Qty Masuk:</strong> ${(data.qty_masuk || 0).toLocaleString()}</div>
-                    <div><strong>Bentuk:</strong> ${data.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
-                    <div><strong>Up/Sheet:</strong> ${data.up_per_sheet || 1}</div>
-                    <div><strong>Total Pcs:</strong> <strong style="color:#3b82f6;">${(data.qty_pcs || 0).toLocaleString()}</strong></div>
-                    <div><strong>Status:</strong> ${data.status || '-'}</div>
-                    <div><strong>Tanggal Terima:</strong> ${data.tanggal_terima ? new Date(data.tanggal_terima).toLocaleDateString('id-ID') : '-'}</div>
-                    <div style="grid-column:1/-1;"><strong>Catatan:</strong> ${data.notes || '-'}</div>
-                    <div style="grid-column:1/-1;font-size:11px;color:#94a3b8;">
-                        Dibuat: ${data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
-                        ${data.created_by ? ` oleh ${data.created_by}` : ''}
-                    </div>
-                </div>
-            `;
-
+        if (error || !data) {
+            content.innerHTML = '<div class="alert alert-error">❌ Data tidak ditemukan</div>';
             modal.style.display = 'flex';
-
-        } catch (err) {
-            content.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
-            modal.style.display = 'flex';
+            return;
         }
+
+        title.textContent = `📋 Detail Barang Masuk - ${data.no_pi || 'No PI'}`;
+
+        content.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                <div><strong>No PI:</strong> ${data.no_pi || '-'}</div>
+                <div><strong>Brand:</strong> ${data.brand || '-'}</div>
+                <div><strong>Jenis:</strong> ${data.jenis || '-'}</div>
+                <div><strong>Paper:</strong> ${data.paper || '-'}</div>
+                <div><strong>Size:</strong> ${data.size || '-'}</div>
+                <div><strong>Qty PO:</strong> ${(data.qty_po || 0).toLocaleString()} pcs</div> <!-- qty_pi → qty_po -->
+                <div><strong>Qty Sheet:</strong> ${(data.qty_sheet || 0).toLocaleString()}</div> <!-- qty_masuk → qty_sheet -->
+                <div><strong>Bentuk:</strong> ${data.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
+                <div><strong>Up/Sheet:</strong> ${data.up_per_sheet || 1}</div>
+                <div><strong>Total Pcs:</strong> <strong style="color:#3b82f6;">${(data.qty_pcs || 0).toLocaleString()}</strong></div>
+                <div><strong>Status:</strong> ${data.status || '-'}</div>
+                <div><strong>Tanggal Terima:</strong> ${data.tanggal_terima ? new Date(data.tanggal_terima).toLocaleDateString('id-ID') : '-'}</div>
+                <div style="grid-column:1/-1;"><strong>Catatan:</strong> ${data.notes || '-'}</div>
+                <div style="grid-column:1/-1;font-size:11px;color:#94a3b8;">
+                    Dibuat: ${data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
+                    ${data.created_by ? ` oleh ${data.created_by}` : ''}
+                </div>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+
+    } catch (err) {
+        content.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
+        modal.style.display = 'flex';
     }
+}
 
     // ============================================================
     // EDIT INBOUND
