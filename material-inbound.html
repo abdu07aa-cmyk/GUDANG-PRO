@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        /* ====== STYLE SAMA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
@@ -182,7 +181,7 @@
         }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
 
@@ -264,322 +263,359 @@
     </style>
 </head>
 <body>
-        <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3>📦 SUPPLY MATERIAL</h3>
-            <p>Manajemen Inventory</p>
-        </div>
-        <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
-            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
-            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
-            <div class="menu-divider"></div>
-
-            <div class="menu-item active" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
-            <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
-            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
-            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
-
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
-        </div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>📦 SUPPLY MATERIAL</h3>
+        <p>Manajemen Inventory</p>
     </div>
+    <div class="sidebar-menu">
+        <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+        <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+        <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+        <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+        <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+        <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+        <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+        <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
-    <div class="overlay" id="overlay"></div>
+        <div class="menu-divider"></div>
 
-    <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 SUPPLY MATERIAL</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
+        <div class="menu-item active" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+        <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+        <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+        <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+        <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+        <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
     </div>
-        <div class="container" id="mainContent">
-        <div class="card">
-            <div class="card-title">
-                <span>📥 BARANG MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
-                <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">
-                    📊 Tracking
-                </button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <div class="logo">📦 SUPPLY MATERIAL</div>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
+
+<div class="container" id="mainContent">
+    <div class="card">
+        <div class="card-title">
+            <span>📥 BARANG MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
+            <button class="btn btn-primary" onclick="window.location.href='material-tracking.html'" style="padding:6px 12px; font-size:12px;">
+                📊 Tracking
+            </button>
+        </div>
+        
+        <div id="msgContainer"></div>
+
+        <form id="inboundForm" onsubmit="return false;">
+            <input type="hidden" id="editId" value="">
+
+            <!-- ====== BAGIAN 1: PILIH PI & ITEM ====== -->
+            <div class="section-title">
+                📋 Pilih PI & Item <span class="badge badge-wajib">WAJIB</span>
             </div>
-            
-            <div id="msgContainer"></div>
 
-            <form id="inboundForm" onsubmit="return false;">
-                <input type="hidden" id="editId" value="">
+            <div class="form-group">
+                <label>Pilih No PI <span class="required">*</span></label>
+                <select id="selectNoPi" onchange="loadPiData()">
+                    <option value="">-- Pilih No PI --</option>
+                </select>
+                <span class="small-text">📌 Pilih PI yang sudah dibuat di menu Input PI</span>
+            </div>
 
-                <div class="section-title">
-                    📋 Pilih PI <span class="badge badge-wajib">WAJIB</span>
-                </div>
+            <div class="form-group">
+                <label>Pilih Item <span class="required">*</span></label>
+                <select id="selectItem" onchange="loadItemData()">
+                    <option value="">-- Pilih Item --</option>
+                </select>
+                <span class="small-text">📌 Pilih item dari PI yang dipilih</span>
+            </div>
 
-                <div class="form-group">
-                    <label>Pilih No PI <span class="required">*</span></label>
-                    <select id="selectNoPi" onchange="loadPiData()">
-                        <option value="">-- Pilih No PI --</option>
-                    </select>
-                    <span class="small-text">📌 Pilih PI yang sudah dibuat di menu Input PI</span>
-                </div>
+            <!-- ====== BAGIAN 2: DATA DARI PI (AUTO) ====== -->
+            <div class="section-title">
+                📋 Data dari PI <span class="badge badge-auto">AUTO</span>
+            </div>
 
-                <div class="section-title">
-                    📋 Data dari PI <span class="badge badge-auto">AUTO</span>
-                </div>
-
-                <div id="piDataContainer" style="display:none;">
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label>Brand</label>
-                            <input type="text" id="brand" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Jenis</label>
-                            <input type="text" id="jenis" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Paper</label>
-                            <input type="text" id="paper" disabled>
-                        </div>
+            <div id="piDataContainer" style="display:none;">
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <input type="text" id="brand" disabled>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Size</label>
-                            <input type="text" id="size" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Qty PI (Pcs)</label>
-                            <input type="text" id="qty_pi" disabled>
-                        </div>
+                    <div class="form-group">
+                        <label>Jenis</label>
+                        <input type="text" id="jenis" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Paper</label>
+                        <input type="text" id="paper" disabled>
                     </div>
                 </div>
-
-                <div class="section-title">
-                    ✏️ Input Barang Masuk <span class="badge badge-wajib">WAJIB: Tanggal & Qty</span>
-                </div>
-
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Tanggal Terima <span class="required">*</span></label>
-                        <input type="date" id="tanggal_terima" required>
+                        <label>Size</label>
+                        <input type="text" id="size" disabled>
                     </div>
                     <div class="form-group">
-                        <label>Bentuk Barang <span class="required">*</span></label>
-                        <div class="radio-group" id="bentukGroup">
-                            <label><input type="radio" name="bentuk" value="sheet" checked onchange="toggleBentuk()"> 📄 Sheet</label>
-                            <label><input type="radio" name="bentuk" value="pcs" onchange="toggleBentuk()"> 📦 Pcs</label>
-                        </div>
+                        <label>Qty PI (Pcs)</label>
+                        <input type="text" id="qty_pi" disabled>
                     </div>
                 </div>
+            </div>
 
-                <div class="form-row" id="qtyRow">
-                    <div class="form-group">
-                        <label id="qtyLabel">Qty Masuk (Sheet) <span class="required">*</span></label>
-                        <input type="number" id="qty_masuk" placeholder="Jumlah sheet masuk" min="0" required>
-                        <span class="small-text" id="qtyHint">📌 Masukkan jumlah sheet yang diterima</span>
-                    </div>
-                    <div class="form-group" id="upRow">
-                        <label>Up / Sheet <span class="required">*</span></label>
-                        <input type="number" id="up_per_sheet" placeholder="Jumlah pcs per sheet" min="1" required>
-                        <span class="small-text">📌 Jumlah pcs dalam 1 sheet</span>
-                    </div>
-                </div>
+            <!-- ====== BAGIAN 3: INPUT USER ====== -->
+            <div class="section-title">
+                ✏️ Input Barang Masuk <span class="badge badge-wajib">WAJIB: Tanggal & Qty</span>
+            </div>
 
-                <div class="info-box" id="calcInfo">
-                    <strong>📊 Perhitungan Otomatis:</strong><br>
-                    <span id="calcResult">Qty Masuk: 0 × Up: 0 = <strong>0 Pcs</strong></span>
-                </div>
-
+            <div class="form-row">
                 <div class="form-group">
-                    <label>Catatan / Keterangan <span class="optional">Opsional</span></label>
-                    <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
+                    <label>Tanggal Terima <span class="required">*</span></label>
+                    <input type="date" id="tanggal_terima" required>
                 </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-                    <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">
-                        💾 Simpan Barang Masuk
-                    </button>
-                    <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
-                        🔄 Reset
-                    </button>
-                    <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
-                        ⬅ Kembali
-                    </button>
+                <div class="form-group">
+                    <label>Bentuk Barang <span class="required">*</span></label>
+                    <div class="radio-group" id="bentukGroup">
+                        <label><input type="radio" name="bentuk" value="sheet" checked onchange="toggleBentuk()"> 📄 Sheet</label>
+                        <label><input type="radio" name="bentuk" value="pcs" onchange="toggleBentuk()"> 📦 Pcs</label>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
 
-        <div class="card">
-            <div class="card-title">
-                <span>📋 Daftar Barang Masuk</span>
-                <button class="btn btn-primary" onclick="loadData()" style="padding:6px 12px; font-size:12px;">🔄 Refresh</button>
+            <div class="form-row" id="qtyRow">
+                <div class="form-group">
+                    <label id="qtyLabel">Qty Masuk (Sheet) <span class="required">*</span></label>
+                    <input type="number" id="qty_masuk" placeholder="Jumlah sheet masuk" min="0" required>
+                    <span class="small-text" id="qtyHint">📌 Masukkan jumlah sheet yang diterima</span>
+                </div>
+                <div class="form-group" id="upRow">
+                    <label>Up / Sheet <span class="required">*</span></label>
+                    <input type="number" id="up_per_sheet" placeholder="Jumlah pcs per sheet" min="1" required>
+                    <span class="small-text">📌 Jumlah pcs dalam 1 sheet</span>
+                </div>
             </div>
-            <div id="materialList" style="overflow-x:auto;">
-                <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat data...</div>
+
+            <!-- Auto Calculate -->
+            <div class="info-box" id="calcInfo">
+                <strong>📊 Perhitungan Otomatis:</strong><br>
+                <span id="calcResult">Qty Masuk: 0 × Up: 0 = <strong>0 Pcs</strong></span>
             </div>
-        </div>
+
+            <div class="form-group">
+                <label>Catatan / Keterangan <span class="optional">Opsional</span></label>
+                <textarea id="notes" placeholder="Catatan tambahan..."></textarea>
+            </div>
+
+            <!-- ====== TOMBOL ====== -->
+            <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <button type="submit" class="btn btn-success" id="btnSubmit" onclick="saveInbound()" style="flex:2; min-width:150px;">
+                    💾 Simpan Barang Masuk
+                </button>
+                <button type="reset" class="btn btn-secondary" onclick="resetForm()" style="flex:1; min-width:100px;">
+                    🔄 Reset
+                </button>
+                <button type="button" class="btn btn-back" onclick="window.location.href='material-tracking.html'" style="flex:1; min-width:100px;">
+                    ⬅ Kembali
+                </button>
+            </div>
+        </form>
     </div>
 
-    <div id="detailModal" class="modal">
-        <div class="modal-content">
-            <h3 id="detailTitle">📋 Detail Barang Masuk</h3>
-            <div id="detailContent"></div>
-            <div class="modal-footer">
-                <button class="btn-cancel" onclick="closeModal('detailModal')">Tutup</button>
-            </div>
+    <!-- LIST MATERIAL + TOMBOL AKSI -->
+    <div class="card">
+        <div class="card-title">
+            <span>📋 Daftar Barang Masuk</span>
+            <button class="btn btn-primary" onclick="loadData()" style="padding:6px 12px; font-size:12px;">🔄 Refresh</button>
+        </div>
+        <div id="materialList" style="overflow-x:auto;">
+            <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat data...</div>
         </div>
     </div>
+</div>
 
-    <div id="toast" class="toast"></div>
+<!-- Modal Detail -->
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <h3 id="detailTitle">📋 Detail Barang Masuk</h3>
+        <div id="detailContent"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('detailModal')">Tutup</button>
+        </div>
+    </div>
+</div>
 
-    <script>
-        let allData = [];
-        let isSubmitting = false;
-        let selectedPiDetail = null;
+<div id="toast" class="toast"></div>
 
-        function showToast(msg, type = 'success') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast ' + type + ' show';
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.className = 'toast', 3000);
+<script>
+    // ============================================================
+    // KONFIGURASI SUPABASE
+    // ============================================================
+    const supabaseUrl = 'https://your-project.supabase.co';
+    const supabaseKey = 'your-anon-key';
+    const sb = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let allData = [];
+    let isSubmitting = false;
+    let selectedPiDetail = null;
+
+    // ============================================================
+    // UTILITY FUNCTIONS
+    // ============================================================
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast ' + type + ' show';
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    function showMessage(msg, type = 'info') {
+        const container = document.getElementById('msgContainer');
+        const map = { success: 'alert-success', error: 'alert-error', info: 'alert-info' };
+        container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
+        setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    // ============================================================
+    // TOGGLE BENTUK BARANG
+    // ============================================================
+    function toggleBentuk() {
+        const bentuk = document.querySelector('input[name="bentuk"]:checked');
+        if (!bentuk) return;
+        
+        const value = bentuk.value;
+        const qtyLabel = document.getElementById('qtyLabel');
+        const qtyHint = document.getElementById('qtyHint');
+        const upRow = document.getElementById('upRow');
+        const upInput = document.getElementById('up_per_sheet');
+
+        if (value === 'sheet') {
+            qtyLabel.innerHTML = 'Qty Masuk (Sheet) <span class="required">*</span>';
+            qtyHint.textContent = '📌 Masukkan jumlah sheet yang diterima';
+            upRow.style.display = 'block';
+            upInput.required = true;
+        } else {
+            qtyLabel.innerHTML = 'Qty Masuk (Pcs) <span class="required">*</span>';
+            qtyHint.textContent = '📌 Masukkan jumlah pcs yang diterima';
+            upRow.style.display = 'none';
+            upInput.required = false;
+            upInput.value = 1;
+        }
+        calculatePcs();
+    }
+
+    // ============================================================
+    // AUTO CALCULATE
+    // ============================================================
+    function calculatePcs() {
+        const qty = parseInt(document.getElementById('qty_masuk').value) || 0;
+        const up = parseInt(document.getElementById('up_per_sheet').value) || 1;
+        const bentuk = document.querySelector('input[name="bentuk"]:checked');
+        const value = bentuk ? bentuk.value : 'sheet';
+        
+        let totalPcs = 0;
+        if (value === 'sheet') {
+            totalPcs = qty * up;
+        } else {
+            totalPcs = qty;
         }
 
-        function showMessage(msg, type = 'info') {
-            const container = document.getElementById('msgContainer');
-            const map = { success: 'alert-success', error: 'alert-error', info: 'alert-info' };
-            container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
-            setTimeout(() => container.innerHTML = '', 5000);
-        }
+        document.getElementById('calcResult').innerHTML = 
+            `Qty Masuk: ${qty} × Up: ${value === 'sheet' ? up : '-'} = <strong style="color:#3b82f6;">${totalPcs.toLocaleString()} Pcs</strong>`;
+        
+        return totalPcs;
+    }
 
-        // ============================================================
-        // ✅ TOGGLE BENTUK BARANG
-        // ============================================================
-        function toggleBentuk() {
-            const bentuk = document.querySelector('input[name="bentuk"]:checked');
-            if (!bentuk) return;
-            
-            const value = bentuk.value;
-            const qtyLabel = document.getElementById('qtyLabel');
-            const qtyHint = document.getElementById('qtyHint');
-            const upRow = document.getElementById('upRow');
-            const upInput = document.getElementById('up_per_sheet');
+    // Event listeners untuk auto calculate
+    document.getElementById('qty_masuk').addEventListener('input', calculatePcs);
+    document.getElementById('up_per_sheet').addEventListener('input', calculatePcs);
 
-            if (value === 'sheet') {
-                qtyLabel.innerHTML = 'Qty Masuk (Sheet) <span class="required">*</span>';
-                qtyHint.textContent = '📌 Masukkan jumlah sheet yang diterima';
-                upRow.style.display = 'block';
-                upInput.required = true;
-            } else {
-                qtyLabel.innerHTML = 'Qty Masuk (Pcs) <span class="required">*</span>';
-                qtyHint.textContent = '📌 Masukkan jumlah pcs yang diterima';
-                upRow.style.display = 'none';
-                upInput.required = false;
-                upInput.value = 1;
-            }
-            calculatePcs();
-        }
+    // ============================================================
+    // LOAD DAFTAR PI (DROPDOWN)
+    // ============================================================
+    async function loadPiList() {
+        const select = document.getElementById('selectNoPi');
+        if (!select) return;
 
-        // ============================================================
-        // AUTO CALCULATE
-        // ============================================================
-        function calculatePcs() {
-            const qty = parseInt(document.getElementById('qty_masuk').value) || 0;
-            const up = parseInt(document.getElementById('up_per_sheet').value) || 1;
-            const bentuk = document.querySelector('input[name="bentuk"]:checked');
-            const value = bentuk ? bentuk.value : 'sheet';
-            
-            let totalPcs = 0;
-            if (value === 'sheet') {
-                totalPcs = qty * up;
-            } else {
-                totalPcs = qty;
-            }
+        try {
+            const { data: headers, error } = await sb
+                .from('pi_header')
+                .select('id, no_pi')
+                .order('no_pi', { ascending: true });
 
-            document.getElementById('calcResult').innerHTML = 
-                `Qty Masuk: ${qty} × Up: ${value === 'sheet' ? up : '-'} = <strong style="color:#3b82f6;">${totalPcs.toLocaleString()} Pcs</strong>`;
-            
-            return totalPcs;
-        }
-
-        document.getElementById('qty_masuk').addEventListener('input', calculatePcs);
-        document.getElementById('up_per_sheet').addEventListener('input', calculatePcs);
-
-        // ============================================================
-        // ✅ LOAD DAFTAR PI (DROPDOWN) - FIXED
-        // ============================================================
-        async function loadPiList() {
-            const select = document.getElementById('selectNoPi');
-            if (!select) return;
-
-            try {
-                const { data: headers, error } = await sb
-                    .from('pi_header')
-                    .select('id, no_pi')
-                    .order('no_pi', { ascending: true });
-
-                if (error) {
-                    console.error('Error load PI:', error);
-                    showMessage('❌ Gagal memuat daftar PI: ' + error.message, 'error');
-                    return;
-                }
-
-                console.log('📋 Data PI ditemukan:', headers?.length || 0);
-
-                select.innerHTML = '<option value="">-- Pilih No PI --</option>';
-                
-                if (!headers || headers.length === 0) {
-                    select.innerHTML += '<option value="" disabled>Belum ada PI</option>';
-                    showMessage('⚠️ Belum ada data PI. Buat PI dulu di menu Input PI.', 'warning');
-                    return;
-                }
-
-                for (const h of headers) {
-                    const option = document.createElement('option');
-                    option.value = h.id;
-                    option.textContent = h.no_pi;
-                    option.dataset.noPi = h.no_pi;
-                    select.appendChild(option);
-                }
-
-                showToast(`✅ ${headers.length} PI tersedia`, 'success');
-
-            } catch (err) {
-                console.error('Error:', err);
-                showMessage('❌ Error: ' + err.message, 'error');
-            }
-        }
-
-        // ============================================================
-        // LOAD DATA PI SAAT DIPILIH
-        // ============================================================
-        async function loadPiData() {
-            const select = document.getElementById('selectNoPi');
-            const piId = select.value;
-            const container = document.getElementById('piDataContainer');
-
-            if (!piId) {
-                container.style.display = 'none';
-                document.getElementById('brand').value = '';
-                document.getElementById('jenis').value = '';
-                document.getElementById('paper').value = '';
-                document.getElementById('size').value = '';
-                document.getElementById('qty_pi').value = '';
-                selectedPiDetail = null;
+            if (error) {
+                console.error('Error load PI:', error);
+                showMessage('❌ Gagal memuat daftar PI: ' + error.message, 'error');
                 return;
             }
 
+            console.log('📋 Data PI ditemukan:', headers?.length || 0);
+
+            select.innerHTML = '<option value="">-- Pilih No PI --</option>';
+            
+            if (!headers || headers.length === 0) {
+                select.innerHTML += '<option value="" disabled>Belum ada PI</option>';
+                showMessage('⚠️ Belum ada data PI. Buat PI dulu di menu Input PI.', 'warning');
+                return;
+            }
+
+            for (const h of headers) {
+                const option = document.createElement('option');
+                option.value = h.id;
+                option.textContent = h.no_pi;
+                option.dataset.noPi = h.no_pi;
+                select.appendChild(option);
+            }
+
+            showToast(`✅ ${headers.length} PI tersedia`, 'success');
+
+        } catch (err) {
+            console.error('Error:', err);
+            showMessage('❌ Error: ' + err.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // LOAD DATA PI SAAT DIPILIH
+    // ============================================================
+    async function loadPiData() {
+        const piId = document.getElementById('selectNoPi').value;
+        const container = document.getElementById('piDataContainer');
+        const itemSelect = document.getElementById('selectItem');
+
+        // Reset item dropdown
+        itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+        container.style.display = 'none';
+        document.getElementById('brand').value = '';
+        document.getElementById('jenis').value = '';
+        document.getElementById('paper').value = '';
+        document.getElementById('size').value = '';
+        document.getElementById('qty_pi').value = '';
+        selectedPiDetail = null;
+
+        if (!piId) {
+            return;
+        }
+
+        try {
+            // Ambil data pi_detail
             const { data: details, error } = await sb
                 .from('pi_detail')
                 .select('*')
@@ -587,181 +623,381 @@
 
             if (error || !details || details.length === 0) {
                 showMessage('❌ Tidak ada item di PI ini!', 'error');
-                container.style.display = 'none';
                 return;
             }
 
-            const item = details[0];
-            selectedPiDetail = item;
+            // Isi dropdown item
+            for (const item of details) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.brand} - ${item.jenis} (${item.qty_pi} pcs)`;
+                option.dataset.brand = item.brand;
+                option.dataset.jenis = item.jenis;
+                option.dataset.paper = item.paper || '';
+                option.dataset.size = item.size || '';
+                option.dataset.qtyPi = item.qty_pi;
+                itemSelect.appendChild(option);
+            }
 
             container.style.display = 'block';
-            document.getElementById('brand').value = item.brand || '-';
-            document.getElementById('jenis').value = item.jenis || '-';
-            document.getElementById('paper').value = item.paper || '-';
-            document.getElementById('size').value = item.size || '-';
-            document.getElementById('qty_pi').value = item.qty_pi || 0;
+            showToast(`✅ ${details.length} item tersedia, silakan pilih item`, 'success');
 
-            document.getElementById('qty_masuk').value = '';
-            document.getElementById('up_per_sheet').value = '';
-            document.getElementById('notes').value = '';
-            document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
-            
-            document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
-            toggleBentuk();
-            calculatePcs();
-
-            showToast(`✅ Data PI ${select.options[select.selectedIndex].text} dimuat`, 'success');
+        } catch (err) {
+            showMessage('❌ Error: ' + err.message, 'error');
         }
+    }
 
-        // ============================================================
-        // SAVE INBOUND
-        // ============================================================
-        async function saveInbound() {
-            if (isSubmitting) return;
-
-            const piId = document.getElementById('selectNoPi').value;
-            const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
-            const tanggal_terima = document.getElementById('tanggal_terima').value;
-            const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
-            const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
-            const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
-            const notes = document.getElementById('notes').value.trim();
-            const editId = document.getElementById('editId').value;
-
-            if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
-            if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
-            if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
-            if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
-                showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
-                return;
-            }
-
-            const btn = document.getElementById('btnSubmit');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
-            btn.disabled = true;
-
-            isSubmitting = true;
-
-            try {
-                const { data: { user } } = await sb.auth.getUser();
-                
-                const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
-
-                const data = {
-                    no_pi: noPi,
-                    brand: selectedPiDetail?.brand || '',
-                    jenis: selectedPiDetail?.jenis || '',
-                    paper: selectedPiDetail?.paper || '',
-                    size: selectedPiDetail?.size || '',
-                    qty_pi: selectedPiDetail?.qty_pi || 0,
-                    qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
-                    qty_masuk_pcs: qty_pcs,
-                    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
-                    bentuk: bentuk,
-                    status: 'DITERIMA',
-                    tanggal_terima: tanggal_terima,
-                    notes: notes || null,
-                    pi_detail_id: selectedPiDetail?.id || null,
-                    created_by: user?.email || 'Unknown'
-                };
-
-                let result;
-                if (editId) {
-                    data.updated_by = user?.email || 'Unknown';
-                    data.updated_at = new Date().toISOString();
-                    result = await sb
-                        .from('material_inbound')
-                        .update(data)
-                        .eq('id', editId);
-                } else {
-                    result = await sb.from('material_inbound').insert([data]);
-                }
-
-                if (result.error) throw result.error;
-
-                const actionText = editId ? 'diupdate' : 'disimpan';
-                showMessage(`✅ Barang masuk berhasil ${actionText}! Status: DITERIMA (siap QC)`, 'success');
-                showToast(`✅ Barang masuk berhasil ${actionText}!`, 'success');
-
-                resetForm();
-                loadData();
-
-                try {
-                    await addLog('BARANG MASUK', `${user?.email} ${actionText} barang masuk ${selectedPiDetail?.brand} - ${selectedPiDetail?.jenis} (PI: ${noPi})`);
-                } catch(e) {}
-
-            } catch (err) {
-                showMessage('❌ Gagal: ' + err.message, 'error');
-                showToast('❌ Gagal: ' + err.message, 'error');
-                console.error('Save error:', err);
-            } finally {
-                isSubmitting = false;
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // ============================================================
-        // RESET FORM
-        // ============================================================
-        function resetForm() {
-            document.getElementById('editId').value = '';
-            document.getElementById('editBadge').style.display = 'none';
-            document.getElementById('btnSubmit').innerHTML = '💾 Simpan Barang Masuk';
-            
-            document.getElementById('selectNoPi').value = '';
-            document.getElementById('piDataContainer').style.display = 'none';
+    // ============================================================
+    // LOAD DATA ITEM YANG DIPILIH
+    // ============================================================
+    function loadItemData() {
+        const select = document.getElementById('selectItem');
+        const selected = select.options[select.selectedIndex];
+        
+        if (!select.value || !selected) {
             document.getElementById('brand').value = '';
             document.getElementById('jenis').value = '';
             document.getElementById('paper').value = '';
             document.getElementById('size').value = '';
             document.getElementById('qty_pi').value = '';
-            document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
-            document.getElementById('qty_masuk').value = '';
-            document.getElementById('up_per_sheet').value = '';
-            document.getElementById('notes').value = '';
-            document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
-            toggleBentuk();
-            calculatePcs();
-            document.getElementById('msgContainer').innerHTML = '';
             selectedPiDetail = null;
+            return;
         }
 
-        // ============================================================
-        // EDIT MATERIAL
-        // ============================================================
-        async function editMaterial(id) {
-            const { data: item } = await sb
+        selectedPiDetail = {
+            id: select.value,
+            brand: selected.dataset.brand,
+            jenis: selected.dataset.jenis,
+            paper: selected.dataset.paper,
+            size: selected.dataset.size,
+            qty_pi: parseInt(selected.dataset.qtyPi)
+        };
+
+        document.getElementById('brand').value = selected.dataset.brand || '-';
+        document.getElementById('jenis').value = selected.dataset.jenis || '-';
+        document.getElementById('paper').value = selected.dataset.paper || '-';
+        document.getElementById('size').value = selected.dataset.size || '-';
+        document.getElementById('qty_pi').value = selected.dataset.qtyPi || 0;
+
+        // Reset form input
+        document.getElementById('qty_masuk').value = '';
+        document.getElementById('up_per_sheet').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+        
+        // Reset radio ke Sheet
+        document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+        toggleBentuk();
+        calculatePcs();
+
+        showToast(`✅ Item ${selected.dataset.jenis} dipilih`, 'success');
+    }
+
+    // ============================================================
+    // SAVE INBOUND
+    // ============================================================
+    async function saveInbound() {
+        if (isSubmitting) return;
+
+        const piId = document.getElementById('selectNoPi').value;
+        const itemId = document.getElementById('selectItem').value;
+        const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
+        const tanggal_terima = document.getElementById('tanggal_terima').value;
+        const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
+        const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
+        const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
+        const notes = document.getElementById('notes').value.trim();
+        const editId = document.getElementById('editId').value;
+
+        // Validasi
+        if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+        if (!itemId) { showMessage('❌ Pilih Item terlebih dahulu!', 'error'); return; }
+        if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
+        if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
+        if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
+            showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
+            return;
+        }
+
+        // Loading state
+        const btn = document.getElementById('btnSubmit');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = editId ? '⏳ Mengupdate...' : '⏳ Menyimpan...';
+        btn.disabled = true;
+        isSubmitting = true;
+
+        try {
+            const { data: { user } } = await sb.auth.getUser();
+            
+            const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
+
+            const data = {
+                no_pi: noPi,
+                brand: selectedPiDetail?.brand || '',
+                jenis: selectedPiDetail?.jenis || '',
+                paper: selectedPiDetail?.paper || '',
+                size: selectedPiDetail?.size || '',
+                qty_pi: selectedPiDetail?.qty_pi || 0,
+                qty_masuk: qty_masuk,
+                qty_pcs: qty_pcs,
+                up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+                bentuk: bentuk,
+                tanggal_terima: tanggal_terima,
+                notes: notes,
+                status: 'diterima',
+                pi_detail_id: itemId,
+                pi_id: piId,
+                created_by: user?.email || 'system',
+                updated_at: new Date().toISOString()
+            };
+
+            let result;
+            if (editId) {
+                // Update
+                result = await sb
+                    .from('material_inbound')
+                    .update(data)
+                    .eq('id', editId);
+            } else {
+                // Insert
+                data.created_at = new Date().toISOString();
+                result = await sb
+                    .from('material_inbound')
+                    .insert([data]);
+            }
+
+            if (result.error) {
+                console.error('Error save:', result.error);
+                showMessage(`❌ Gagal ${editId ? 'update' : 'simpan'}: ${result.error.message}`, 'error');
+                return;
+            }
+
+            showToast(`✅ ${editId ? 'Berhasil diupdate' : 'Berhasil disimpan'}! ${qty_pcs.toLocaleString()} pcs`, 'success');
+            
+            // Reset form
+            resetForm();
+            loadData();
+            document.getElementById('editId').value = '';
+            document.getElementById('editBadge').style.display = 'none';
+            
+        } catch (err) {
+            console.error('Error:', err);
+            showMessage('❌ Error: ' + err.message, 'error');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            isSubmitting = false;
+        }
+    }
+
+    // ============================================================
+    // LOAD DATA MATERIAL INBOUND
+    // ============================================================
+    async function loadData() {
+        const container = document.getElementById('materialList');
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat data...</div>';
+
+        try {
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<div class="alert alert-error">❌ Gagal memuat data: ${error.message}</div>`;
+                return;
+            }
+
+            allData = data || [];
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:#94a3b8;">
+                        <div style="font-size:48px;margin-bottom:10px;">📭</div>
+                        <p>Belum ada barang masuk</p>
+                        <p style="font-size:12px;">Silakan input barang masuk di form di atas</p>
+                    </div>
+                `;
+                return;
+            }
+
+            renderTable(data);
+
+        } catch (err) {
+            container.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
+        }
+    }
+
+    // ============================================================
+    // RENDER TABLE
+    // ============================================================
+    function renderTable(data) {
+        const container = document.getElementById('materialList');
+        
+        let html = `
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No PI</th>
+                            <th>Brand</th>
+                            <th>Jenis</th>
+                            <th>Qty PI</th>
+                            <th>Qty Masuk</th>
+                            <th>Bentuk</th>
+                            <th>Total Pcs</th>
+                            <th>Status</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        for (const item of data) {
+            const statusMap = {
+                'diterima': '<span class="status-badge status-diterima">📥 Diterima</span>',
+                'qc': '<span class="status-badge status-qc1">🔬 QC</span>',
+                'diecut': '<span class="status-badge status-diecut">⚙️ Diecut</span>',
+                'qc2': '<span class="status-badge status-qc2">🔬 QC2</span>',
+                'kirim': '<span class="status-badge status-kirim">🏭 Kirim</span>'
+            };
+
+            const statusText = statusMap[item.status] || `<span class="status-badge">${item.status}</span>`;
+
+            html += `
+                <tr>
+                    <td><strong>${item.no_pi || '-'}</strong></td>
+                    <td>${item.brand || '-'}</td>
+                    <td>${item.jenis || '-'}</td>
+                    <td>${(item.qty_pi || 0).toLocaleString()}</td>
+                    <td>${(item.qty_masuk || 0).toLocaleString()}</td>
+                    <td>${item.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</td>
+                    <td><strong style="color:#3b82f6;">${(item.qty_pcs || 0).toLocaleString()}</strong></td>
+                    <td>${statusText}</td>
+                    <td style="font-size:11px;">${item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-'}</td>
+                    <td>
+                        <button class="btn-small btn-detail" onclick="viewDetail('${item.id}')">📋</button>
+                        <button class="btn-small btn-edit-small" onclick="editInbound('${item.id}')">✏️</button>
+                        <button class="btn-small btn-delete" onclick="deleteInbound('${item.id}')">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
+                Total: <strong>${data.length}</strong> data
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    // ============================================================
+    // VIEW DETAIL
+    // ============================================================
+    async function viewDetail(id) {
+        const modal = document.getElementById('detailModal');
+        const content = document.getElementById('detailContent');
+        const title = document.getElementById('detailTitle');
+
+        try {
+            const { data, error } = await sb
                 .from('material_inbound')
                 .select('*')
                 .eq('id', id)
                 .single();
 
-            if (!item) {
-                showToast('❌ Data tidak ditemukan!', 'error');
+            if (error || !data) {
+                content.innerHTML = '<div class="alert alert-error">❌ Data tidak ditemukan</div>';
+                modal.style.display = 'flex';
                 return;
             }
 
-            const select = document.getElementById('selectNoPi');
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].dataset.noPi === item.no_pi) {
-                    select.value = select.options[i].value;
+            title.textContent = `📋 Detail Barang Masuk - ${data.no_pi || 'No PI'}`;
+
+            content.innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                    <div><strong>No PI:</strong> ${data.no_pi || '-'}</div>
+                    <div><strong>Brand:</strong> ${data.brand || '-'}</div>
+                    <div><strong>Jenis:</strong> ${data.jenis || '-'}</div>
+                    <div><strong>Paper:</strong> ${data.paper || '-'}</div>
+                    <div><strong>Size:</strong> ${data.size || '-'}</div>
+                    <div><strong>Qty PI:</strong> ${(data.qty_pi || 0).toLocaleString()} pcs</div>
+                    <div><strong>Qty Masuk:</strong> ${(data.qty_masuk || 0).toLocaleString()}</div>
+                    <div><strong>Bentuk:</strong> ${data.bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
+                    <div><strong>Up/Sheet:</strong> ${data.up_per_sheet || 1}</div>
+                    <div><strong>Total Pcs:</strong> <strong style="color:#3b82f6;">${(data.qty_pcs || 0).toLocaleString()}</strong></div>
+                    <div><strong>Status:</strong> ${data.status || '-'}</div>
+                    <div><strong>Tanggal Terima:</strong> ${data.tanggal_terima ? new Date(data.tanggal_terima).toLocaleDateString('id-ID') : '-'}</div>
+                    <div style="grid-column:1/-1;"><strong>Catatan:</strong> ${data.notes || '-'}</div>
+                    <div style="grid-column:1/-1;font-size:11px;color:#94a3b8;">
+                        Dibuat: ${data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
+                        ${data.created_by ? ` oleh ${data.created_by}` : ''}
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+
+        } catch (err) {
+            content.innerHTML = `<div class="alert alert-error">❌ Error: ${err.message}</div>`;
+            modal.style.display = 'flex';
+        }
+    }
+
+    // ============================================================
+    // EDIT INBOUND
+    // ============================================================
+    async function editInbound(id) {
+        try {
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !data) {
+                showMessage('❌ Data tidak ditemukan', 'error');
+                return;
+            }
+
+            // Isi form
+            document.getElementById('editId').value = data.id;
+            document.getElementById('editBadge').style.display = 'inline-block';
+
+            // Pilih PI
+            const piSelect = document.getElementById('selectNoPi');
+            for (let option of piSelect.options) {
+                if (option.value === data.pi_id) {
+                    option.selected = true;
                     break;
                 }
             }
             await loadPiData();
 
-            document.getElementById('editId').value = id;
-            document.getElementById('editBadge').style.display = 'inline';
-            document.getElementById('btnSubmit').innerHTML = '✏️ Update Barang Masuk';
-            
-            document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
-            document.getElementById('qty_masuk').value = item.qty_sheet || item.qty_masuk_pcs || '';
-            document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
-            document.getElementById('notes').value = item.notes || '';
-            
-            if (item.bentuk === 'pcs') {
+            // Pilih Item
+            const itemSelect = document.getElementById('selectItem');
+            for (let option of itemSelect.options) {
+                if (option.value === data.pi_detail_id) {
+                    option.selected = true;
+                    break;
+                }
+            }
+            loadItemData();
+
+            // Isi form
+            document.getElementById('tanggal_terima').value = data.tanggal_terima || new Date().toISOString().split('T')[0];
+            document.getElementById('qty_masuk').value = data.qty_masuk || '';
+            document.getElementById('up_per_sheet').value = data.up_per_sheet || '';
+            document.getElementById('notes').value = data.notes || '';
+
+            // Pilih bentuk
+            if (data.bentuk === 'pcs') {
                 document.querySelector('input[name="bentuk"][value="pcs"]').checked = true;
             } else {
                 document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
@@ -769,276 +1005,180 @@
             toggleBentuk();
             calculatePcs();
 
-            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
-            showToast('📝 Mode Edit: silakan ubah data', 'info');
+            // Scroll ke form
+            document.querySelector('#inboundForm').scrollIntoView({ behavior: 'smooth' });
+
+            showToast('✏️ Mode edit aktif. Ubah data dan klik Simpan.', 'info');
+
+        } catch (err) {
+            showMessage('❌ Error: ' + err.message, 'error');
         }
+    }
 
-        // ============================================================
-        // LOAD DATA
-        // ============================================================
-        async function loadData() {
-            const container = document.getElementById('materialList');
-            container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
+    // ============================================================
+    // DELETE INBOUND
+    // ============================================================
+    async function deleteInbound(id) {
+        if (!confirm('⚠️ Yakin ingin menghapus data barang masuk ini?')) return;
+        if (!confirm('🗑️ Data yang dihapus tidak bisa dikembalikan. Lanjutkan?')) return;
 
-            const { data, error } = await sb
+        try {
+            const { error } = await sb
                 .from('material_inbound')
-                .select('*')
-                .order('created_at', { ascending: false });
+                .delete()
+                .eq('id', id);
 
             if (error) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
+                showMessage(`❌ Gagal hapus: ${error.message}`, 'error');
                 return;
             }
 
-            allData = data || [];
+            showToast('✅ Data berhasil dihapus', 'success');
+            loadData();
 
-            if (allData.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada barang masuk</div>`;
-                return;
-            }
-
-            const statusMap = {
-                'DITERIMA': '📥 Diterima',
-                'QC1': '🔬 QC #1',
-                'DIECUT': '⚙️ Diecut',
-                'QC2': '🔬 QC #2',
-                'KIRIM': '🏭 Kirim'
-            };
-
-            const statusClass = {
-                'DITERIMA': 'status-diterima',
-                'QC1': 'status-qc1',
-                'DIECUT': 'status-diecut',
-                'QC2': 'status-qc2',
-                'KIRIM': 'status-kirim'
-            };
-
-            let html = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No PI</th>
-                            <th>Brand</th>
-                            <th>Jenis</th>
-                            <th style="text-align:center;">Sheet</th>
-                            <th style="text-align:center;">Up</th>
-                            <th style="text-align:center;">Pcs</th>
-                            <th style="text-align:center;">Status</th>
-                            <th style="text-align:center;">Tgl Terima</th>
-                            <th style="text-align:center;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            for (const item of allData) {
-                const bentuk = item.bentuk || 'sheet';
-                
-                html += `
-                    <tr>
-                        <td><strong>${item.no_pi}</strong></td>
-                        <td>${item.brand}</td>
-                        <td>${item.jenis}</td>
-                        <td style="text-align:center;">${bentuk === 'sheet' ? item.qty_sheet : '-'}</td>
-                        <td style="text-align:center;">${bentuk === 'sheet' ? item.up_per_sheet : '-'}</td>
-                        <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || item.qty_sheet || 0}</td>
-                        <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
-                        <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
-                        <td style="min-width:200px; text-align:center;">
-                            <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
-                            <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')">✏️</button>
-                            
-                            ${item.status === 'DITERIMA' ? 
-                                `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬</button>` : ''}
-                            
-                            ${item.status === 'QC1' ? `
-                                <button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>
-                            ` : ''}
-                            
-                            ${item.status === 'DIECUT' ? `
-                                <button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬</button>
-                            ` : ''}
-                            
-                            ${item.status === 'QC2' ? `
-                                <button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭</button>
-                            ` : ''}
-                            
-                            <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            }
-
-            html += `</tbody></table>`;
-            container.innerHTML = html;
+        } catch (err) {
+            showMessage('❌ Error: ' + err.message, 'error');
         }
+    }
 
-        // ============================================================
-        // FUNGSI AKSI
-        // ============================================================
-        function goToQC(id) {
-            window.location.href = `qc-inspection.html?material_id=${id}&qc=1`;
-        }
+    // ============================================================
+    // RESET FORM
+    // ============================================================
+    function resetForm() {
+        document.getElementById('inboundForm').reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('editBadge').style.display = 'none';
+        document.getElementById('qty_masuk').value = '';
+        document.getElementById('up_per_sheet').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+        
+        // Reset ke Sheet
+        document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+        toggleBentuk();
+        calculatePcs();
+        
+        // Reset pi data
+        document.getElementById('piDataContainer').style.display = 'none';
+        document.getElementById('brand').value = '';
+        document.getElementById('jenis').value = '';
+        document.getElementById('paper').value = '';
+        document.getElementById('size').value = '';
+        document.getElementById('qty_pi').value = '';
 
-        function goToQC2(id) {
-            window.location.href = `qc-inspection.html?material_id=${id}&qc=2`;
-        }
+        // Reset dropdown item
+        const itemSelect = document.getElementById('selectItem');
+        itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+        selectedPiDetail = null;
+    }
 
-        function goToDiecut(id) {
-            window.location.href = `diecut-process.html?material_id=${id}`;
-        }
+    // ============================================================
+    // SIDEBAR & NAVIGATION
+    // ============================================================
+    document.getElementById('menuToggle').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('show');
+    });
 
-        function goToSend(id) {
-            window.location.href = `production-send.html?material_id=${id}`;
-        }
+    document.getElementById('overlay').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('show');
+    });
 
-        // ============================================================
-        // DETAIL
-        // ============================================================
-        async function showDetail(id) {
-            const { data: item } = await sb
-                .from('material_inbound')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (!item) return;
-
-            const statusMap = {
-                'DITERIMA': '📥 Diterima',
-                'QC1': '🔬 QC #1',
-                'DIECUT': '⚙️ Diecut',
-                'QC2': '🔬 QC #2',
-                'KIRIM': '🏭 Kirim'
-            };
-
-            const statusClass = {
-                'DITERIMA': 'status-diterima',
-                'QC1': 'status-qc1',
-                'DIECUT': 'status-diecut',
-                'QC2': 'status-qc2',
-                'KIRIM': 'status-kirim'
-            };
-
-            const bentuk = item.bentuk || 'sheet';
-
-            let html = `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
-                    <div><strong>Brand:</strong> ${item.brand || '-'}</div>
-                    <div><strong>Jenis:</strong> ${item.jenis || '-'}</div>
-                    <div><strong>Paper:</strong> ${item.paper || '-'}</div>
-                    <div><strong>Size:</strong> ${item.size || '-'}</div>
-                    <div><strong>Qty PI (Pcs):</strong> ${item.qty_pi || '-'}</div>
-                    <div><strong>Bentuk:</strong> ${bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
-                    <div><strong>Qty Masuk:</strong> ${bentuk === 'sheet' ? item.qty_sheet + ' Sheet' : item.qty_masuk_pcs + ' Pcs'}</div>
-                    ${bentuk === 'sheet' ? `<div><strong>Up/Sheet:</strong> ${item.up_per_sheet}</div>` : ''}
-                    <div><strong>Total Pcs:</strong> ${item.qty_masuk_pcs || item.qty_sheet || 0} Pcs</div>
-                    <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
-                    <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
-                    <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
-                </div>
-            `;
-
-            document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_pi} (${item.brand})`;
-            document.getElementById('detailContent').innerHTML = html;
-            document.getElementById('detailModal').style.display = 'flex';
-        }
-
-        // ============================================================
-        // DELETE
-        // ============================================================
-        async function deleteMaterial(id) {
-            if (!confirm('Yakin ingin menghapus material ini?')) return;
-            
-            await sb.from('ng_tracking').delete().eq('material_inbound_id', id);
-            await sb.from('qc_inspection').delete().eq('material_inbound_id', id);
-            await sb.from('diecut_process').delete().eq('material_inbound_id', id);
-            await sb.from('production_send').delete().eq('material_inbound_id', id);
-            
-            const { error } = await sb.from('material_inbound').delete().eq('id', id);
-            if (error) {
-                showToast('❌ Gagal: ' + error.message, 'error');
-            } else {
-                showToast('✅ Material berhasil dihapus', 'success');
-                loadData();
-            }
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-
-        // ============================================================
-        // NAVIGASI
-        // ============================================================
-        function goToMenu(menu) {
-            const files = {
-                dashboard: 'dashboard.html',
+    // Navigasi menu
+    document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+        item.addEventListener('click', function() {
+            const menu = this.dataset.menu;
+            const pageMap = {
+                'dashboard': 'index.html',
                 'pi-input': 'pi-input.html',
-                'stock-in': 'stock-in.html',
-                'stock-out': 'stock-out.html',
-                'stock-report': 'stock-report.html',
+                'stock-in': 'barang-masuk.html',
+                'stock-out': 'barang-keluar.html',
+                'stock-report': 'stok-gudang.html',
                 'stok-pendukung': 'stok-pendukung.html',
                 'barcode-generator': 'barcode-generator.html',
                 'scan-barcode': 'scan-barcode.html',
-                'material-tracking': 'material-tracking.html',
-                'material-inbound': 'material-inbound.html',
+                'material-inbound': 'barang-masuk.html',
                 'qc-inspection': 'qc-inspection.html',
                 'diecut-process': 'diecut-process.html',
                 'production-send': 'production-send.html',
                 'ng-report': 'ng-report.html',
-                executive: 'executive-report.html',
+                'material-tracking': 'material-tracking.html',
+                'executive': 'executive.html',
                 'manage-users': 'manage-users.html',
                 'log-aktivitas': 'log-aktivitas.html',
-                export: 'export-final3.html'
+                'export': 'export-data.html'
             };
-            window.location.href = files[menu] || 'dashboard.html';
+
+            if (pageMap[menu]) {
+                window.location.href = pageMap[menu];
+            }
+
+            // Tutup sidebar
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+        });
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('logoutMenu').addEventListener('click', logout);
+
+    async function logout() {
+        if (confirm('Yakin ingin logout?')) {
+            try {
+                await sb.auth.signOut();
+                window.location.href = 'login.html';
+            } catch (err) {
+                showMessage('❌ Gagal logout: ' + err.message, 'error');
+            }
         }
+    }
 
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-
-        function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
-            });
+    // ============================================================
+    // CEK AUTH & INIT
+    // ============================================================
+    async function checkAuth() {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) {
+            window.location.href = 'login.html';
+            return;
         }
+        return user;
+    }
 
-        async function init() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'login.html';
-            
-            setupEventListeners();
-            await loadPiList();
-            await loadData();
-            toggleBentuk();
-            calculatePcs();
+    // ============================================================
+    // INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', async function() {
+        await checkAuth();
+        
+        // Set tanggal default
+        document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
+        
+        // Load daftar PI
+        await loadPiList();
+        
+        // Load data inbound
+        await loadData();
+        
+        // Toggle bentuk
+        toggleBentuk();
+        calculatePcs();
+        
+        console.log('✅ Barang Masuk page loaded');
+    });
+
+    // Tutup modal klik di luar
+    window.addEventListener('click', function(e) {
+        const detailModal = document.getElementById('detailModal');
+        if (e.target === detailModal) {
+            detailModal.style.display = 'none';
         }
+    });
 
-        window.loadPiList = loadPiList;
-        window.loadPiData = loadPiData;
-        window.saveInbound = saveInbound;
-        window.resetForm = resetForm;
-        window.editMaterial = editMaterial;
-        window.showDetail = showDetail;
-        window.goToQC = goToQC;
-        window.goToQC2 = goToQC2;
-        window.goToDiecut = goToDiecut;
-        window.goToSend = goToSend;
-        window.deleteMaterial = deleteMaterial;
-        window.closeModal = closeModal;
-        window.toggleBentuk = toggleBentuk;
-        window.calculatePcs = calculatePcs;
+    console.log('✅ Script barang masuk siap!');
+</script>
 
-        init();
-    </script>
 </body>
 </html>
