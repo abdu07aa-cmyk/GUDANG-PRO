@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        /* ====== STYLE ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; }
 
@@ -93,6 +92,7 @@
         .form-group textarea { min-height: 60px; resize: vertical; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
 
         .section-title {
             font-size: 14px;
@@ -167,15 +167,15 @@
         }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; font-size: 12px; }
-        th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 1400px; font-size: 12px; }
+        th, td { padding: 6px 5px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #f8fafc; color: #64748b; font-weight: 600; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
         td { vertical-align: middle; }
 
         .status-badge {
             padding: 3px 10px;
             border-radius: 20px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             display: inline-block;
             white-space: nowrap;
@@ -187,11 +187,11 @@
         .status-kirim { background: #d1fae5; color: #065f46; }
 
         .btn-small {
-            padding: 3px 8px;
+            padding: 2px 6px;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             margin: 1px;
             white-space: nowrap;
         }
@@ -269,13 +269,13 @@
         .jenis-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
 
         @media (max-width: 600px) {
-            .form-row { grid-template-columns: 1fr; }
+            .form-row, .form-row-4 { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr; }
             .modal-content .row { grid-template-columns: 1fr; }
-            .btn-small { font-size: 9px; padding: 2px 5px; }
+            .btn-small { font-size: 8px; padding: 2px 4px; }
             .radio-group { flex-direction: column; gap: 8px; }
-            table { font-size: 10px; min-width: 900px; }
-            th, td { padding: 4px; }
+            table { font-size: 9px; min-width: 1000px; }
+            th, td { padding: 3px; }
         }
     </style>
 </head>
@@ -401,6 +401,24 @@
                     <div id="jenisDetailInfo" class="jenis-detail-info">
                         <strong>📊 Detail Jenis:</strong><br>
                         <span id="jenisDetailText">-</span>
+                    </div>
+                </div>
+
+                <!-- Input Supplier & Surat Jalan -->
+                <div class="section-title">
+                    🏢 Data Supplier & Surat Jalan <span class="badge badge-opsi">OPSIONAL</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Supplier</label>
+                        <input type="text" id="supplier" placeholder="Nama supplier...">
+                        <span class="small-text">📌 Nama supplier pengirim barang</span>
+                    </div>
+                    <div class="form-group">
+                        <label>No Surat Jalan / DO</label>
+                        <input type="text" id="surat_jalan" placeholder="No surat jalan / DO...">
+                        <span class="small-text">📌 Nomor surat jalan atau delivery order</span>
                     </div>
                 </div>
 
@@ -716,6 +734,8 @@
             document.getElementById('qty_masuk').value = '';
             document.getElementById('up_per_sheet').value = '';
             document.getElementById('notes').value = '';
+            document.getElementById('supplier').value = '';
+            document.getElementById('surat_jalan').value = '';
             document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
             document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
             toggleBentuk();
@@ -726,7 +746,7 @@
         }
 
         // ============================================================
-        // SAVE INBOUND
+        // SAVE INBOUND - DENGAN SUPPLIER & SURAT JALAN
         // ============================================================
         async function saveInbound() {
             if (isSubmitting) return;
@@ -739,8 +759,11 @@
             const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
             const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
             const notes = document.getElementById('notes').value.trim();
+            const supplier = document.getElementById('supplier').value.trim();
+            const surat_jalan = document.getElementById('surat_jalan').value.trim();
             const editId = document.getElementById('editId').value;
 
+            // VALIDASI
             if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!jenisTerpilih) { showMessage('❌ Pilih Jenis Produk terlebih dahulu!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
@@ -758,29 +781,43 @@
 
             try {
                 const { data: { user } } = await sb.auth.getUser();
-                
                 const selectedItem = selectedPiDetails.find(item => item.jenis === jenisTerpilih) || selectedPiDetails[0] || {};
+
+                // PERHITUNGAN SESUAI BENTUK
+                let qtySheetValue = 0;
+                let upPerSheetValue = 1;
+                let totalPcs = 0;
+
+                if (bentuk === 'sheet') {
+                    qtySheetValue = qty_masuk;
+                    upPerSheetValue = up_per_sheet;
+                    totalPcs = qty_masuk * up_per_sheet;
+                } else {
+                    qtySheetValue = 0;
+                    upPerSheetValue = 1;
+                    totalPcs = qty_masuk;
+                }
 
                 const data = {
                     no_pi: noPi,
-                    no_po: selectedItem.no_po || '',
+                    no_po: selectedItem.no_po || '-',
+                    surat_jalan: surat_jalan || '-',
                     tanggal_terima: tanggal_terima,
+                    supplier: supplier || '',
                     brand: selectedItem.brand || '',
                     jenis: jenisTerpilih,
                     paper: selectedItem.paper || '',
                     size: selectedItem.size || '',
-                    qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
-                    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+                    qty_sheet: qtySheetValue,
+                    up_per_sheet: upPerSheetValue,
                     qty_masuk: qty_masuk,
                     qty_pi: selectedItem.qty_pi || 0,
                     status: 'DITERIMA',
                     notes: notes || null,
                     created_by: user?.email || 'Unknown',
-                    supplier: selectedItem.supplier || '',
                     qty_po: selectedItem.qty_po || null,
                     qty_pi_sheet: bentuk === 'sheet' ? qty_masuk : null,
                     qty_pi_pcs: bentuk === 'pcs' ? qty_masuk : null,
-                    // Kirim pi_id dan pi_detail_id (sekarang VARCHAR, aman!)
                     pi_id: piId,
                     pi_detail_id: selectedItem.id || null,
                 };
@@ -789,10 +826,7 @@
                 if (editId) {
                     data.updated_by = user?.email || 'Unknown';
                     data.updated_at = new Date().toISOString();
-                    result = await sb
-                        .from('material_inbound')
-                        .update(data)
-                        .eq('id', editId);
+                    result = await sb.from('material_inbound').update(data).eq('id', editId);
                 } else {
                     result = await sb.from('material_inbound').insert([data]);
                 }
@@ -800,8 +834,10 @@
                 if (result.error) throw result.error;
 
                 const actionText = editId ? 'diupdate' : 'disimpan';
-                showMessage(`✅ Barang masuk berhasil ${actionText}! Status: DITERIMA (siap QC)`, 'success');
-                showToast(`✅ Barang masuk berhasil ${actionText}!`, 'success');
+                const bentukText = bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs';
+                showMessage(`✅ Barang masuk (${bentukText}) berhasil ${actionText}! Total: ${totalPcs} Pcs`, 'success');
+                showToast(`✅ ${bentukText} berhasil ${actionText}!`, 'success');
+                
                 resetForm();
                 loadData();
 
@@ -824,6 +860,8 @@
             document.getElementById('editBadge').style.display = 'none';
             document.getElementById('btnSubmit').innerHTML = '💾 Simpan Barang Masuk';
             document.getElementById('selectNoPi').value = '';
+            document.getElementById('supplier').value = '';
+            document.getElementById('surat_jalan').value = '';
             const jenisSelect = document.getElementById('selectJenis');
             jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
             document.getElementById('jenisInfo').textContent = '📌 Akan menampilkan semua jenis dari PI yang dipilih';
@@ -868,6 +906,11 @@
                 }
             }
             await loadPiData();
+            
+            // Set nilai supplier & surat jalan
+            document.getElementById('supplier').value = item.supplier || '';
+            document.getElementById('surat_jalan').value = item.surat_jalan || '';
+            
             const jenisSelect = document.getElementById('selectJenis');
             let found = false;
             for (let i = 0; i < jenisSelect.options.length; i++) {
@@ -891,6 +934,7 @@
             document.getElementById('qty_masuk').value = item.qty_masuk || item.qty_sheet || '';
             document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
             document.getElementById('notes').value = item.notes || '';
+            
             if (item.qty_sheet === 0 && item.qty_masuk > 0) {
                 document.querySelector('input[name="bentuk"][value="pcs"]').checked = true;
             } else {
@@ -903,7 +947,7 @@
         }
 
         // ============================================================
-        // LOAD DATA HISTORY
+        // LOAD DATA HISTORY - DENGAN SEMUA KOLOM
         // ============================================================
         async function loadData() {
             const container = document.getElementById('materialList');
@@ -957,16 +1001,18 @@
                             <th style="text-align:center;min-width:45px;">Up</th>
                             <th style="text-align:center;min-width:60px;">Pcs</th>
                             <th style="text-align:center;min-width:100px;">Status</th>
-                            <th style="min-width:80px;">Catatan</th>
+                            <th style="min-width:100px;">Supplier</th>
+                            <th style="min-width:90px;">DO/SJ No</th>
                             <th style="text-align:center;min-width:90px;">Tgl Terima</th>
-                            <th style="text-align:center;min-width:200px;">Aksi</th>
+                            <th style="min-width:80px;">Catatan</th>
+                            <th style="text-align:center;min-width:180px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             
             for (const item of allData) {
-                const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1);
+                const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1) || item.qty_masuk || 0;
                 const tanggal = item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-';
                 
                 html += `
@@ -985,10 +1031,12 @@
                                 ${statusMap[item.status] || item.status || 'DITERIMA'}
                             </span>
                         </td>
+                        <td style="font-size:11px;">${item.supplier || '-'}</td>
+                        <td style="font-size:11px;">${item.surat_jalan || '-'}</td>
+                        <td style="text-align:center; font-size:11px; color:#64748b;">${tanggal}</td>
                         <td style="font-size:11px; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             ${item.notes || '-'}
                         </td>
-                        <td style="text-align:center; font-size:11px; color:#64748b;">${tanggal}</td>
                         <td style="text-align:center; white-space:nowrap;">
                             <button class="btn-small btn-detail" onclick="showDetail('${item.id}')" title="Detail">📋</button>
                             <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')" title="Edit">✏️</button>
@@ -1049,7 +1097,7 @@
                 'KIRIM': 'status-kirim'
             };
             
-            const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1);
+            const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1) || item.qty_masuk || 0;
             const tanggal = item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-';
             
             let html = `
@@ -1081,6 +1129,12 @@
                     <div><strong>Total Pcs:</strong></div>
                     <div><strong style="color:#3b82f6;">${totalPcs}</strong> Pcs</div>
                     
+                    <div><strong>Supplier:</strong></div>
+                    <div>${item.supplier || '-'}</div>
+                    
+                    <div><strong>No Surat Jalan/DO:</strong></div>
+                    <div>${item.surat_jalan || '-'}</div>
+                    
                     <div><strong>Status:</strong></div>
                     <div>
                         <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">
@@ -1093,12 +1147,6 @@
                     
                     <div><strong>Catatan:</strong></div>
                     <div>${item.notes || '-'}</div>
-                    
-                    <div><strong>PI ID:</strong></div>
-                    <div>${item.pi_id || '-'}</div>
-                    
-                    <div><strong>PI Detail ID:</strong></div>
-                    <div>${item.pi_detail_id || '-'}</div>
                     
                     <div><strong>Created By:</strong></div>
                     <div>${item.created_by || '-'}</div>
