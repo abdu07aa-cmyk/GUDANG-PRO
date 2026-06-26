@@ -7,9 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        /* ====== STYLE SAMA ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; }
 
         .sidebar {
             position: fixed;
@@ -264,7 +263,7 @@
     </style>
 </head>
 <body>
-        <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 SUPPLY MATERIAL</h3>
             <p>Manajemen Inventory</p>
@@ -278,15 +277,12 @@
             <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
             <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
             <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
-
             <div class="menu-divider"></div>
-
             <div class="menu-item active" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
             <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
             <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
             <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
             <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
-
             <div class="menu-divider"></div>
             <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
             <div class="menu-divider"></div>
@@ -308,7 +304,8 @@
         <div class="logo">📦 SUPPLY MATERIAL</div>
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
-        <div class="container" id="mainContent">
+
+    <div class="container" id="mainContent">
         <div class="card">
             <div class="card-title">
                 <span>📥 BARANG MASUK DARI SUPPLIER <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
@@ -322,6 +319,7 @@
             <form id="inboundForm" onsubmit="return false;">
                 <input type="hidden" id="editId" value="">
 
+                <!-- Pilih PI -->
                 <div class="section-title">
                     📋 Pilih PI <span class="badge badge-wajib">WAJIB</span>
                 </div>
@@ -334,6 +332,21 @@
                     <span class="small-text">📌 Pilih PI yang sudah dibuat di menu Input PI</span>
                 </div>
 
+                <!-- DROPDOWN JENIS - OTOMATIS DARI PI -->
+                <div class="section-title" style="margin-top:10px;">
+                    📂 Jenis Produk <span class="badge badge-wajib">WAJIB</span>
+                    <span class="badge badge-auto" style="margin-left:auto;">AUTO DARI PI</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Jenis Produk <span class="required">*</span></label>
+                    <select id="selectJenis" required>
+                        <option value="">-- Pilih Jenis --</option>
+                    </select>
+                    <span class="small-text" id="jenisInfo">📌 Akan otomatis terisi dari PI yang dipilih</span>
+                </div>
+
+                <!-- Data dari PI -->
                 <div class="section-title">
                     📋 Data dari PI <span class="badge badge-auto">AUTO</span>
                 </div>
@@ -345,26 +358,27 @@
                             <input type="text" id="brand" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Jenis</label>
-                            <input type="text" id="jenis" disabled>
-                        </div>
-                        <div class="form-group">
                             <label>Paper</label>
                             <input type="text" id="paper" disabled>
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label>Size</label>
                             <input type="text" id="size" disabled>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label>Qty PI (Pcs)</label>
                             <input type="text" id="qty_pi" disabled>
                         </div>
+                        <div class="form-group">
+                            <label>Jenis (dari PI)</label>
+                            <input type="text" id="jenis_pi" disabled>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Input Barang Masuk -->
                 <div class="section-title">
                     ✏️ Input Barang Masuk <span class="badge badge-wajib">WAJIB: Tanggal & Qty</span>
                 </div>
@@ -420,6 +434,7 @@
             </form>
         </div>
 
+        <!-- Daftar Barang Masuk -->
         <div class="card">
             <div class="card-title">
                 <span>📋 Daftar Barang Masuk</span>
@@ -431,6 +446,7 @@
         </div>
     </div>
 
+    <!-- Modal Detail -->
     <div id="detailModal" class="modal">
         <div class="modal-content">
             <h3 id="detailTitle">📋 Detail Barang Masuk</h3>
@@ -464,7 +480,7 @@
         }
 
         // ============================================================
-        // ✅ TOGGLE BENTUK BARANG
+        // TOGGLE BENTUK BARANG
         // ============================================================
         function toggleBentuk() {
             const bentuk = document.querySelector('input[name="bentuk"]:checked');
@@ -517,7 +533,7 @@
         document.getElementById('up_per_sheet').addEventListener('input', calculatePcs);
 
         // ============================================================
-        // ✅ LOAD DAFTAR PI (DROPDOWN) - FIXED
+        // LOAD DAFTAR PI (DROPDOWN)
         // ============================================================
         async function loadPiList() {
             const select = document.getElementById('selectNoPi');
@@ -534,8 +550,6 @@
                     showMessage('❌ Gagal memuat daftar PI: ' + error.message, 'error');
                     return;
                 }
-
-                console.log('📋 Data PI ditemukan:', headers?.length || 0);
 
                 select.innerHTML = '<option value="">-- Pilih No PI --</option>';
                 
@@ -562,24 +576,31 @@
         }
 
         // ============================================================
-        // LOAD DATA PI SAAT DIPILIH
+        // LOAD DATA PI SAAT DIPILIH - DENGAN AUTO FILL JENIS
         // ============================================================
         async function loadPiData() {
             const select = document.getElementById('selectNoPi');
             const piId = select.value;
             const container = document.getElementById('piDataContainer');
+            const jenisSelect = document.getElementById('selectJenis');
 
             if (!piId) {
                 container.style.display = 'none';
                 document.getElementById('brand').value = '';
-                document.getElementById('jenis').value = '';
+                document.getElementById('jenis_pi').value = '';
                 document.getElementById('paper').value = '';
                 document.getElementById('size').value = '';
                 document.getElementById('qty_pi').value = '';
+                
+                // Reset dropdown jenis
+                jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+                document.getElementById('jenisInfo').textContent = '📌 Pilih PI terlebih dahulu';
+                document.getElementById('jenisInfo').style.color = '#94a3b8';
                 selectedPiDetail = null;
                 return;
             }
 
+            // Ambil data detail PI
             const { data: details, error } = await sb
                 .from('pi_detail')
                 .select('*')
@@ -594,13 +615,49 @@
             const item = details[0];
             selectedPiDetail = item;
 
+            // Tampilkan data PI
             container.style.display = 'block';
             document.getElementById('brand').value = item.brand || '-';
-            document.getElementById('jenis').value = item.jenis || '-';
+            document.getElementById('jenis_pi').value = item.jenis || '-';
             document.getElementById('paper').value = item.paper || '-';
             document.getElementById('size').value = item.size || '-';
             document.getElementById('qty_pi').value = item.qty_pi || 0;
 
+            // ============================================================
+            // 🔥 DROPDOWN JENIS - HANYA MENAMPILKAN JENIS DARI PI
+            // ============================================================
+            // Reset dropdown
+            jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+            
+            if (item.jenis && item.jenis.trim() !== '') {
+                // Tambahkan jenis dari PI sebagai satu-satunya opsi
+                const option = document.createElement('option');
+                option.value = item.jenis;
+                option.textContent = item.jenis;
+                option.selected = true;
+                jenisSelect.appendChild(option);
+                
+                document.getElementById('jenisInfo').textContent = `✅ Jenis dari PI: ${item.jenis}`;
+                document.getElementById('jenisInfo').style.color = '#10b981';
+            } else {
+                // Jika PI tidak punya jenis, beri opsi untuk input manual
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '-- Tidak ada jenis di PI --';
+                option.disabled = true;
+                jenisSelect.appendChild(option);
+                
+                // Tambahkan opsi kosong untuk input manual
+                const manualOption = document.createElement('option');
+                manualOption.value = 'manual';
+                manualOption.textContent = '📝 Input Manual...';
+                jenisSelect.appendChild(manualOption);
+                
+                document.getElementById('jenisInfo').textContent = '⚠️ PI tidak memiliki data jenis, silakan pilih manual';
+                document.getElementById('jenisInfo').style.color = '#f59e0b';
+            }
+
+            // Reset form input
             document.getElementById('qty_masuk').value = '';
             document.getElementById('up_per_sheet').value = '';
             document.getElementById('notes').value = '';
@@ -610,7 +667,8 @@
             toggleBentuk();
             calculatePcs();
 
-            showToast(`✅ Data PI ${select.options[select.selectedIndex].text} dimuat`, 'success');
+            const noPi = select.options[select.selectedIndex]?.text || '';
+            showToast(`✅ Data PI ${noPi} dimuat, jenis: ${item.jenis || '-'}`, 'success');
         }
 
         // ============================================================
@@ -621,6 +679,7 @@
 
             const piId = document.getElementById('selectNoPi').value;
             const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
+            const jenisTerpilih = document.getElementById('selectJenis').value;
             const tanggal_terima = document.getElementById('tanggal_terima').value;
             const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
             const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
@@ -628,7 +687,12 @@
             const notes = document.getElementById('notes').value.trim();
             const editId = document.getElementById('editId').value;
 
+            // Validasi
             if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
+            if (!jenisTerpilih || jenisTerpilih === 'manual') { 
+                showMessage('❌ Pilih Jenis Produk terlebih dahulu!', 'error'); 
+                return; 
+            }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
             if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
             if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
@@ -651,7 +715,7 @@
                 const data = {
                     no_pi: noPi,
                     brand: selectedPiDetail?.brand || '',
-                    jenis: selectedPiDetail?.jenis || '',
+                    jenis: jenisTerpilih,
                     paper: selectedPiDetail?.paper || '',
                     size: selectedPiDetail?.size || '',
                     qty_pi: selectedPiDetail?.qty_pi || 0,
@@ -687,10 +751,6 @@
                 resetForm();
                 loadData();
 
-                try {
-                    await addLog('BARANG MASUK', `${user?.email} ${actionText} barang masuk ${selectedPiDetail?.brand} - ${selectedPiDetail?.jenis} (PI: ${noPi})`);
-                } catch(e) {}
-
             } catch (err) {
                 showMessage('❌ Gagal: ' + err.message, 'error');
                 showToast('❌ Gagal: ' + err.message, 'error');
@@ -711,9 +771,16 @@
             document.getElementById('btnSubmit').innerHTML = '💾 Simpan Barang Masuk';
             
             document.getElementById('selectNoPi').value = '';
+            
+            // Reset dropdown jenis
+            const jenisSelect = document.getElementById('selectJenis');
+            jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+            document.getElementById('jenisInfo').textContent = '📌 Akan otomatis terisi dari PI yang dipilih';
+            document.getElementById('jenisInfo').style.color = '#94a3b8';
+            
             document.getElementById('piDataContainer').style.display = 'none';
             document.getElementById('brand').value = '';
-            document.getElementById('jenis').value = '';
+            document.getElementById('jenis_pi').value = '';
             document.getElementById('paper').value = '';
             document.getElementById('size').value = '';
             document.getElementById('qty_pi').value = '';
@@ -743,6 +810,7 @@
                 return;
             }
 
+            // Pilih PI yang sesuai
             const select = document.getElementById('selectNoPi');
             for (let i = 0; i < select.options.length; i++) {
                 if (select.options[i].dataset.noPi === item.no_pi) {
@@ -751,6 +819,24 @@
                 }
             }
             await loadPiData();
+
+            // Set dropdown jenis
+            const jenisSelect = document.getElementById('selectJenis');
+            let found = false;
+            for (let i = 0; i < jenisSelect.options.length; i++) {
+                if (jenisSelect.options[i].value === item.jenis) {
+                    jenisSelect.value = item.jenis;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && item.jenis) {
+                const option = document.createElement('option');
+                option.value = item.jenis;
+                option.textContent = item.jenis;
+                jenisSelect.appendChild(option);
+                jenisSelect.value = item.jenis;
+            }
 
             document.getElementById('editId').value = id;
             document.getElementById('editBadge').style.display = 'inline';
@@ -838,7 +924,7 @@
                     <tr>
                         <td><strong>${item.no_pi}</strong></td>
                         <td>${item.brand}</td>
-                        <td>${item.jenis}</td>
+                        <td>${item.jenis || '-'}</td>
                         <td style="text-align:center;">${bentuk === 'sheet' ? item.qty_sheet : '-'}</td>
                         <td style="text-align:center;">${bentuk === 'sheet' ? item.up_per_sheet : '-'}</td>
                         <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || item.qty_sheet || 0}</td>
@@ -1023,6 +1109,9 @@
             calculatePcs();
         }
 
+        // ============================================================
+        // EXPOSE FUNCTIONS
+        // ============================================================
         window.loadPiList = loadPiList;
         window.loadPiData = loadPiData;
         window.saveInbound = saveInbound;
