@@ -11,222 +11,578 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
-        .sidebar {
+        /* ===== SIDEBAR MODERN ===== */
+        .sidebar-modern {
             position: fixed;
             top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: #1e293b;
+            left: -320px;
+            width: 320px;
+            height: 100vh;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
             color: white;
-            transition: 0.3s;
-            z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
         }
-        .sidebar.open { left: 0; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
-        .sidebar-header h3 { font-size: 18px; }
-        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
-        .sidebar-menu { padding: 10px 0; }
-        .menu-item {
+
+        .sidebar-modern.open {
+            left: 0;
+        }
+
+        /* Sidebar Header Modern */
+        .sidebar-modern .sidebar-header {
+            padding: 25px 20px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 23, 42, 0.9);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-modern .sidebar-header .logo-wrapper {
             display: flex;
             align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
-            cursor: pointer;
+            justify-content: space-between;
         }
-        .menu-item:hover { background: #334155; color: white; }
-        .menu-item.active { background: #3b82f6; color: white; }
-        .menu-item .icon { width: 30px; font-size: 20px; }
-        .menu-item .text { font-size: 14px; }
-        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
 
-        .overlay {
+        .sidebar-modern .sidebar-header .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-modern .sidebar-header .brand .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .sidebar-modern .sidebar-header .brand h3 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-modern .sidebar-header .brand p {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-modern .sidebar-close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: #94a3b8;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: none;
+        }
+
+        .sidebar-modern .sidebar-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        /* Search di Sidebar */
+        .sidebar-modern .sidebar-search {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-modern .sidebar-search input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .sidebar-modern .sidebar-search input::placeholder {
+            color: #64748b;
+        }
+
+        .sidebar-modern .sidebar-search input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Menu Items Modern */
+        .sidebar-modern .sidebar-menu {
+            padding: 10px 0 20px 0;
+        }
+
+        .sidebar-modern .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 11px 20px 11px 24px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.25s;
+            border-left: 3px solid transparent;
+            position: relative;
+            gap: 14px;
+        }
+
+        .sidebar-modern .menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-left-color: #3b82f6;
+        }
+
+        .sidebar-modern .menu-item.active {
+            background: rgba(59, 130, 246, 0.12);
+            color: white;
+            border-left-color: #3b82f6;
+        }
+
+        .sidebar-modern .menu-item.active .icon {
+            color: #3b82f6;
+        }
+
+        .sidebar-modern .menu-item .icon {
+            width: 28px;
+            font-size: 18px;
+            flex-shrink: 0;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .sidebar-modern .menu-item .text {
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .sidebar-modern .menu-item .badge {
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-modern .menu-item .arrow {
+            font-size: 12px;
+            color: #475569;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-modern .menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 8px 20px;
+        }
+
+        .sidebar-modern .menu-label {
+            padding: 15px 24px 8px 24px;
+            font-size: 11px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-modern .sidebar-footer {
+            position: sticky;
+            bottom: 0;
+            padding: 15px 20px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-modern .sidebar-footer .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-modern .sidebar-footer .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .sidebar-modern .sidebar-footer .user-details {
+            flex: 1;
+        }
+
+        .sidebar-modern .sidebar-footer .user-details .name {
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .sidebar-modern .sidebar-footer .user-details .role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .sidebar-modern .sidebar-footer .logout-icon {
+            color: #64748b;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        .sidebar-modern .sidebar-footer .logout-icon:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* ===== OVERLAY ===== */
+        .overlay-modern {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
             display: none;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
         }
-        .overlay.show { display: block; }
 
+        .overlay-modern.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== HEADER DENGAN TOGGLE ===== */
         .header {
             background: white;
-            padding: 15px;
+            padding: 15px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        .menu-toggle {
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .menu-toggle-modern {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 26px;
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            color: #1e293b;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+
+        .menu-toggle-modern:hover {
+            background: #f1f5f9;
+            transform: scale(1.05);
+        }
+
+        .menu-toggle-modern .label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .logo span {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-right .welcome-text {
+            font-size: 13px;
+            color: #64748b;
+        }
+
         .logout-btn {
             background: #ef4444;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 7px 14px;
             border-radius: 8px;
             font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        /* ===== CONTAINER ===== */
+        .container { padding: 20px; max-width: 100%; margin: 0 auto; }
+
+        /* ===== CARDS ===== */
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: 500; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover td { background: #f8fafc; }
+
         .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
-        .filter-bar input { flex: 2; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .filter-bar select { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
-        .filter-bar button { padding: 8px 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-export { background: #10b981; padding: 8px 15px; border-radius: 8px; border: none; color: white; cursor: pointer; }
-        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
-        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
-        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 20px; display: inline-block; font-size: 11px; }
-        .warning-card { background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px; margin-bottom: 15px; border-radius: 8px; }
-        .warning-item { padding: 8px; border-bottom: 1px solid #fecaca; }
+        .filter-bar input { flex: 2; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: all 0.3s; }
+        .filter-bar input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .filter-bar select { padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: white; outline: none; }
+        .filter-bar select:focus { border-color: #3b82f6; }
+        .filter-bar button { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 500; transition: all 0.3s; }
+        .filter-bar button:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .filter-bar button:active { transform: translateY(0); }
+
+        .btn-export { background: #10b981; padding: 10px 20px; border-radius: 10px; border: none; color: white; cursor: pointer; font-weight: 500; transition: all 0.3s; }
+        .btn-export:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+
+        .status-selesai { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 12px; font-weight: 600; }
+        .status-proses { background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 12px; font-weight: 600; }
+        .status-belum { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 12px; font-weight: 600; }
+
+        .warning-card { background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin-bottom: 20px; border-radius: 10px; }
+        .warning-item { padding: 10px 0; border-bottom: 1px solid #fecaca; }
         .warning-item:last-child { border-bottom: none; }
-        @media (max-width: 600px) { th, td { font-size: 10px; padding: 6px 4px; } }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .sidebar-modern { width: 280px; left: -280px; }
+            .sidebar-modern .sidebar-close-btn { display: block; }
+            .menu-toggle-modern .label { display: none; }
+            .header-right .welcome-text { display: none; }
+            .container { padding: 12px; }
+            th, td { font-size: 11px; padding: 8px 6px; }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar-modern { width: 260px; left: -260px; }
+            .filter-bar input { flex: 1; min-width: 150px; }
+            .filter-bar select { min-width: 120px; }
+        }
+
+        /* Scrollbar */
+        .sidebar-modern::-webkit-scrollbar { width: 4px; }
+        .sidebar-modern::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-modern::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+        .sidebar-modern::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
     </style>
 </head>
 <body>
 
-   <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-        <h3>📦 SUPPLY MATERIAL</h3>
-        <p>Manajemen Inventory</p>
+    <!-- ===== SIDEBAR MODERN ===== -->
+    <div class="sidebar-modern" id="sidebarModern">
+        <!-- Header -->
+        <div class="sidebar-header">
+            <div class="logo-wrapper">
+                <div class="brand">
+                    <div class="logo-icon">📦</div>
+                    <div>
+                        <h3>SUPPLY MATERIAL</h3>
+                        <p>Manajemen Inventory</p>
+                    </div>
+                </div>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn">✕</button>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="sidebar-search">
+            <input type="text" id="sidebarSearch" placeholder="🔍 Cari menu..." />
+        </div>
+
+        <!-- Menu -->
+        <div class="sidebar-menu" id="sidebarMenu">
+            <div class="menu-label">Main Menu</div>
+            
+            <div class="menu-item" data-menu="dashboard">
+                <span class="icon">📊</span>
+                <span class="text">Dashboard</span>
+            </div>
+            <div class="menu-item" data-menu="pi-input">
+                <span class="icon">📝</span>
+                <span class="text">Input PI</span>
+            </div>
+            <div class="menu-item" data-menu="stock-in">
+                <span class="icon">📥</span>
+                <span class="text">Barang Masuk</span>
+            </div>
+            <div class="menu-item" data-menu="stock-out">
+                <span class="icon">📤</span>
+                <span class="text">Barang Keluar</span>
+            </div>
+            <div class="menu-item" data-menu="stock-report">
+                <span class="icon">📋</span>
+                <span class="text">Stok Gudang</span>
+            </div>
+            <div class="menu-item" data-menu="stok-pendukung">
+                <span class="icon">📦</span>
+                <span class="text">Stok Pendukung</span>
+            </div>
+            <div class="menu-item" data-menu="barcode-generator">
+                <span class="icon">🏷️</span>
+                <span class="text">QR Code</span>
+            </div>
+            <div class="menu-item" data-menu="scan-barcode">
+                <span class="icon">📷</span>
+                <span class="text">Scan QR</span>
+            </div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-label">Backup & Export</div>
+
+            <div class="menu-item" data-menu="export-backup">
+                <span class="icon">💾</span>
+                <span class="text">Backup Data</span>
+            </div>
+            <div class="menu-item" data-menu="export">
+                <span class="icon">📎</span>
+                <span class="text">Export Data</span>
+            </div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-label">Tracking Material</div>
+
+            <div class="menu-item" data-menu="material-tracking">
+                <span class="icon">📊</span>
+                <span class="text">Tracking Material</span>
+            </div>
+            <div class="menu-item" data-menu="material-inbound">
+                <span class="icon">📥</span>
+                <span class="text">Material Masuk</span>
+            </div>
+            <div class="menu-item" data-menu="qc-inspection">
+                <span class="icon">🔬</span>
+                <span class="text">QC Inspection</span>
+            </div>
+            <div class="menu-item" data-menu="diecut-process">
+                <span class="icon">⚙️</span>
+                <span class="text">Proses Diecut</span>
+            </div>
+            <div class="menu-item" data-menu="production-send">
+                <span class="icon">🏭</span>
+                <span class="text">Kirim Produksi</span>
+            </div>
+            <div class="menu-item" data-menu="ng-report">
+                <span class="icon">📋</span>
+                <span class="text">Laporan NG</span>
+            </div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-label">Laporan</div>
+
+            <div class="menu-item" data-menu="executive">
+                <span class="icon">📈</span>
+                <span class="text">Laporan Eksekutif</span>
+            </div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-label">Admin</div>
+
+            <div class="menu-item menu-admin-only" data-menu="manage-users">
+                <span class="icon">👥</span>
+                <span class="text">Kelola User</span>
+            </div>
+            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
+                <span class="icon">📜</span>
+                <span class="text">Log Aktivitas</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">👤</div>
+                <div class="user-details">
+                    <div class="name" id="userName">Admin</div>
+                    <div class="role" id="userRole">Administrator</div>
+                </div>
+                <div class="logout-icon" id="logoutMenu">🚪</div>
+            </div>
+        </div>
     </div>
-    <div class="sidebar-menu">
-        <!-- MAIN MENU -->
-        <div class="menu-item" data-menu="dashboard">
-            <span class="icon">📊</span>
-            <span class="text">Dashboard</span>
-        </div>
-        <div class="menu-item" data-menu="pi-input">
-            <span class="icon">📝</span>
-            <span class="text">Input PI</span>
-        </div>
-        <div class="menu-item" data-menu="stock-in">
-            <span class="icon">📥</span>
-            <span class="text">Barang Masuk</span>
-        </div>
-        
-        <div class="menu-item" data-menu="stock-out">
-            <span class="icon">📤</span>
-            <span class="text">Barang Keluar</span>
-        </div>
-        <div class="menu-item" data-menu="stock-report">
-            <span class="icon">📋</span>
-            <span class="text">Stok Gudang</span>
-        </div>
-        <div class="menu-item" data-menu="stok-pendukung">
-            <span class="icon">📦</span>
-            <span class="text">Stok Pendukung</span>
-        </div>
-        <div class="menu-item" data-menu="barcode-generator">
-            <span class="icon">🏷️</span>
-            <span class="text">QR Code</span>
-        </div>
-        <div class="menu-item" data-menu="scan-barcode">
-            <span class="icon">📷</span>
-            <span class="text">Scan QR</span>
-        </div>
 
-        <div class="menu-divider"></div>
-        <!-- Backup Data - Tambahkan di bawah menu Export atau di menu-divider terakhir -->
-<div class="menu-item" data-menu="export-backup">
-    <span class="icon">💾</span>
-    <span class="text">Backup Data</span>
-</div>
+    <!-- ===== OVERLAY ===== -->
+    <div class="overlay-modern" id="overlayModern"></div>
 
-        <!-- MENU TRACKING MATERIAL (BARU) -->
-        <div class="menu-item" data-menu="material-tracking">
-            <span class="icon">📊</span>
-            <span class="text">Tracking Material</span>
-        </div>
-        <div class="menu-item" data-menu="material-inbound">
-            <span class="icon">📥</span>
-            <span class="text">Material Masuk</span>
-        </div>
-        <div class="menu-item" data-menu="qc-inspection">
-            <span class="icon">🔬</span>
-            <span class="text">QC Inspection</span>
-        </div>
-        <div class="menu-item" data-menu="diecut-process">
-            <span class="icon">⚙️</span>
-            <span class="text">Proses Diecut</span>
-        </div>
-        <div class="menu-item" data-menu="production-send">
-            <span class="icon">🏭</span>
-            <span class="text">Kirim Produksi</span>
-        </div>
-        <div class="menu-item" data-menu="ng-report">
-            <span class="icon">📋</span>
-            <span class="text">Laporan NG</span>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <!-- MENU LAINNYA -->
-        <div class="menu-item" data-menu="executive">
-            <span class="icon">📈</span>
-            <span class="text">Laporan Eksekutif</span>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-item menu-admin-only" data-menu="manage-users">
-            <span class="icon">👥</span>
-            <span class="text">Kelola User</span>
-        </div>
-        <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
-            <span class="icon">📜</span>
-            <span class="text">Log Aktivitas</span>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-item" data-menu="export">
-            <span class="icon">📎</span>
-            <span class="text">Export Data</span>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-item" id="logoutMenu">
-            <span class="icon">🚪</span>
-            <span class="text">Logout</span>
-        </div>
-    </div>
-</div>
-
-    <div class="overlay" id="overlay"></div>
-
+    <!-- ===== HEADER ===== -->
     <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 SUPPLY MATERIAL</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
+        <div class="header-left">
+            <button class="menu-toggle-modern" id="menuToggle">
+                ☰
+                <span class="label">Menu</span>
+            </button>
+            <div class="logo">📦 <span>SUPPLY MATERIAL</span></div>
+        </div>
+        <div class="header-right">
+            <span class="welcome-text" id="welcomeText">👋 Welcome, Admin</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
     </div>
 
+    <!-- ===== MAIN CONTENT ===== -->
     <div class="container" id="mainContent">Memuat...</div>
 
     <script>
+        // ============================================================
+        // KODE ASLI (TIDAK DIUBAH)
+        // ============================================================
         let allData = [];
         let stokPendukung = [];
 
@@ -239,13 +595,11 @@
             const container = document.getElementById('mainContent');
             container.innerHTML = '<div style="text-align:center;padding:20px">Loading...</div>';
             
-            // Ambil data PI
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
             const { data: details } = await sb.from('pi_detail').select('*');
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
             
-            // Ambil data stok pendukung
             const { data: stok } = await sb.from('stok_pendukung').select('*');
             stokPendukung = stok || [];
             
@@ -287,7 +641,6 @@
         }
         
         function renderDashboard() {
-            // Hitung notifikasi stok menipis dari stok pendukung
             const stokMenipis = stokPendukung.filter(item => {
                 const min = item.stok_minimum || 0;
                 return min > 0 && item.stok <= min;
@@ -423,56 +776,218 @@
         }
         
         function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        'material-tracking': 'material-tracking.html',
-        'material-inbound': 'material-inbound.html',
-        'qc-inspection': 'qc-inspection.html',
-        'diecut-process': 'diecut-process.html',
-        'production-send': 'production-send.html',
-        'ng-report': 'ng-report.html',
-        'export-backup': 'export-backup.html',
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
-        
-        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
-        
-        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
-        
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                'export-backup': 'export-backup.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        // ============================================================
+        // FUNGSI SIDEBAR MODERN (BARU)
+        // ============================================================
+        function openSidebarModern() {
+            document.getElementById('sidebarModern').classList.add('open');
+            document.getElementById('overlayModern').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebarModern() {
+            document.getElementById('sidebarModern').classList.remove('open');
+            document.getElementById('overlayModern').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebarModern() {
+            if (document.getElementById('sidebarModern').classList.contains('open')) {
+                closeSidebarModern();
+            } else {
+                openSidebarModern();
+            }
+        }
+
+        // ============================================================
+        // SETUP EVENT LISTENERS (MENGGABUNGKAN LAMA & BARU)
+        // ============================================================
         function setupEventListeners() {
-            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            // Sidebar Modern - Toggle
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebarModern);
+            document.getElementById('overlayModern').addEventListener('click', closeSidebarModern);
+            document.getElementById('sidebarCloseBtn').addEventListener('click', closeSidebarModern);
+
+            // Logout
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('logoutMenu').addEventListener('click', logout);
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+
+            // Menu Items (Modern Sidebar)
+            document.querySelectorAll('.sidebar-modern .menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const menu = el.getAttribute('data-menu');
+                    goToMenu(menu);
+                });
+            });
+
+            // Search Sidebar
+            document.getElementById('sidebarSearch').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const menuItems = document.querySelectorAll('.sidebar-modern .menu-item');
+                let foundCount = 0;
+                
+                menuItems.forEach(item => {
+                    const text = item.querySelector('.text')?.textContent?.toLowerCase() || '';
+                    if (text.includes(searchTerm) || searchTerm === '') {
+                        item.style.display = 'flex';
+                        foundCount++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // Sembunyikan label dan divider jika tidak ada hasil
+                const labels = document.querySelectorAll('.sidebar-modern .menu-label');
+                const dividers = document.querySelectorAll('.sidebar-modern .menu-divider');
+                
+                if (searchTerm !== '') {
+                    labels.forEach(label => {
+                        const nextItems = label.nextElementSibling;
+                        let hasVisible = false;
+                        let el = nextItems;
+                        while (el && !el.classList.contains('menu-label')) {
+                            if (el.classList.contains('menu-item') && el.style.display !== 'none') {
+                                hasVisible = true;
+                                break;
+                            }
+                            el = el.nextElementSibling;
+                        }
+                        label.style.display = hasVisible ? 'block' : 'none';
+                    });
+                    
+                    dividers.forEach(div => {
+                        let hasVisibleBefore = false;
+                        let hasVisibleAfter = false;
+                        let el = div.previousElementSibling;
+                        while (el && !el.classList.contains('menu-label')) {
+                            if (el.classList.contains('menu-item') && el.style.display !== 'none') {
+                                hasVisibleBefore = true;
+                                break;
+                            }
+                            el = el.previousElementSibling;
+                        }
+                        el = div.nextElementSibling;
+                        while (el && !el.classList.contains('menu-label')) {
+                            if (el.classList.contains('menu-item') && el.style.display !== 'none') {
+                                hasVisibleAfter = true;
+                                break;
+                            }
+                            el = el.nextElementSibling;
+                        }
+                        div.style.display = (hasVisibleBefore && hasVisibleAfter) ? 'block' : 'none';
+                    });
+                } else {
+                    labels.forEach(l => l.style.display = 'block');
+                    dividers.forEach(d => d.style.display = 'block');
+                }
+            });
+
+            // Shortcut Keyboard: Ctrl + B
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && (e.key === 'b' || e.key === 'B')) {
+                    e.preventDefault();
+                    toggleSidebarModern();
+                }
+            });
+
+            // Close sidebar on ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('sidebarModern').classList.contains('open')) {
+                    closeSidebarModern();
+                }
+            });
+
+            // Reset sidebar search on close
+            document.addEventListener('sidebarClosed', function() {
+                document.getElementById('sidebarSearch').value = '';
+                document.querySelectorAll('.sidebar-modern .menu-item').forEach(item => {
+                    item.style.display = 'flex';
+                });
+                document.querySelectorAll('.sidebar-modern .menu-label').forEach(l => l.style.display = 'block');
+                document.querySelectorAll('.sidebar-modern .menu-divider').forEach(d => d.style.display = 'block');
             });
         }
-        
+
+        // Override closeSidebarModern untuk trigger event
+        const originalClose = closeSidebarModern;
+        closeSidebarModern = function() {
+            originalClose();
+            document.dispatchEvent(new Event('sidebarClosed'));
+        };
+
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        // ============================================================
+        // INIT
+        // ============================================================
         async function init() {
             await cekSession();
+            
+            // Set user info jika ada session
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (user) {
+                    const nameEl = document.getElementById('userName');
+                    const roleEl = document.getElementById('userRole');
+                    const welcomeEl = document.getElementById('welcomeText');
+                    
+                    const email = user.email || 'User';
+                    nameEl.textContent = email.split('@')[0];
+                    welcomeEl.textContent = '👋 Welcome, ' + email.split('@')[0];
+                    
+                    // Cek role (contoh: admin)
+                    const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single();
+                    if (profile?.role === 'admin') {
+                        roleEl.textContent = 'Administrator';
+                    } else {
+                        roleEl.textContent = 'User';
+                        // Sembunyikan menu admin
+                        document.querySelectorAll('.menu-admin-only').forEach(el => el.style.display = 'none');
+                    }
+                }
+            } catch(e) {
+                console.log('User info not available');
+            }
+            
             setupEventListeners();
             await loadData();
         }
-        
+
+        // Expose functions ke global
         window.filterData = filterData;
         window.resetFilter = resetFilter;
         window.exportExcel = exportExcel;
-        
+        window.openSidebar = openSidebarModern;
+        window.closeSidebar = closeSidebarModern;
+        window.toggleSidebar = toggleSidebarModern;
+
         init();
     </script>
 </body>
