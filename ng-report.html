@@ -210,7 +210,6 @@
             <p>Manajemen Inventory</p>
         </div>
         <div class="sidebar-menu">
-            <!-- Menu Utama -->
             <div class="menu-item" data-menu="dashboard">
                 <span class="icon">📊</span>
                 <span class="text">Dashboard</span>
@@ -246,7 +245,6 @@
 
             <div class="menu-divider"></div>
 
-            <!-- Menu Material -->
             <div class="menu-item" data-menu="material-tracking">
                 <span class="icon">📊</span>
                 <span class="text">Tracking Material</span>
@@ -272,8 +270,8 @@
                 <span class="text">Laporan NG</span>
             </div>
 
-            <!-- MENU BACKUP DATA -->
             <div class="menu-divider"></div>
+
             <div class="menu-item" data-menu="export-backup">
                 <span class="icon">💾</span>
                 <span class="text">Backup Data</span>
@@ -281,7 +279,6 @@
 
             <div class="menu-divider"></div>
 
-            <!-- Menu Laporan -->
             <div class="menu-item" data-menu="executive">
                 <span class="icon">📈</span>
                 <span class="text">Laporan Eksekutif</span>
@@ -289,7 +286,6 @@
 
             <div class="menu-divider"></div>
 
-            <!-- Menu Admin -->
             <div class="menu-item menu-admin-only" data-menu="manage-users">
                 <span class="icon">👥</span>
                 <span class="text">Kelola User</span>
@@ -301,7 +297,6 @@
 
             <div class="menu-divider"></div>
 
-            <!-- Menu Export & Logout -->
             <div class="menu-item" data-menu="export">
                 <span class="icon">📎</span>
                 <span class="text">Export Data</span>
@@ -415,7 +410,7 @@
         }
 
         // ============================================================
-        // LOAD DATA
+        // LOAD DATA - PERBAIKAN (hapus qty_pcs)
         // ============================================================
         async function loadData() {
             var container = getEl('mainContent');
@@ -438,8 +433,7 @@
                             paper,
                             size,
                             qty_sheet,
-                            up_per_sheet,
-                            qty_pcs
+                            up_per_sheet
                         )
                     `)
                     .order('created_at', { ascending: false });
@@ -475,7 +469,6 @@
             var jenisFilter = (filterJenisEl ? filterJenisEl.value : 'all');
             var bulanFilter = (filterBulanEl ? filterBulanEl.value : 'all');
 
-            // Filter data
             var filtered = allData.filter(function(item) {
                 var material = item.material_inbound || {};
                 var matchSearch = (material.no_pi || '').toLowerCase().indexOf(searchText) !== -1 ||
@@ -520,7 +513,6 @@
             }
             var uniqueMaterial = Object.keys(materialIds).length;
 
-            // Top 5 jenis NG
             var topJenis = Object.keys(jenisCount).sort(function(a, b) {
                 return jenisCount[b] - jenisCount[a];
             }).slice(0, 5);
@@ -585,10 +577,13 @@
             }
             var bulanKeys = Object.keys(bulanData).sort();
             var bulanHtml = '';
+            var maxVal = 1;
             for (var bi = 0; bi < bulanKeys.length; bi++) {
-                var key = bulanKeys[bi];
+                if (bulanData[bulanKeys[bi]] > maxVal) maxVal = bulanData[bulanKeys[bi]];
+            }
+            for (var bj = 0; bj < bulanKeys.length; bj++) {
+                var key = bulanKeys[bj];
                 var label = key.substring(5, 7) + '/' + key.substring(0, 4);
-                var maxVal = Math.max.apply(null, Object.values(bulanData));
                 var pct = maxVal > 0 ? (bulanData[key] / maxVal) * 100 : 0;
                 bulanHtml += '<div style="flex:1; min-width:60px; text-align:center;">' +
                     '<div style="font-size:10px; color:#64748b;">' + label + '</div>' +
@@ -607,7 +602,6 @@
             // ============================================================
             var html = '';
 
-            // KPI Cards
             html += '<div class="kpi-grid">' +
                 '<div class="kpi-card" style="border-left-color:#ef4444;">' +
                 '<div class="kpi-value" style="color:#ef4444;">' + totalNG + '</div>' +
@@ -635,19 +629,16 @@
                 '</div>' +
                 '</div>';
 
-            // Top 5 Jenis NG
             html += '<div class="card">' +
                 '<div class="card-title"><span>🏆 TOP 5 JENIS NG</span></div>' +
                 '<div style="display:flex; gap:15px; flex-wrap:wrap;">' + topJenisHtml + '</div>' +
                 '</div>';
 
-            // Ringkasan per Bulan (Bar Chart sederhana)
             html += '<div class="card">' +
                 '<div class="card-title"><span>📊 TREND NG PER BULAN</span></div>' +
                 '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; padding:10px 0;">' + bulanHtml + '</div>' +
                 '</div>';
 
-            // Tabel Data
             html += '<div class="card">' +
                 '<div class="card-title">' +
                 '<span>📋 Daftar NG</span>' +
@@ -713,7 +704,6 @@
 
             container.innerHTML = html;
 
-            // Re-attach event listeners
             var newSearchInput = getEl('searchInput');
             var newFilterProses = getEl('filterProses');
             var newFilterJenis = getEl('filterJenisNg');
@@ -785,7 +775,7 @@
         }
 
         // ============================================================
-        // EXPORT PDF (SEDERHANA - PRINT)
+        // EXPORT PDF (PRINT)
         // ============================================================
         function exportPDF() {
             if (currentFiltered.length === 0) {
@@ -886,7 +876,6 @@
             await loadData();
         }
 
-        // Expose functions ke global
         window.filterData = filterData;
         window.resetFilter = resetFilter;
         window.exportData = exportData;
