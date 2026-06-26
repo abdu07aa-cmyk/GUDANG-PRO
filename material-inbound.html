@@ -733,7 +733,7 @@
         }
 
         // ============================================================
-        // SAVE INBOUND - TANPA KOLOM 'bentuk'
+        // SAVE INBOUND - SESUAI STRUKTUR DATABASE
         // ============================================================
         async function saveInbound() {
             if (isSubmitting) return;
@@ -742,6 +742,7 @@
             const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
             const jenisTerpilih = document.getElementById('selectJenis').value;
             const tanggal_terima = document.getElementById('tanggal_terima').value;
+            const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
             const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
             const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
             const notes = document.getElementById('notes').value.trim();
@@ -751,6 +752,10 @@
             if (!jenisTerpilih) { showMessage('❌ Pilih Jenis Produk terlebih dahulu!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
             if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
+            if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
+                showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
+                return;
+            }
 
             const btn = document.getElementById('btnSubmit');
             const originalText = btn.innerHTML;
@@ -760,32 +765,46 @@
 
             try {
                 const { data: { user } } = await sb.auth.getUser();
-                const qty_pcs = qty_masuk * up_per_sheet;
+                
+                // Cari item dengan jenis yang dipilih
                 const selectedItem = selectedPiDetails.find(item => item.jenis === jenisTerpilih) || selectedPiDetails[0] || {};
 
+                // Hitung total pcs
+                const totalPcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
+
+                // Data sesuai struktur database
                 const data = {
                     no_pi: noPi,
+                    no_po: selectedItem.no_po || '',  // dari PI jika ada
+                    tanggal_terima: tanggal_terima,
                     brand: selectedItem.brand || '',
                     jenis: jenisTerpilih,
                     paper: selectedItem.paper || '',
                     size: selectedItem.size || '',
+                    qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
+                    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
+                    qty_masuk: qty_masuk,  // qty masuk (sheet atau pcs)
                     qty_pi: selectedItem.qty_pi || 0,
-                    qty_sheet: qty_masuk,
-                    qty_masuk_pcs: qty_pcs,
-                    up_per_sheet: up_per_sheet,
-                    // bentuk: bentuk,  // ⚠️ DIHAPUS karena kolom tidak ada di database
                     status: 'DITERIMA',
-                    tanggal_terima: tanggal_terima,
                     notes: notes || null,
+                    created_by: user?.email || 'Unknown',
+                    // Kolom tambahan
                     pi_detail_id: selectedItem.id || null,
-                    created_by: user?.email || 'Unknown'
+                    pi_id: piId,
+                    supplier: selectedItem.supplier || '',
+                    qty_po: selectedItem.qty_po || null,
+                    qty_pi_sheet: bentuk === 'sheet' ? qty_masuk : null,
+                    qty_pi_pcs: bentuk === 'pcs' ? qty_masuk : null,
                 };
 
                 let result;
                 if (editId) {
                     data.updated_by = user?.email || 'Unknown';
                     data.updated_at = new Date().toISOString();
-                    result = await sb.from('material_inbound').update(data).eq('id', editId);
+                    result = await sb
+                        .from('material_inbound')
+                        .update(data)
+                        .eq('id', editId);
                 } else {
                     result = await sb.from('material_inbound').insert([data]);
                 }
@@ -881,9 +900,14 @@
             document.getElementById('editBadge').style.display = 'inline';
             document.getElementById('btnSubmit').innerHTML = '✏️ Update Barang Masuk';
             document.getElementById('tanggal_terima').value = item.tanggal_terima || '';
-            document.getElementById('qty_masuk').value = item.qty_sheet || item.qty_masuk_pcs || '';
+            document.getElementById('qty_masuk').value = item.qty_masuk || item.qty_sheet || '';
             document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
             document.getElementById('notes').value = item.notes || '';
+            if (item.qty_sheet === 0 && item.qty_masuk > 0) {
+                document.querySelector('input[name="bentuk"][value="pcs"]').checked = true;
+            } else {
+                document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
+            }
             toggleBentuk();
             calculatePcs();
             document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
@@ -933,13 +957,14 @@
                 <th style="text-align:center;">Aksi</th>
             </tr></thead><tbody>`;
             for (const item of allData) {
+                const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1);
                 html += `<tr>
                     <td><strong>${item.no_pi}</strong></td>
                     <td>${item.brand}</td>
                     <td>${item.jenis || '-'}</td>
                     <td style="text-align:center;">${item.qty_sheet || '-'}</td>
                     <td style="text-align:center;">${item.up_per_sheet || '-'}</td>
-                    <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || item.qty_sheet || 0}</td>
+                    <td style="text-align:center; font-weight:bold; color:#3b82f6;">${totalPcs || item.qty_masuk || 0}</td>
                     <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
                     <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
                     <td style="min-width:200px; text-align:center;">
@@ -982,6 +1007,7 @@
                 'QC2': 'status-qc2',
                 'KIRIM': 'status-kirim'
             };
+            const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1);
             let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
                 <div><strong>Brand:</strong> ${item.brand || '-'}</div>
@@ -991,7 +1017,7 @@
                 <div><strong>Qty PI (Pcs):</strong> ${item.qty_pi || '-'}</div>
                 <div><strong>Qty Sheet:</strong> ${item.qty_sheet || '-'}</div>
                 <div><strong>Up/Sheet:</strong> ${item.up_per_sheet || '-'}</div>
-                <div><strong>Total Pcs:</strong> ${item.qty_masuk_pcs || item.qty_sheet || 0} Pcs</div>
+                <div><strong>Total Pcs:</strong> ${totalPcs || item.qty_masuk || 0} Pcs</div>
                 <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
                 <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
                 <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
