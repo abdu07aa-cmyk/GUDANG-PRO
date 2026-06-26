@@ -185,7 +185,7 @@
         <p>Manajemen Inventory</p>
     </div>
     <div class="sidebar-menu">
-        <!-- MAIN MENU -->
+        <!-- Menu Utama -->
         <div class="menu-item" data-menu="dashboard">
             <span class="icon">📊</span>
             <span class="text">Dashboard</span>
@@ -221,7 +221,7 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU TRACKING MATERIAL (BARU) -->
+        <!-- Menu Material -->
         <div class="menu-item" data-menu="material-tracking">
             <span class="icon">📊</span>
             <span class="text">Tracking Material</span>
@@ -249,7 +249,15 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU LAINNYA -->
+        <!-- MENU BACKUP DATA (BARU) -->
+        <div class="menu-item" data-menu="export-backup">
+            <span class="icon">💾</span>
+            <span class="text">Backup Data</span>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <!-- Menu Laporan -->
         <div class="menu-item" data-menu="executive">
             <span class="icon">📈</span>
             <span class="text">Laporan Eksekutif</span>
@@ -257,6 +265,7 @@
 
         <div class="menu-divider"></div>
 
+        <!-- Menu Admin -->
         <div class="menu-item menu-admin-only" data-menu="manage-users">
             <span class="icon">👥</span>
             <span class="text">Kelola User</span>
@@ -268,6 +277,7 @@
 
         <div class="menu-divider"></div>
 
+        <!-- Menu Export & Logout -->
         <div class="menu-item" data-menu="export">
             <span class="icon">📎</span>
             <span class="text">Export Data</span>
@@ -281,7 +291,6 @@
         </div>
     </div>
 </div>
-
     <div class="overlay no-print" id="overlay"></div>
 
     <div class="header no-print">
@@ -708,9 +717,8 @@ window.handleScanAction = handleScanAction;
         }
 
         // ===== NAVIGASI =====
-       function goToMenu(menu) {
+      function goToMenu(menu) {
     const files = {
-        // MENU UTAMA
         dashboard: 'dashboard.html',
         'pi-input': 'pi-input.html',
         'stock-in': 'stock-in.html',
@@ -719,16 +727,13 @@ window.handleScanAction = handleScanAction;
         'stok-pendukung': 'stok-pendukung.html',
         'barcode-generator': 'barcode-generator.html',
         'scan-barcode': 'scan-barcode.html',
-        
-        // MENU TRACKING MATERIAL (BARU)
         'material-tracking': 'material-tracking.html',
         'material-inbound': 'material-inbound.html',
         'qc-inspection': 'qc-inspection.html',
         'diecut-process': 'diecut-process.html',
         'production-send': 'production-send.html',
         'ng-report': 'ng-report.html',
-        
-        // MENU LAINNYA
+        'export-backup': 'export-backup.html',  // ← TAMBAHKAN INI
         executive: 'executive-report.html',
         'manage-users': 'manage-users.html',
         'log-aktivitas': 'log-aktivitas.html',
