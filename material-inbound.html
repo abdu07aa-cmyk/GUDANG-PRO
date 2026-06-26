@@ -253,6 +253,21 @@
         .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 14px; cursor: pointer; }
         .radio-group input[type="radio"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
 
+        .jenis-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .jenis-tag {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr; }
@@ -332,10 +347,10 @@
                     <span class="small-text">📌 Pilih PI yang sudah dibuat di menu Input PI</span>
                 </div>
 
-                <!-- DROPDOWN JENIS - OTOMATIS DARI PI -->
+                <!-- DROPDOWN JENIS - MENAMPILKAN SEMUA JENIS DARI PI -->
                 <div class="section-title" style="margin-top:10px;">
                     📂 Jenis Produk <span class="badge badge-wajib">WAJIB</span>
-                    <span class="badge badge-auto" style="margin-left:auto;">AUTO DARI PI</span>
+                    <span class="badge badge-auto" style="margin-left:auto;">DARI PI</span>
                 </div>
 
                 <div class="form-group">
@@ -343,7 +358,8 @@
                     <select id="selectJenis" required>
                         <option value="">-- Pilih Jenis --</option>
                     </select>
-                    <span class="small-text" id="jenisInfo">📌 Akan otomatis terisi dari PI yang dipilih</span>
+                    <span class="small-text" id="jenisInfo">📌 Akan menampilkan semua jenis dari PI yang dipilih</span>
+                    <div id="jenisTags" class="jenis-list" style="margin-top:5px;"></div>
                 </div>
 
                 <!-- Data dari PI -->
@@ -372,8 +388,8 @@
                             <input type="text" id="qty_pi" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Jenis (dari PI)</label>
-                            <input type="text" id="jenis_pi" disabled>
+                            <label>Jumlah Item</label>
+                            <input type="text" id="total_items" disabled>
                         </div>
                     </div>
                 </div>
@@ -462,7 +478,7 @@
     <script>
         let allData = [];
         let isSubmitting = false;
-        let selectedPiDetail = null;
+        let selectedPiDetails = [];
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -576,31 +592,33 @@
         }
 
         // ============================================================
-        // LOAD DATA PI SAAT DIPILIH - DENGAN AUTO FILL JENIS
+        // LOAD DATA PI SAAT DIPILIH - MENAMPILKAN SEMUA JENIS
         // ============================================================
         async function loadPiData() {
             const select = document.getElementById('selectNoPi');
             const piId = select.value;
             const container = document.getElementById('piDataContainer');
             const jenisSelect = document.getElementById('selectJenis');
+            const jenisTags = document.getElementById('jenisTags');
 
             if (!piId) {
                 container.style.display = 'none';
                 document.getElementById('brand').value = '';
-                document.getElementById('jenis_pi').value = '';
                 document.getElementById('paper').value = '';
                 document.getElementById('size').value = '';
                 document.getElementById('qty_pi').value = '';
+                document.getElementById('total_items').value = '';
                 
                 // Reset dropdown jenis
                 jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
-                document.getElementById('jenisInfo').textContent = '📌 Pilih PI terlebih dahulu';
+                document.getElementById('jenisInfo').textContent = '📌 Akan menampilkan semua jenis dari PI yang dipilih';
                 document.getElementById('jenisInfo').style.color = '#94a3b8';
-                selectedPiDetail = null;
+                jenisTags.innerHTML = '';
+                selectedPiDetails = [];
                 return;
             }
 
-            // Ambil data detail PI
+            // Ambil SEMUA data detail PI
             const { data: details, error } = await sb
                 .from('pi_detail')
                 .select('*')
@@ -612,49 +630,68 @@
                 return;
             }
 
-            const item = details[0];
-            selectedPiDetail = item;
+            // Simpan semua item PI
+            selectedPiDetails = details;
 
             // Tampilkan data PI
+            const firstItem = details[0];
             container.style.display = 'block';
-            document.getElementById('brand').value = item.brand || '-';
-            document.getElementById('jenis_pi').value = item.jenis || '-';
-            document.getElementById('paper').value = item.paper || '-';
-            document.getElementById('size').value = item.size || '-';
-            document.getElementById('qty_pi').value = item.qty_pi || 0;
+            document.getElementById('brand').value = firstItem.brand || '-';
+            document.getElementById('paper').value = firstItem.paper || '-';
+            document.getElementById('size').value = firstItem.size || '-';
+            document.getElementById('qty_pi').value = details.reduce((sum, d) => sum + (parseInt(d.qty_pi) || 0), 0);
+            document.getElementById('total_items').value = details.length + ' item';
 
             // ============================================================
-            // 🔥 DROPDOWN JENIS - HANYA MENAMPILKAN JENIS DARI PI
+            // 🔥 DROPDOWN JENIS - MENAMPILKAN SEMUA JENIS DARI PI
             // ============================================================
             // Reset dropdown
             jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+            jenisTags.innerHTML = '';
             
-            if (item.jenis && item.jenis.trim() !== '') {
-                // Tambahkan jenis dari PI sebagai satu-satunya opsi
-                const option = document.createElement('option');
-                option.value = item.jenis;
-                option.textContent = item.jenis;
-                option.selected = true;
-                jenisSelect.appendChild(option);
+            // Kumpulkan semua jenis yang unik dari semua item di PI
+            const jenisSet = new Set();
+            for (const item of details) {
+                if (item.jenis && item.jenis.trim() !== '') {
+                    jenisSet.add(item.jenis.trim());
+                }
+            }
+            
+            const jenisList = Array.from(jenisSet);
+            
+            if (jenisList.length > 0) {
+                // Tambahkan semua jenis dari PI sebagai opsi
+                for (const jenis of jenisList) {
+                    const option = document.createElement('option');
+                    option.value = jenis;
+                    option.textContent = jenis;
+                    jenisSelect.appendChild(option);
+                }
                 
-                document.getElementById('jenisInfo').textContent = `✅ Jenis dari PI: ${item.jenis}`;
+                // Pilih jenis pertama sebagai default
+                jenisSelect.value = jenisList[0];
+                
+                // Tampilkan tag jenis
+                for (const jenis of jenisList) {
+                    const tag = document.createElement('span');
+                    tag.className = 'jenis-tag';
+                    tag.textContent = '📌 ' + jenis;
+                    jenisTags.appendChild(tag);
+                }
+                
+                document.getElementById('jenisInfo').textContent = `✅ ${jenisList.length} jenis ditemukan di PI: ${jenisList.join(', ')}`;
                 document.getElementById('jenisInfo').style.color = '#10b981';
             } else {
-                // Jika PI tidak punya jenis, beri opsi untuk input manual
+                // Jika PI tidak punya jenis
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = '-- Tidak ada jenis di PI --';
+                option.textContent = '-- Tidak ada jenis --';
                 option.disabled = true;
                 jenisSelect.appendChild(option);
                 
-                // Tambahkan opsi kosong untuk input manual
-                const manualOption = document.createElement('option');
-                manualOption.value = 'manual';
-                manualOption.textContent = '📝 Input Manual...';
-                jenisSelect.appendChild(manualOption);
-                
-                document.getElementById('jenisInfo').textContent = '⚠️ PI tidak memiliki data jenis, silakan pilih manual';
+                document.getElementById('jenisInfo').textContent = '⚠️ PI tidak memiliki data jenis';
                 document.getElementById('jenisInfo').style.color = '#f59e0b';
+                jenisTags.innerHTML = '<span class="jenis-tag" style="background:#fee2e2;color:#991b1b;">⚠️ Tidak ada jenis</span>';
             }
 
             // Reset form input
@@ -668,7 +705,7 @@
             calculatePcs();
 
             const noPi = select.options[select.selectedIndex]?.text || '';
-            showToast(`✅ Data PI ${noPi} dimuat, jenis: ${item.jenis || '-'}`, 'success');
+            showToast(`✅ Data PI ${noPi} dimuat (${details.length} item, ${jenisList.length} jenis)`, 'success');
         }
 
         // ============================================================
@@ -687,12 +724,8 @@
             const notes = document.getElementById('notes').value.trim();
             const editId = document.getElementById('editId').value;
 
-            // Validasi
             if (!piId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
-            if (!jenisTerpilih || jenisTerpilih === 'manual') { 
-                showMessage('❌ Pilih Jenis Produk terlebih dahulu!', 'error'); 
-                return; 
-            }
+            if (!jenisTerpilih) { showMessage('❌ Pilih Jenis Produk terlebih dahulu!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
             if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
             if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
@@ -712,13 +745,16 @@
                 
                 const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
 
+                // Ambil data dari item pertama sebagai referensi
+                const firstItem = selectedPiDetails[0] || {};
+
                 const data = {
                     no_pi: noPi,
-                    brand: selectedPiDetail?.brand || '',
+                    brand: firstItem.brand || '',
                     jenis: jenisTerpilih,
-                    paper: selectedPiDetail?.paper || '',
-                    size: selectedPiDetail?.size || '',
-                    qty_pi: selectedPiDetail?.qty_pi || 0,
+                    paper: firstItem.paper || '',
+                    size: firstItem.size || '',
+                    qty_pi: selectedPiDetails.reduce((sum, d) => sum + (parseInt(d.qty_pi) || 0), 0),
                     qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
                     qty_masuk_pcs: qty_pcs,
                     up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
@@ -726,7 +762,7 @@
                     status: 'DITERIMA',
                     tanggal_terima: tanggal_terima,
                     notes: notes || null,
-                    pi_detail_id: selectedPiDetail?.id || null,
+                    pi_detail_id: firstItem.id || null,
                     created_by: user?.email || 'Unknown'
                 };
 
@@ -775,15 +811,16 @@
             // Reset dropdown jenis
             const jenisSelect = document.getElementById('selectJenis');
             jenisSelect.innerHTML = '<option value="">-- Pilih Jenis --</option>';
-            document.getElementById('jenisInfo').textContent = '📌 Akan otomatis terisi dari PI yang dipilih';
+            document.getElementById('jenisInfo').textContent = '📌 Akan menampilkan semua jenis dari PI yang dipilih';
             document.getElementById('jenisInfo').style.color = '#94a3b8';
+            document.getElementById('jenisTags').innerHTML = '';
             
             document.getElementById('piDataContainer').style.display = 'none';
             document.getElementById('brand').value = '';
-            document.getElementById('jenis_pi').value = '';
             document.getElementById('paper').value = '';
             document.getElementById('size').value = '';
             document.getElementById('qty_pi').value = '';
+            document.getElementById('total_items').value = '';
             document.getElementById('tanggal_terima').value = new Date().toISOString().split('T')[0];
             document.getElementById('qty_masuk').value = '';
             document.getElementById('up_per_sheet').value = '';
@@ -792,7 +829,7 @@
             toggleBentuk();
             calculatePcs();
             document.getElementById('msgContainer').innerHTML = '';
-            selectedPiDetail = null;
+            selectedPiDetails = [];
         }
 
         // ============================================================
@@ -818,6 +855,8 @@
                     break;
                 }
             }
+            
+            // Load data PI terlebih dahulu
             await loadPiData();
 
             // Set dropdown jenis
