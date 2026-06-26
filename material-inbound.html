@@ -733,7 +733,7 @@
         }
 
         // ============================================================
-        // SAVE INBOUND
+        // SAVE INBOUND - TANPA KOLOM 'bentuk'
         // ============================================================
         async function saveInbound() {
             if (isSubmitting) return;
@@ -742,7 +742,6 @@
             const noPi = document.getElementById('selectNoPi').selectedOptions[0]?.dataset?.noPi || '';
             const jenisTerpilih = document.getElementById('selectJenis').value;
             const tanggal_terima = document.getElementById('tanggal_terima').value;
-            const bentuk = document.querySelector('input[name="bentuk"]:checked').value;
             const qty_masuk = parseInt(document.getElementById('qty_masuk').value);
             const up_per_sheet = parseInt(document.getElementById('up_per_sheet').value) || 1;
             const notes = document.getElementById('notes').value.trim();
@@ -752,10 +751,6 @@
             if (!jenisTerpilih) { showMessage('❌ Pilih Jenis Produk terlebih dahulu!', 'error'); return; }
             if (!tanggal_terima) { showMessage('❌ Tanggal Terima wajib diisi!', 'error'); return; }
             if (!qty_masuk || qty_masuk < 1) { showMessage('❌ Qty Masuk harus lebih dari 0!', 'error'); return; }
-            if (bentuk === 'sheet' && (!up_per_sheet || up_per_sheet < 1)) {
-                showMessage('❌ Up/Sheet harus lebih dari 0!', 'error');
-                return;
-            }
 
             const btn = document.getElementById('btnSubmit');
             const originalText = btn.innerHTML;
@@ -765,7 +760,7 @@
 
             try {
                 const { data: { user } } = await sb.auth.getUser();
-                const qty_pcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
+                const qty_pcs = qty_masuk * up_per_sheet;
                 const selectedItem = selectedPiDetails.find(item => item.jenis === jenisTerpilih) || selectedPiDetails[0] || {};
 
                 const data = {
@@ -775,10 +770,10 @@
                     paper: selectedItem.paper || '',
                     size: selectedItem.size || '',
                     qty_pi: selectedItem.qty_pi || 0,
-                    qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
+                    qty_sheet: qty_masuk,
                     qty_masuk_pcs: qty_pcs,
-                    up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
-                    bentuk: bentuk,
+                    up_per_sheet: up_per_sheet,
+                    // bentuk: bentuk,  // ⚠️ DIHAPUS karena kolom tidak ada di database
                     status: 'DITERIMA',
                     tanggal_terima: tanggal_terima,
                     notes: notes || null,
@@ -889,11 +884,6 @@
             document.getElementById('qty_masuk').value = item.qty_sheet || item.qty_masuk_pcs || '';
             document.getElementById('up_per_sheet').value = item.up_per_sheet || '';
             document.getElementById('notes').value = item.notes || '';
-            if (item.bentuk === 'pcs') {
-                document.querySelector('input[name="bentuk"][value="pcs"]').checked = true;
-            } else {
-                document.querySelector('input[name="bentuk"][value="sheet"]').checked = true;
-            }
             toggleBentuk();
             calculatePcs();
             document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
@@ -943,13 +933,12 @@
                 <th style="text-align:center;">Aksi</th>
             </tr></thead><tbody>`;
             for (const item of allData) {
-                const bentuk = item.bentuk || 'sheet';
                 html += `<tr>
                     <td><strong>${item.no_pi}</strong></td>
                     <td>${item.brand}</td>
                     <td>${item.jenis || '-'}</td>
-                    <td style="text-align:center;">${bentuk === 'sheet' ? item.qty_sheet : '-'}</td>
-                    <td style="text-align:center;">${bentuk === 'sheet' ? item.up_per_sheet : '-'}</td>
+                    <td style="text-align:center;">${item.qty_sheet || '-'}</td>
+                    <td style="text-align:center;">${item.up_per_sheet || '-'}</td>
                     <td style="text-align:center; font-weight:bold; color:#3b82f6;">${item.qty_masuk_pcs || item.qty_sheet || 0}</td>
                     <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
                     <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
@@ -993,7 +982,6 @@
                 'QC2': 'status-qc2',
                 'KIRIM': 'status-kirim'
             };
-            const bentuk = item.bentuk || 'sheet';
             let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
                 <div><strong>Brand:</strong> ${item.brand || '-'}</div>
@@ -1001,9 +989,8 @@
                 <div><strong>Paper:</strong> ${item.paper || '-'}</div>
                 <div><strong>Size:</strong> ${item.size || '-'}</div>
                 <div><strong>Qty PI (Pcs):</strong> ${item.qty_pi || '-'}</div>
-                <div><strong>Bentuk:</strong> ${bentuk === 'sheet' ? '📄 Sheet' : '📦 Pcs'}</div>
-                <div><strong>Qty Masuk:</strong> ${bentuk === 'sheet' ? item.qty_sheet + ' Sheet' : item.qty_masuk_pcs + ' Pcs'}</div>
-                ${bentuk === 'sheet' ? `<div><strong>Up/Sheet:</strong> ${item.up_per_sheet}</div>` : ''}
+                <div><strong>Qty Sheet:</strong> ${item.qty_sheet || '-'}</div>
+                <div><strong>Up/Sheet:</strong> ${item.up_per_sheet || '-'}</div>
                 <div><strong>Total Pcs:</strong> ${item.qty_masuk_pcs || item.qty_sheet || 0} Pcs</div>
                 <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
                 <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
