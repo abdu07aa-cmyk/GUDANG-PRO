@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Backup Data - GUDANG PRO</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* ====== STYLE SAMA DENGAN import-excel.html ====== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px 10px; border-radius: 8px; }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+
+        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            display: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 90%;
+        }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        .stat-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-box .number { font-size: 28px; font-weight: bold; color: #1e293b; }
+        .stat-box .label { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.5s;
+            width: 0%;
+        }
+
+        .backup-list { margin-top: 10px; }
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .backup-item .info { font-size: 13px; }
+        .backup-item .info .name { font-weight: 600; }
+        .backup-item .info .date { color: #94a3b8; font-size: 11px; }
+        .backup-item .actions { display: flex; gap: 6px; }
+
+        .btn-small {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .container { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR SAMA -->
+    <div class="sidebar" id="sidebar">...</div>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="header">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="logo">📦 SUPPLY MATERIAL</div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="container">
+        <!-- Statistik -->
+        <div class="grid-3" id="statsContainer">
+            <div class="stat-box">
+                <div class="number" id="totalData">0</div>
+                <div class="label">📦 Total Data</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="totalBackup">0</div>
+                <div class="label">💾 Total Backup</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="lastBackup">-</div>
+                <div class="label">🕐 Backup Terakhir</div>
+            </div>
+        </div>
+
+        <!-- Tombol Backup -->
+        <div class="card">
+            <div class="card-title">
+                <span>💾 Backup & Export Data</span>
+            </div>
+            <div id="msgContainer"></div>
+
+            <div class="grid-2">
+                <button class="btn btn-success" onclick="backupAll()" style="padding:15px; font-size:16px;">
+                    📦 Backup Semua Data
+                </button>
+                <button class="btn btn-primary" onclick="exportFiltered()" style="padding:15px; font-size:16px;">
+                    🔍 Export dengan Filter
+                </button>
+            </div>
+
+            <div style="margin-top:15px; display:none;" id="filterSection">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Tanggal Mulai</label>
+                        <input type="date" id="filterStart">
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Selesai</label>
+                        <input type="date" id="filterEnd">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Brand</label>
+                    <input type="text" id="filterBrand" placeholder="Kosongkan untuk semua">
+                </div>
+                <button class="btn btn-primary" onclick="exportWithFilter()">📥 Export dengan Filter</button>
+            </div>
+
+            <div class="progress-bar" id="progressBar" style="display:none;">
+                <div class="fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Daftar Backup -->
+        <div class="card">
+            <div class="card-title">
+                <span>📋 Daftar Backup</span>
+                <button class="btn btn-secondary" onclick="loadBackupList()" style="padding:6px 12px; font-size:12px;">🔄 Refresh</button>
+            </div>
+            <div id="backupList">
+                <div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat daftar backup...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ============================================================
+        // TOAST & MESSAGE
+        // ============================================================
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function showMessage(msg, type = 'info') {
+            const container = document.getElementById('msgContainer');
+            const map = { success: 'alert-success', error: 'alert-error', info: 'alert-info' };
+            container.innerHTML = `<div class="alert ${map[type] || 'alert-info'}">${msg}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // ============================================================
+        // LOAD STATISTICS
+        // ============================================================
+        async function loadStats() {
+            try {
+                // Total data
+                const { count: totalData } = await sb
+                    .from('material_inbound')
+                    .select('*', { count: 'exact', head: true });
+
+                document.getElementById('totalData').textContent = totalData || 0;
+
+                // Total backup
+                const { count: totalBackup } = await sb
+                    .from('backup_history')
+                    .select('*', { count: 'exact', head: true });
+
+                document.getElementById('totalBackup').textContent = totalBackup || 0;
+
+                // Last backup
+                const { data: lastBackup } = await sb
+                    .from('backup_history')
+                    .select('created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (lastBackup && lastBackup.length > 0) {
+                    const date = new Date(lastBackup[0].created_at);
+                    document.getElementById('lastBackup').textContent = date.toLocaleString('id-ID');
+                } else {
+                    document.getElementById('lastBackup').textContent = 'Belum ada backup';
+                }
+
+            } catch (err) {
+                console.error('Error load stats:', err);
+            }
+        }
+
+        // ============================================================
+        // BACKUP ALL DATA
+        // ============================================================
+        async function backupAll() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Backup...';
+
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            progressBar.style.display = 'block';
+
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+
+                // Ambil semua data
+                progressFill.style.width = '20%';
+                const { data, error } = await sb
+                    .from('material_inbound')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                progressFill.style.width = '60%';
+
+                // Buat Excel
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, 'Barang Masuk');
+
+                // Generate nama file
+                const date = new Date();
+                const fileName = `Backup_Barang_Masuk_${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}_${String(date.getHours()).padStart(2,'0')}${String(date.getMinutes()).padStart(2,'0')}.xlsx`;
+
+                // Download
+                XLSX.writeFile(wb, fileName);
+
+                progressFill.style.width = '80%';
+
+                // Simpan history backup
+                await sb.from('backup_history').insert([{
+                    file_name: fileName,
+                    total_rows: data.length,
+                    backup_by: user?.email || 'Unknown',
+                    created_at: new Date().toISOString()
+                }]);
+
+                progressFill.style.width = '100%';
+
+                showMessage(`✅ Backup berhasil! ${data.length} data diexport`, 'success');
+                showToast(`✅ Backup ${data.length} data berhasil!`, 'success');
+
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 2000);
+
+                loadStats();
+                loadBackupList();
+
+            } catch (err) {
+                showMessage('❌ Gagal backup: ' + err.message, 'error');
+                showToast('❌ Gagal backup!', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📦 Backup Semua Data';
+            }
+        }
+
+        // ============================================================
+        // EXPORT WITH FILTER
+        // ============================================================
+        function exportFiltered() {
+            const section = document.getElementById('filterSection');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function exportWithFilter() {
+            const start = document.getElementById('filterStart').value;
+            const end = document.getElementById('filterEnd').value;
+            const brand = document.getElementById('filterBrand').value.trim();
+
+            let query = sb.from('material_inbound').select('*');
+
+            if (start) query = query.gte('tanggal_terima', start);
+            if (end) query = query.lte('tanggal_terima', end);
+            if (brand) query = query.ilike('brand', `%${brand}%`);
+
+            const { data, error } = await query.order('tanggal_terima', { ascending: false });
+
+            if (error) {
+                showMessage('❌ Gagal export: ' + error.message, 'error');
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                showMessage('⚠️ Tidak ada data dengan filter tersebut', 'warning');
+                return;
+            }
+
+            // Buat Excel
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Barang Masuk');
+
+            const date = new Date();
+            const fileName = `Export_Filtered_${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+            showToast(`✅ Export ${data.length} data berhasil!`, 'success');
+        }
+
+        // ============================================================
+        // LOAD BACKUP LIST
+        // ============================================================
+        async function loadBackupList() {
+            const container = document.getElementById('backupList');
+            try {
+                const { data, error } = await sb
+                    .from('backup_history')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">Belum ada backup</div>';
+                    return;
+                }
+
+                let html = '<div class="backup-list">';
+                for (const item of data) {
+                    const date = item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-';
+                    html += `
+                        <div class="backup-item">
+                            <div class="info">
+                                <div class="name">📄 ${item.file_name || 'backup'}</div>
+                                <div class="date">
+                                    ${item.total_rows || 0} data • ${date} • oleh ${item.backup_by || '-'}
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-small btn-primary" onclick="downloadBackup('${item.file_name}')">⬇️ Download</button>
+                                <button class="btn-small btn-danger" onclick="deleteBackup('${item.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+
+            } catch (err) {
+                container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${err.message}</div>`;
+            }
+        }
+
+        // ============================================================
+        // DOWNLOAD BACKUP
+        // ============================================================
+        function downloadBackup(fileName) {
+            // Karena file disimpan di local, kita tidak bisa download ulang
+            // Tapi kita bisa buat ulang dari database
+            showToast('📥 Silakan gunakan fitur Export untuk membuat ulang file', 'info');
+        }
+
+        // ============================================================
+        // DELETE BACKUP
+        // ============================================================
+        async function deleteBackup(id) {
+            if (!confirm('Yakin ingin menghapus history backup ini?')) return;
+            const { error } = await sb.from('backup_history').delete().eq('id', id);
+            if (error) {
+                showToast('❌ Gagal: ' + error.message, 'error');
+            } else {
+                showToast('✅ History backup dihapus', 'success');
+                loadBackupList();
+                loadStats();
+            }
+        }
+
+        // ============================================================
+        // NAVIGASI
+        // ============================================================
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                'import-excel': 'import-excel.html',
+                'export-backup': 'export-backup.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
+
+        function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+        function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+
+        async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+
+        function setupEventListeners() {
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenu').addEventListener('click', logout);
+            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
+                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            });
+        }
+
+        async function init() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            setupEventListeners();
+            await loadStats();
+            await loadBackupList();
+        }
+
+        // EXPOSE FUNCTIONS
+        window.backupAll = backupAll;
+        window.exportFiltered = exportFiltered;
+        window.exportWithFilter = exportWithFilter;
+        window.loadBackupList = loadBackupList;
+        window.downloadBackup = downloadBackup;
+        window.deleteBackup = deleteBackup;
+
+        init();
+    </script>
+</body>
+</html>
