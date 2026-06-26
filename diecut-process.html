@@ -8,86 +8,359 @@
     <script src="config.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* ============================================================ */
+        /* RESET & BASE                                                */
+        /* ============================================================ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f9;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
 
+        /* ============================================================ */
+        /* SIDEBAR - DESAIN BARU (GRADIENT MODERN)                      */
+        /* ============================================================ */
         .sidebar {
             position: fixed;
             top: 0;
-            left: -280px;
+            left: 0;
             width: 280px;
-            height: 100%;
-            background: #1e293b;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
             color: white;
-            transition: 0.3s;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            overflow-x: hidden;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 0;
         }
-        .sidebar.open { left: 0; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
-        .sidebar-header h3 { font-size: 18px; }
-        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
-        .sidebar-menu { padding: 10px 0; }
-        .menu-item {
+
+        .sidebar.closed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* ===== SIDEBAR HEADER ===== */
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
-            cursor: pointer;
+            justify-content: space-between;
+            flex-shrink: 0;
         }
-        .menu-item:hover { background: #334155; color: white; }
-        .menu-item.active { background: #3b82f6; color: white; }
-        .menu-item .icon { width: 30px; font-size: 20px; }
-        .menu-item .text { font-size: 14px; }
-        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
 
+        .sidebar-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .sidebar-header .logo span:first-child {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .sidebar-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            display: none;
+            transition: transform 0.3s;
+            border-radius: 6px;
+        }
+
+        .sidebar-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        /* ===== SIDEBAR MENU ===== */
+        .sidebar-menu {
+            list-style: none;
+            padding: 8px 0;
+            margin: 0;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu li {
+            padding: 0 12px;
+            margin-bottom: 1px;
+        }
+
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 14px;
+            color: rgba(255, 255, 255, 0.65);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            pointer-events: auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sidebar-menu li a:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            transform: translateX(3px);
+        }
+
+        .sidebar-menu li a.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+        }
+
+        .sidebar-menu li a .icon {
+            font-size: 16px;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 6px 16px;
+        }
+
+        /* ===== SIDEBAR FOOTER ===== */
+        .sidebar-footer {
+            padding: 10px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
+        }
+
+        .sidebar-footer .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-footer .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer .user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-footer .user-details .name {
+            font-weight: 600;
+            font-size: 13px;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-footer .user-details .role {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .sidebar-footer .logout-btn-sidebar {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.35);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer .logout-btn-sidebar:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        /* ============================================================ */
+        /* OVERLAY                                                     */
+        /* ============================================================ */
         .overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.4);
             z-index: 999;
             display: none;
+            backdrop-filter: blur(3px);
+            animation: fadeIn 0.25s ease;
         }
-        .overlay.show { display: block; }
 
+        .overlay.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ============================================================ */
+        /* HEADER                                                       */
+        /* ============================================================ */
         .header {
             background: white;
-            padding: 15px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
             position: sticky;
             top: 0;
             z-index: 100;
         }
+
+        .header .left-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .menu-toggle {
             background: none;
             border: none;
             font-size: 24px;
             cursor: pointer;
-            padding: 5px 10px;
+            padding: 4px 10px;
             border-radius: 8px;
+            transition: all 0.2s;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+
+        .menu-toggle:hover {
+            background: #f0f2f5;
+        }
+
+        .menu-toggle .label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .logo-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .header .right-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header .user-email {
+            font-size: 13px;
+            color: #888;
+        }
+
         .logout-btn {
             background: #ef4444;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 6px;
             font-size: 12px;
             cursor: pointer;
+            transition: background 0.2s;
         }
 
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
 
+        /* ============================================================ */
+        /* MAIN CONTENT                                                */
+        /* ============================================================ */
+        .container {
+            padding: 15px 20px;
+            max-width: 100%;
+            margin: 0 auto;
+            transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .container.expanded {
+            margin-left: 0;
+        }
+
+        /* ============================================================ */
+        /* CARD                                                         */
+        /* ============================================================ */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ============================================================ */
+        /* FORM                                                         */
+        /* ============================================================ */
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-weight: 500; font-size: 13px; color: #1e293b; margin-bottom: 4px; }
         .form-group label .required { color: #ef4444; }
@@ -121,6 +394,9 @@
         .btn-export { background: #10b981; color: white; }
         .btn-export:hover { background: #059669; }
 
+        /* ============================================================ */
+        /* ALERT                                                        */
+        /* ============================================================ */
         .alert {
             padding: 12px 16px;
             border-radius: 8px;
@@ -142,29 +418,9 @@
         }
         .info-box strong { color: #1e293b; }
 
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 9999;
-            display: none;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
-        .toast.success { background: #10b981; }
-        .toast.error { background: #ef4444; }
-        .toast.info { background: #3b82f6; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
+        /* ============================================================ */
+        /* TABLE                                                        */
+        /* ============================================================ */
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
@@ -180,6 +436,9 @@
         .status-qc1 { background: #fef3c7; color: #92400e; }
         .status-diecut { background: #dbeafe; color: #1e40af; }
 
+        /* ============================================================ */
+        /* MATERIAL INFO                                               */
+        /* ============================================================ */
         .material-info {
             background: #f1f5f9;
             padding: 15px;
@@ -219,63 +478,141 @@
             margin-left: 8px;
         }
 
-        @media (max-width: 600px) {
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            display: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+            }
+            .sidebar-close-btn {
+                display: block;
+            }
+            .container {
+                margin-left: 0;
+                padding: 10px 12px;
+            }
+            .menu-toggle .label { display: none; }
+            .header .user-email { display: none; }
+            .logo-header { font-size: 15px; }
+            .header { padding: 10px 15px; }
             .form-row { grid-template-columns: 1fr; }
             .material-info-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .header .right-section { gap: 8px; }
+            .logout-btn { padding: 4px 10px; font-size: 11px; }
+            .material-info-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-        <div class="sidebar" id="sidebar">
+
+    <!-- ============================================================ -->
+    <!-- SIDEBAR - DESAIN BARU                                        -->
+    <!-- ============================================================ -->
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>📦 SUPPLY MATERIAL</h3>
-            <p>Manajemen Inventory</p>
+            <div class="logo">
+                <span>📦</span>
+                <span>SUPPLY MATERIAL</span>
+            </div>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn">✕</button>
         </div>
-        <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
-            <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
-            <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
-            <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
-            <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
-            <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
-            <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
-            <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
-            <div class="menu-divider"></div>
+        <ul class="sidebar-menu">
+            <li><a href="#" data-menu="dashboard"><span class="icon">📊</span> Dashboard</a></li>
+            <li><a href="#" data-menu="pi-input"><span class="icon">📝</span> Input PI</a></li>
+            <li><a href="#" data-menu="stock-in"><span class="icon">📥</span> Barang Masuk</a></li>
+            <li><a href="#" data-menu="stock-out"><span class="icon">📤</span> Barang Keluar</a></li>
+            <li><a href="#" data-menu="stock-report"><span class="icon">📋</span> Stok Gudang</a></li>
+            <li><a href="#" data-menu="stok-pendukung"><span class="icon">📦</span> Stok Pendukung</a></li>
+            <li><a href="#" data-menu="barcode-generator"><span class="icon">🏷️</span> QR Code</a></li>
+            <li><a href="#" data-menu="scan-barcode"><span class="icon">📷</span> Scan QR</a></li>
 
-            <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
-            <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
-            <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
-            <div class="menu-item active" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
-            <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
-            <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+            <li class="menu-divider"></li>
 
-            <!-- Backup Data - Tambahkan di bawah menu Export atau di menu-divider terakhir -->
-<div class="menu-item" data-menu="export-backup">
-    <span class="icon">💾</span>
-    <span class="text">Backup Data</span>
-</div>
+            <li><a href="#" data-menu="material-tracking"><span class="icon">📊</span> Tracking Material</a></li>
+            <li><a href="#" data-menu="material-inbound"><span class="icon">📥</span> Material Masuk</a></li>
+            <li><a href="#" data-menu="qc-inspection"><span class="icon">🔬</span> QC Inspection</a></li>
+            <li><a href="#" class="active" data-menu="diecut-process"><span class="icon">⚙️</span> Proses Diecut</a></li>
+            <li><a href="#" data-menu="production-send"><span class="icon">🏭</span> Kirim Produksi</a></li>
+            <li><a href="#" data-menu="ng-report"><span class="icon">📋</span> Laporan NG</a></li>
 
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+            <li class="menu-divider"></li>
+
+            <li><a href="#" data-menu="export-backup"><span class="icon">💾</span> Backup Data</a></li>
+
+            <li class="menu-divider"></li>
+
+            <li><a href="#" data-menu="executive"><span class="icon">📈</span> Laporan Eksekutif</a></li>
+            <li><a href="#" data-menu="manage-users"><span class="icon">👥</span> Kelola User</a></li>
+            <li><a href="#" data-menu="log-aktivitas"><span class="icon">📜</span> Log Aktivitas</a></li>
+
+            <li class="menu-divider"></li>
+
+            <li><a href="#" data-menu="export"><span class="icon">📎</span> Export Data</a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">👤</div>
+                <div class="user-details">
+                    <div class="name" id="userName">User</div>
+                    <div class="role" id="userRole">Operator</div>
+                </div>
+                <button class="logout-btn-sidebar" id="logoutMenuSidebar" title="Logout">🚪</button>
+            </div>
         </div>
-    </div>
+    </aside>
 
+    <!-- ============================================================ -->
+    <!-- OVERLAY                                                      -->
+    <!-- ============================================================ -->
     <div class="overlay" id="overlay"></div>
 
+    <!-- ============================================================ -->
+    <!-- HEADER                                                       -->
+    <!-- ============================================================ -->
     <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 SUPPLY MATERIAL</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
+        <div class="left-section">
+            <button class="menu-toggle" id="menuToggle">
+                ☰
+                <span class="label">Menu</span>
+            </button>
+            <span class="logo-header">⚙️ Proses Diecut</span>
+        </div>
+        <div class="right-section">
+            <span class="user-email" id="userEmail">user@email.com</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
     </div>
-        <div class="container" id="mainContent">
+
+    <!-- ============================================================ -->
+    <!-- MAIN CONTENT                                                 -->
+    <!-- ============================================================ -->
+    <div class="container" id="mainContent">
         <div class="card">
             <div class="card-title">
                 <span>⚙️ PROSES DIECUT <span id="editBadge" class="edit-badge" style="display:none;">✏️ EDIT MODE</span></span>
@@ -284,7 +621,6 @@
             
             <div id="msgContainer"></div>
 
-            <!-- Dropdown 1: Untuk Proses Diecut (Hanya QC1) -->
             <div class="form-group">
                 <label>Pilih No PI (Untuk Diecut) <span class="required">*</span></label>
                 <select id="selectNoPi" onchange="loadMaterialByPi()">
@@ -296,7 +632,6 @@
             <input type="hidden" id="materialId">
             <input type="hidden" id="editId" value="">
 
-            <!-- Material Info -->
             <div id="materialInfo" class="material-info" style="display:none;">
                 <div style="font-weight:600;margin-bottom:8px;">📋 Informasi Material</div>
                 <div class="material-info-grid" id="materialInfoGrid">
@@ -314,8 +649,6 @@
             </div>
 
             <form id="diecutForm" onsubmit="return false;">
-                <input type="hidden" id="materialId">
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tanggal Diecut <span class="required">*</span></label>
@@ -332,7 +665,6 @@
                     <input type="text" id="operator" placeholder="Nama Operator" required>
                 </div>
 
-                <!-- AUTO DARI QC #1 OK -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Qty Sheet In (Dari QC #1 OK) <span class="required">*</span></label>
@@ -346,14 +678,12 @@
                     </div>
                 </div>
 
-                <!-- USER INPUT -->
                 <div class="form-group">
                     <label>Qty NG Diecut</label>
                     <input type="number" id="qty_ng_diecut" placeholder="Jumlah NG" min="0" value="0">
                     <span class="small-text">✏️ Input manual jumlah yang reject</span>
                 </div>
 
-                <!-- Auto Calculate -->
                 <div class="info-box" id="calcInfo">
                     <strong>📊 Perhitungan Otomatis:</strong><br>
                     <span id="calcResult">
@@ -380,7 +710,6 @@
             </form>
         </div>
 
-        <!-- History Diecut -->
         <div class="card">
             <div class="card-title">
                 <span>📋 Riwayat Diecut</span>
@@ -392,7 +721,6 @@
                 </div>
             </div>
             
-            <!-- Dropdown untuk riwayat (status DIECUT, QC2, KIRIM) -->
             <div class="form-group">
                 <label>Pilih No PI yang Sudah Diecut</label>
                 <select id="selectHistoryPi" onchange="loadHistoryByPi()">
@@ -408,7 +736,8 @@
     </div>
 
     <div id="toast" class="toast"></div>
-        <script>
+
+    <script>
         let currentMaterialId = null;
         let isSubmitting = false;
         let selectedNoPi = null;
@@ -440,7 +769,6 @@
             setTimeout(() => container.innerHTML = '', 5000);
         }
 
-        // Auto calculate yield
         function calculateYield() {
             const pcsOut = parseInt(getEl('qty_pcs_out')?.value) || 0;
             const ng = parseInt(getEl('qty_ng_diecut')?.value) || 0;
@@ -461,9 +789,34 @@
         const ngInput = getEl('qty_ng_diecut');
         if (ngInput) ngInput.addEventListener('input', calculateYield);
 
-        // Set today's date
         const tanggalDiecut = getEl('tanggal_diecut');
         if (tanggalDiecut) tanggalDiecut.value = new Date().toISOString().split('T')[0];
+
+        // ============================================================
+        // SET USER INFO DI SIDEBAR
+        // ============================================================
+        async function setUserInfo() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (user) {
+                    var name = user.email ? user.email.split('@')[0] : 'User';
+                    document.getElementById('userName').textContent = name;
+                    document.getElementById('userEmail').textContent = user.email || 'user@email.com';
+                    
+                    const { data: profile } = await sb
+                        .from('user_profiles')
+                        .select('role')
+                        .eq('email', user.email)
+                        .single();
+                    
+                    if (profile) {
+                        document.getElementById('userRole').textContent = profile.role || 'Operator';
+                    }
+                }
+            } catch (err) {
+                console.error('Error get user info:', err);
+            }
+        }
 
         // ============================================================
         // DROPDOWN 1: LOAD DAFTAR NO PI (HANYA QC1)
@@ -513,7 +866,55 @@
         }
 
         // ============================================================
-        // LOAD MATERIAL BERDASARKAN NO PI (DARI DROPDOWN 1)
+        // DROPDOWN 2: LOAD DAFTAR NO PI UNTUK RIWAYAT
+        // ============================================================
+        async function loadHistoryPiList() {
+            const select = getEl('selectHistoryPi');
+            if (!select) return;
+            
+            const { data, error } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, id')
+                .in('status', ['DIECUT', 'QC2', 'KIRIM'])
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading history PI list:', error);
+                return;
+            }
+
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Pilih No PI yang Sudah Diecut --</option>';
+
+            if (!data || data.length === 0) {
+                select.innerHTML += '<option value="" disabled>Belum ada material yang sudah diecut</option>';
+                return;
+            }
+
+            for (const item of data) {
+                if (item.no_pi) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    
+                    let statusText = '';
+                    if (item.status === 'DIECUT') statusText = '⚙️ Sudah Diecut';
+                    else if (item.status === 'QC2') statusText = '🔬 QC #2';
+                    else if (item.status === 'KIRIM') statusText = '🏭 Kirim Produksi';
+                    
+                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
+                    option.dataset.noPi = item.no_pi;
+                    select.appendChild(option);
+                }
+            }
+
+            if (currentValue) {
+                select.value = currentValue;
+                await loadHistoryByPi();
+            }
+        }
+
+        // ============================================================
+        // LOAD MATERIAL BERDASARKAN NO PI
         // ============================================================
         async function loadMaterialByPi() {
             const select = getEl('selectNoPi');
@@ -580,35 +981,16 @@
             const materialInfo = getEl('materialInfo');
             if (materialInfo) materialInfo.style.display = 'block';
             
-            const infoNoPo = getEl('infoNoPo');
-            if (infoNoPo) infoNoPo.innerText = noPo || '-';
-            
-            const infoNoPi = getEl('infoNoPi');
-            if (infoNoPi) infoNoPi.innerText = noPi || '-';
-            
-            const infoBrand = getEl('infoBrand');
-            if (infoBrand) infoBrand.innerText = brand || '-';
-            
-            const infoJenis = getEl('infoJenis');
-            if (infoJenis) infoJenis.innerText = jenis || '-';
-            
-            const infoSheet = getEl('infoSheet');
-            if (infoSheet) infoSheet.innerText = qtySheet || 0;
-            
-            const infoUp = getEl('infoUp');
-            if (infoUp) infoUp.innerText = upPerSheet || 0;
-            
-            const infoTarget = getEl('infoTarget');
-            if (infoTarget) infoTarget.innerText = (qtySheet * upPerSheet).toLocaleString();
-            
-            const infoQc1Ok = getEl('infoQc1Ok');
-            if (infoQc1Ok) infoQc1Ok.innerText = qtySheetOk;
-            
-            const infoQc1Ng = getEl('infoQc1Ng');
-            if (infoQc1Ng) infoQc1Ng.innerText = qc1.qty_ng || 0;
-            
-            const infoSheetDiecut = getEl('infoSheetDiecut');
-            if (infoSheetDiecut) infoSheetDiecut.innerText = qtySheetOk;
+            document.getElementById('infoNoPo').innerText = noPo || '-';
+            document.getElementById('infoNoPi').innerText = noPi || '-';
+            document.getElementById('infoBrand').innerText = brand || '-';
+            document.getElementById('infoJenis').innerText = jenis || '-';
+            document.getElementById('infoSheet').innerText = qtySheet || 0;
+            document.getElementById('infoUp').innerText = upPerSheet || 0;
+            document.getElementById('infoTarget').innerText = (qtySheet * upPerSheet).toLocaleString();
+            document.getElementById('infoQc1Ok').innerText = qtySheetOk;
+            document.getElementById('infoQc1Ng').innerText = qc1.qty_ng || 0;
+            document.getElementById('infoSheetDiecut').innerText = qtySheetOk;
 
             const statusBadge = getEl('statusBadge');
             if (statusBadge) {
@@ -617,11 +999,8 @@
             }
 
             // ✅ AUTO FILL
-            const qtySheetIn = getEl('qty_sheet_in');
-            if (qtySheetIn) qtySheetIn.value = qtySheetOk;
-            
-            const qtyPcsOut = getEl('qty_pcs_out');
-            if (qtyPcsOut) qtyPcsOut.value = totalPcs;
+            document.getElementById('qty_sheet_in').value = qtySheetOk;
+            document.getElementById('qty_pcs_out').value = totalPcs;
 
             // Aktifkan tombol simpan
             const btnSubmit = getEl('btnSubmit');
@@ -633,10 +1012,14 @@
 
             // Reset edit mode
             isEditMode = false;
-            const editId = getEl('editId');
-            if (editId) editId.value = '';
-            const editBadge = getEl('editBadge');
-            if (editBadge) editBadge.style.display = 'none';
+            document.getElementById('editId').value = '';
+            document.getElementById('editBadge').style.display = 'none';
+
+            // Reset dropdown history
+            const selectHistory = getEl('selectHistoryPi');
+            if (selectHistory) {
+                selectHistory.value = '';
+            }
 
             // Load history
             const historyList = getEl('historyList');
@@ -645,60 +1028,6 @@
             }
 
             calculateYield();
-            
-            // Reset dropdown history
-            const selectHistory = getEl('selectHistoryPi');
-            if (selectHistory) {
-                selectHistory.value = '';
-            }
-        }
-
-        // ============================================================
-        // DROPDOWN 2: LOAD DAFTAR NO PI UNTUK RIWAYAT (DIECUT, QC2, KIRIM)
-        // ============================================================
-        async function loadHistoryPiList() {
-            const select = getEl('selectHistoryPi');
-            if (!select) return;
-            
-            const { data, error } = await sb
-                .from('material_inbound')
-                .select('no_pi, no_po, brand, jenis, status, id')
-                .in('status', ['DIECUT', 'QC2', 'KIRIM'])
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error loading history PI list:', error);
-                return;
-            }
-
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">-- Pilih No PI yang Sudah Diecut --</option>';
-
-            if (!data || data.length === 0) {
-                select.innerHTML += '<option value="" disabled>Belum ada material yang sudah diecut</option>';
-                return;
-            }
-
-            for (const item of data) {
-                if (item.no_pi) {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    
-                    let statusText = '';
-                    if (item.status === 'DIECUT') statusText = '⚙️ Sudah Diecut';
-                    else if (item.status === 'QC2') statusText = '🔬 QC #2';
-                    else if (item.status === 'KIRIM') statusText = '🏭 Kirim Produksi';
-                    
-                    option.textContent = `${item.no_pi} - ${item.brand} - ${item.jenis} ${statusText}`;
-                    option.dataset.noPi = item.no_pi;
-                    select.appendChild(option);
-                }
-            }
-
-            if (currentValue) {
-                select.value = currentValue;
-                await loadHistoryByPi();
-            }
         }
 
         // ============================================================
@@ -721,7 +1050,7 @@
         }
 
         // ============================================================
-        // LOAD HISTORY (DENGAN TOMBOL EDIT & DELETE)
+        // LOAD HISTORY
         // ============================================================
         async function loadHistory(materialId) {
             const container = getEl('historyList');
@@ -803,145 +1132,123 @@
         }
 
         // ============================================================
-        // ✅ EDIT DIECUT
+        // EDIT DIECUT
         // ============================================================
-       async function editDiecut(id) {
-    const { data, error } = await sb
-        .from('diecut_process')
-        .select('*')
-        .eq('id', id)
-        .single();
+        async function editDiecut(id) {
+            const { data, error } = await sb
+                .from('diecut_process')
+                .select('*')
+                .eq('id', id)
+                .single();
 
-    if (error || !data) {
-        showToast('❌ Data tidak ditemukan!', 'error');
-        return;
-    }
-
-    // ✅ AMBIL DATA MATERIAL
-    const { data: material } = await sb
-        .from('material_inbound')
-        .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
-        .eq('id', data.material_inbound_id)
-        .single();
-
-    if (!material) {
-        showToast('❌ Material tidak ditemukan!', 'error');
-        return;
-    }
-
-    // ✅ UPDATE BADGE
-    const statusBadge = getEl('statusBadge');
-    if (statusBadge) {
-        statusBadge.innerText = `✏️ Edit: ${material.no_pi}`;
-        statusBadge.style.background = '#f59e0b';
-    }
-
-    // ✅ RELOAD DROPDOWN PI LIST TERLEBIH DAHULU
-    await loadPiList();
-
-    // ✅ SET DROPDOWN NO PI OTOMATIS
-    const select = getEl('selectNoPi');
-    if (select && material) {
-        let found = false;
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].dataset.id === material.id) {
-                select.value = select.options[i].value;
-                found = true;
-                break;
+            if (error || !data) {
+                showToast('❌ Data tidak ditemukan!', 'error');
+                return;
             }
+
+            const { data: material } = await sb
+                .from('material_inbound')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .eq('id', data.material_inbound_id)
+                .single();
+
+            if (!material) {
+                showToast('❌ Material tidak ditemukan!', 'error');
+                return;
+            }
+
+            const statusBadge = getEl('statusBadge');
+            if (statusBadge) {
+                statusBadge.innerText = `✏️ Edit: ${material.no_pi}`;
+                statusBadge.style.background = '#f59e0b';
+            }
+
+            await loadPiList();
+
+            const select = getEl('selectNoPi');
+            if (select && material) {
+                let found = false;
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].dataset.id === material.id) {
+                        select.value = select.options[i].value;
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    const option = document.createElement('option');
+                    option.value = material.no_pi;
+                    option.textContent = `${material.no_pi} - ${material.brand} - ${material.jenis} (${material.status})`;
+                    option.dataset.id = material.id;
+                    option.dataset.qtySheet = material.qty_sheet || 0;
+                    option.dataset.upPerSheet = material.up_per_sheet || 1;
+                    option.dataset.status = material.status;
+                    option.dataset.noPo = material.no_po || '-';
+                    option.dataset.brand = material.brand;
+                    option.dataset.jenis = material.jenis;
+                    select.appendChild(option);
+                    select.value = material.no_pi;
+                }
+                
+                await loadMaterialByPi();
+            }
+
+            if (material.status === 'QC2' || material.status === 'KIRIM') {
+                showToast('⚠️ Tidak bisa edit karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
+                const btnSubmit = getEl('btnSubmit');
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = '⚠️ Tidak bisa diedit';
+                    btnSubmit.style.background = '#94a3b8';
+                }
+            } else {
+                const btnSubmit = getEl('btnSubmit');
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '✏️ Update Diecut';
+                    btnSubmit.onclick = updateDiecut;
+                    btnSubmit.style.background = '';
+                }
+            }
+
+            isEditMode = true;
+            document.getElementById('editId').value = id;
+            document.getElementById('editBadge').style.display = 'inline';
+
+            document.getElementById('tanggal_diecut').value = data.tanggal_diecut || '';
+            document.getElementById('mesin').value = data.mesin || '';
+            document.getElementById('operator').value = data.operator || '';
+            document.getElementById('qty_ng_diecut').value = data.qty_ng_diecut || 0;
+            document.getElementById('notes').value = data.notes || '';
+
+            const card = document.querySelector('.card');
+            if (card) card.scrollIntoView({ behavior: 'smooth' });
+
+            showToast(`📝 Mode Edit: Diecut - ${material.no_pi}`, 'info');
         }
-        
-        // Jika tidak ditemukan di dropdown (karena status sudah DIECUT), tambahkan option sementara
-        if (!found) {
-            const option = document.createElement('option');
-            option.value = material.no_pi;
-            option.textContent = `${material.no_pi} - ${material.brand} - ${material.jenis} (${material.status})`;
-            option.dataset.id = material.id;
-            option.dataset.qtySheet = material.qty_sheet || 0;
-            option.dataset.upPerSheet = material.up_per_sheet || 1;
-            option.dataset.status = material.status;
-            option.dataset.noPo = material.no_po || '-';
-            option.dataset.brand = material.brand;
-            option.dataset.jenis = material.jenis;
-            select.appendChild(option);
-            select.value = material.no_pi;
-        }
-        
-        // ✅ LOAD DATA MATERIAL (skip validasi status)
-        await loadMaterialByPi();
-    }
 
-    // CEK STATUS MATERIAL - JIKA SUDAH QC2 ATAU KIRIM, TIDAK BISA EDIT
-    if (material.status === 'QC2' || material.status === 'KIRIM') {
-        showToast('⚠️ Tidak bisa edit karena material sudah lanjut ke QC #2 atau Kirim!', 'warning');
-        // Tetap isi form tapi nonaktifkan tombol simpan
-        const btnSubmit = getEl('btnSubmit');
-        if (btnSubmit) {
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = '⚠️ Tidak bisa diedit';
-            btnSubmit.style.background = '#94a3b8';
-        }
-    } else {
-        // Aktifkan tombol simpan
-        const btnSubmit = getEl('btnSubmit');
-        if (btnSubmit) {
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = '✏️ Update Diecut';
-            btnSubmit.onclick = updateDiecut;
-            btnSubmit.style.background = '';
-        }
-    }
-
-    isEditMode = true;
-    const editId = getEl('editId');
-    if (editId) editId.value = id;
-    
-    const editBadge = getEl('editBadge');
-    if (editBadge) editBadge.style.display = 'inline';
-
-    // ✅ ISI FORM DENGAN DATA DIECUT
-    const tanggalDiecut = getEl('tanggal_diecut');
-    if (tanggalDiecut) tanggalDiecut.value = data.tanggal_diecut || '';
-    
-    const mesin = getEl('mesin');
-    if (mesin) mesin.value = data.mesin || '';
-    
-    const operator = getEl('operator');
-    if (operator) operator.value = data.operator || '';
-    
-    const qtyNgDiecut = getEl('qty_ng_diecut');
-    if (qtyNgDiecut) qtyNgDiecut.value = data.qty_ng_diecut || 0;
-    
-    const notes = getEl('notes');
-    if (notes) notes.value = data.notes || '';
-
-    // ✅ SCROLL KE FORM
-    const card = document.querySelector('.card');
-    if (card) card.scrollIntoView({ behavior: 'smooth' });
-
-    showToast(`📝 Mode Edit: Diecut - ${material.no_pi}`, 'info');
-}
         // ============================================================
-        // ✅ UPDATE DIECUT
+        // UPDATE DIECUT
         // ============================================================
         async function updateDiecut() {
             if (isSubmitting) return;
 
-            const editId = getEl('editId')?.value;
+            const editId = document.getElementById('editId')?.value;
             if (!editId) { showMessage('❌ Tidak ada data yang diedit!', 'error'); return; }
 
-            const tanggal_diecut = getEl('tanggal_diecut')?.value;
-            const mesin = getEl('mesin')?.value?.trim() || '';
-            const operator = getEl('operator')?.value?.trim() || '';
-            const qty_ng_diecut = parseInt(getEl('qty_ng_diecut')?.value) || 0;
-            const notes = getEl('notes')?.value?.trim() || '';
+            const tanggal_diecut = document.getElementById('tanggal_diecut')?.value;
+            const mesin = document.getElementById('mesin')?.value?.trim() || '';
+            const operator = document.getElementById('operator')?.value?.trim() || '';
+            const qty_ng_diecut = parseInt(document.getElementById('qty_ng_diecut')?.value) || 0;
+            const notes = document.getElementById('notes')?.value?.trim() || '';
 
             if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
             if (!operator) { showMessage('❌ Nama Operator wajib diisi!', 'error'); return; }
 
             const { pcsOk, yieldPercent } = calculateYield();
 
-            const btn = getEl('btnSubmit');
+            const btn = document.getElementById('btnSubmit');
             const originalText = btn ? btn.innerHTML : 'Loading...';
             if (btn) {
                 btn.innerHTML = '⏳ Mengupdate...';
@@ -974,28 +1281,19 @@
                 showToast('✅ Data diecut berhasil diupdate!', 'success');
                 showMessage('✅ Data diecut berhasil diupdate!', 'success');
 
-                // Reset edit mode
                 isEditMode = false;
-                const editIdEl = getEl('editId');
-                if (editIdEl) editIdEl.value = '';
-                
-                const editBadge = getEl('editBadge');
-                if (editBadge) editBadge.style.display = 'none';
+                document.getElementById('editId').value = '';
+                document.getElementById('editBadge').style.display = 'none';
                 
                 if (btn) {
                     btn.innerHTML = '💾 Simpan Proses Diecut';
                     btn.onclick = saveDiecut;
                 }
 
-                // Refresh history
-                const selectHistory = getEl('selectHistoryPi');
+                const selectHistory = document.getElementById('selectHistoryPi');
                 if (selectHistory && selectHistory.value) {
                     await loadHistory(selectHistory.value);
                 }
-
-                try {
-                    await addLog('UPDATE DIECUT', `${user?.email} mengupdate data diecut ID ${editId}`);
-                } catch(e) {}
 
             } catch (err) {
                 showMessage('❌ Gagal mengupdate: ' + err.message, 'error');
@@ -1010,12 +1308,11 @@
         }
 
         // ============================================================
-        // ✅ DELETE DIECUT
+        // DELETE DIECUT
         // ============================================================
         async function deleteDiecut(id) {
             if (!confirm('Yakin ingin menghapus data diecut ini?')) return;
 
-            // Cek apakah material sudah lanjut ke QC2
             const { data: diecut } = await sb
                 .from('diecut_process')
                 .select('material_inbound_id')
@@ -1044,8 +1341,7 @@
                 showToast('❌ Gagal menghapus: ' + error.message, 'error');
             } else {
                 showToast('✅ Data diecut berhasil dihapus', 'success');
-                // Refresh history
-                const selectHistory = getEl('selectHistoryPi');
+                const selectHistory = document.getElementById('selectHistoryPi');
                 if (selectHistory && selectHistory.value) {
                     await loadHistory(selectHistory.value);
                 }
@@ -1054,10 +1350,10 @@
         }
 
         // ============================================================
-        // ✅ EXPORT DIECUT HISTORY
+        // EXPORT DIECUT HISTORY
         // ============================================================
         async function exportDiecutHistory() {
-            const selectHistory = getEl('selectHistoryPi');
+            const selectHistory = document.getElementById('selectHistoryPi');
             if (!selectHistory || !selectHistory.value) {
                 showToast('❌ Pilih No PI yang sudah diecut terlebih dahulu!', 'error');
                 return;
@@ -1081,7 +1377,6 @@
                 return;
             }
 
-            // Ambil info material
             const { data: material } = await sb
                 .from('material_inbound')
                 .select('no_pi, no_po, brand, jenis')
@@ -1131,14 +1426,14 @@
         async function saveDiecut() {
             if (isSubmitting) return;
 
-            const materialId = getEl('materialId')?.value;
-            const tanggal_diecut = getEl('tanggal_diecut')?.value;
-            const mesin = getEl('mesin')?.value?.trim() || '';
-            const operator = getEl('operator')?.value?.trim() || '';
-            const qty_sheet_in = parseInt(getEl('qty_sheet_in')?.value) || 0;
-            const qty_pcs_out = parseInt(getEl('qty_pcs_out')?.value) || 0;
-            const qty_ng_diecut = parseInt(getEl('qty_ng_diecut')?.value) || 0;
-            const notes = getEl('notes')?.value?.trim() || '';
+            const materialId = document.getElementById('materialId')?.value;
+            const tanggal_diecut = document.getElementById('tanggal_diecut')?.value;
+            const mesin = document.getElementById('mesin')?.value?.trim() || '';
+            const operator = document.getElementById('operator')?.value?.trim() || '';
+            const qty_sheet_in = parseInt(document.getElementById('qty_sheet_in')?.value) || 0;
+            const qty_pcs_out = parseInt(document.getElementById('qty_pcs_out')?.value) || 0;
+            const qty_ng_diecut = parseInt(document.getElementById('qty_ng_diecut')?.value) || 0;
+            const notes = document.getElementById('notes')?.value?.trim() || '';
 
             if (!materialId) { showMessage('❌ Pilih No PI terlebih dahulu!', 'error'); return; }
             if (!tanggal_diecut) { showMessage('❌ Tanggal Diecut wajib diisi!', 'error'); return; }
@@ -1149,7 +1444,7 @@
 
             const { pcsOk, yieldPercent } = calculateYield();
 
-            const btn = getEl('btnSubmit');
+            const btn = document.getElementById('btnSubmit');
             const originalText = btn ? btn.innerHTML : 'Loading...';
             if (btn) {
                 btn.innerHTML = '⏳ Menyimpan...';
@@ -1178,10 +1473,8 @@
 
                 if (error) throw error;
 
-                // Update status material ke DIECUT
                 await sb.from('material_inbound').update({ status: 'DIECUT' }).eq('id', materialId);
 
-                // Jika ada NG diecut, simpan ke ng_tracking
                 if (qty_ng_diecut > 0) {
                     await sb.from('ng_tracking').insert({
                         material_inbound_id: materialId,
@@ -1197,16 +1490,8 @@
                 showToast(`✅ Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
 
                 resetForm();
-                
-                // Refresh dropdown diecut (QC1)
                 await loadPiList();
-                
-                // Refresh dropdown history (DIECUT, QC2, KIRIM)
                 await loadHistoryPiList();
-
-                try {
-                    await addLog('DIECUT', `${user?.email} melakukan diecut untuk material ID ${materialId}`);
-                } catch(e) {}
 
             } catch (err) {
                 showMessage('❌ Gagal menyimpan: ' + err.message, 'error');
@@ -1221,32 +1506,18 @@
         }
 
         function resetForm() {
-            const tanggalDiecut = getEl('tanggal_diecut');
-            if (tanggalDiecut) tanggalDiecut.value = new Date().toISOString().split('T')[0];
+            document.getElementById('tanggal_diecut').value = new Date().toISOString().split('T')[0];
+            document.getElementById('mesin').value = '';
+            document.getElementById('operator').value = '';
+            document.getElementById('qty_ng_diecut').value = '0';
+            document.getElementById('notes').value = '';
+            document.getElementById('msgContainer').innerHTML = '';
             
-            const mesin = getEl('mesin');
-            if (mesin) mesin.value = '';
-            
-            const operator = getEl('operator');
-            if (operator) operator.value = '';
-            
-            const qtyNgDiecut = getEl('qty_ng_diecut');
-            if (qtyNgDiecut) qtyNgDiecut.value = '0';
-            
-            const notes = getEl('notes');
-            if (notes) notes.value = '';
-            
-            const msgContainer = getEl('msgContainer');
-            if (msgContainer) msgContainer.innerHTML = '';
-            
-            // Reset edit mode
             isEditMode = false;
-            const editId = getEl('editId');
-            if (editId) editId.value = '';
-            const editBadge = getEl('editBadge');
-            if (editBadge) editBadge.style.display = 'none';
+            document.getElementById('editId').value = '';
+            document.getElementById('editBadge').style.display = 'none';
             
-            const btnSubmit = getEl('btnSubmit');
+            const btnSubmit = document.getElementById('btnSubmit');
             if (btnSubmit) {
                 btnSubmit.innerHTML = '💾 Simpan Proses Diecut';
                 btnSubmit.onclick = saveDiecut;
@@ -1255,7 +1526,9 @@
             calculateYield();
         }
 
-        // ============ NAVIGASI ============
+        // ============================================================
+        // NAVIGASI
+        // ============================================================
         function goToMenu(menu) {
             const files = {
                 dashboard: 'dashboard.html',
@@ -1281,69 +1554,88 @@
             window.location.href = files[menu] || 'dashboard.html';
         }
 
-        function openSidebar() { 
-            const sidebar = getEl('sidebar');
-            const overlay = getEl('overlay');
-            if (sidebar) sidebar.classList.add('open');
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.remove('closed');
             if (overlay) overlay.classList.add('show');
+            localStorage.setItem('sidebarOpen', 'true');
         }
-        
-        function closeSidebar() { 
-            const sidebar = getEl('sidebar');
-            const overlay = getEl('overlay');
-            if (sidebar) sidebar.classList.remove('open');
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const container = document.querySelector('.container');
+            if (sidebar) sidebar.classList.add('closed');
             if (overlay) overlay.classList.remove('show');
+            localStorage.setItem('sidebarOpen', 'false');
         }
-        
-        function toggleSidebar() { 
-            const sidebar = getEl('sidebar');
-            if (sidebar && sidebar.classList.contains('open')) {
-                closeSidebar();
-            } else {
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('closed')) {
                 openSidebar();
+            } else {
+                closeSidebar();
             }
         }
 
-        async function logout() { 
-            await sb.auth.signOut(); 
-            window.location.href = 'login.html'; 
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.href = 'login.html';
         }
 
         function setupEventListeners() {
-            const menuToggle = getEl('menuToggle');
-            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
-            
-            const overlay = getEl('overlay');
-            if (overlay) overlay.addEventListener('click', closeSidebar);
-            
-            const logoutBtn = getEl('logoutBtn');
-            if (logoutBtn) logoutBtn.addEventListener('click', logout);
-            
-            const logoutMenu = getEl('logoutMenu');
-            if (logoutMenu) logoutMenu.addEventListener('click', logout);
-            
-            document.querySelectorAll('.menu-item[data-menu]').forEach(el => {
-                el.addEventListener('click', () => goToMenu(el.getAttribute('data-menu')));
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarCloseBtn').addEventListener('click', closeSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('logoutMenuSidebar').addEventListener('click', logout);
+
+            document.querySelectorAll('.sidebar-menu li a[data-menu]').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.sidebar-menu li a').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    goToMenu(this.getAttribute('data-menu'));
+                });
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    toggleSidebar();
+                }
+            });
+
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
+                }, 300);
             });
         }
 
+        // ============================================================
+        // INIT
+        // ============================================================
         async function init() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) window.location.href = 'login.html';
             
+            await setUserInfo();
             setupEventListeners();
             
-            // Load dropdown diecut (QC1)
             await loadPiList();
-            
-            // Load dropdown history (DIECUT, QC2, KIRIM)
             await loadHistoryPiList();
             
-            // Cek parameter dari URL (dari tracking)
             const params = new URLSearchParams(window.location.search);
             const materialId = params.get('material_id');
             if (materialId) {
-                const selectDiecut = getEl('selectNoPi');
+                const selectDiecut = document.getElementById('selectNoPi');
                 if (selectDiecut) {
                     for (let i = 0; i < selectDiecut.options.length; i++) {
                         if (selectDiecut.options[i].dataset.id === materialId) {
@@ -1354,7 +1646,7 @@
                     }
                 }
                 
-                const selectHistory = getEl('selectHistoryPi');
+                const selectHistory = document.getElementById('selectHistoryPi');
                 if (selectHistory) {
                     for (let i = 0; i < selectHistory.options.length; i++) {
                         if (selectHistory.options[i].value === materialId) {
@@ -1367,6 +1659,14 @@
             }
             
             calculateYield();
+
+            const savedState = localStorage.getItem('sidebarOpen');
+            const isMobile = window.innerWidth <= 768;
+            if (savedState === 'false' || isMobile) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
         }
 
         window.loadPiList = loadPiList;
