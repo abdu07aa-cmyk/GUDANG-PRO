@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
+        /* ====== STYLE ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; }
 
@@ -64,24 +65,9 @@
             top: 0;
             z-index: 100;
         }
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-        }
+        .menu-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px 10px; border-radius: 8px; }
         .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
 
         .container { padding: 15px; max-width: 100%; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -181,16 +167,18 @@
         }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; font-size: 12px; }
+        th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; color: #64748b; font-weight: 600; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+        td { vertical-align: middle; }
 
         .status-badge {
-            padding: 4px 10px;
+            padding: 3px 10px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
             display: inline-block;
+            white-space: nowrap;
         }
         .status-diterima { background: #e0f2fe; color: #0369a1; }
         .status-qc1 { background: #fef3c7; color: #92400e; }
@@ -199,12 +187,12 @@
         .status-kirim { background: #d1fae5; color: #065f46; }
 
         .btn-small {
-            padding: 4px 10px;
+            padding: 3px 8px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-size: 11px;
-            margin: 2px;
+            margin: 1px;
             white-space: nowrap;
         }
         .btn-qc { background: #f59e0b; color: white; }
@@ -275,30 +263,24 @@
             color: #166534;
             display: none;
         }
-        .jenis-detail-info.show {
-            display: block;
-        }
-        .jenis-detail-info strong {
-            color: #065f46;
-        }
+        .jenis-detail-info.show { display: block; }
+        .jenis-detail-info strong { color: #065f46; }
 
-        .jenis-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 5px;
-        }
+        .jenis-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
 
         @media (max-width: 600px) {
             .form-row { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr; }
             .modal-content .row { grid-template-columns: 1fr; }
-            .btn-small { font-size: 9px; padding: 2px 6px; }
+            .btn-small { font-size: 9px; padding: 2px 5px; }
             .radio-group { flex-direction: column; gap: 8px; }
+            table { font-size: 10px; min-width: 900px; }
+            th, td { padding: 4px; }
         }
     </style>
 </head>
 <body>
+    <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3>📦 SUPPLY MATERIAL</h3>
@@ -335,12 +317,14 @@
 
     <div class="overlay" id="overlay"></div>
 
+    <!-- HEADER -->
     <div class="header">
         <button class="menu-toggle" id="menuToggle">☰</button>
         <div class="logo">📦 SUPPLY MATERIAL</div>
         <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
 
+    <!-- MAIN CONTENT -->
     <div class="container" id="mainContent">
         <div class="card">
             <div class="card-title">
@@ -476,10 +460,10 @@
             </form>
         </div>
 
-        <!-- Daftar Barang Masuk -->
+        <!-- DAFTAR BARANG MASUK (HISTORY) -->
         <div class="card">
             <div class="card-title">
-                <span>📋 Daftar Barang Masuk</span>
+                <span>📋 History Barang Masuk</span>
                 <button class="btn btn-primary" onclick="loadData()" style="padding:6px 12px; font-size:12px;">🔄 Refresh</button>
             </div>
             <div id="materialList" style="overflow-x:auto;">
@@ -488,7 +472,7 @@
         </div>
     </div>
 
-    <!-- Modal Detail -->
+    <!-- MODAL DETAIL -->
     <div id="detailModal" class="modal">
         <div class="modal-content">
             <h3 id="detailTitle">📋 Detail Barang Masuk</h3>
@@ -506,6 +490,9 @@
         let isSubmitting = false;
         let selectedPiDetails = [];
 
+        // ============================================================
+        // TOAST & MESSAGE
+        // ============================================================
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -521,6 +508,9 @@
             setTimeout(() => container.innerHTML = '', 5000);
         }
 
+        // ============================================================
+        // TOGGLE BENTUK
+        // ============================================================
         function toggleBentuk() {
             const bentuk = document.querySelector('input[name="bentuk"]:checked');
             if (!bentuk) return;
@@ -544,6 +534,9 @@
             calculatePcs();
         }
 
+        // ============================================================
+        // CALCULATE PCS
+        // ============================================================
         function calculatePcs() {
             const qty = parseInt(document.getElementById('qty_masuk').value) || 0;
             const up = parseInt(document.getElementById('up_per_sheet').value) || 1;
@@ -733,7 +726,7 @@
         }
 
         // ============================================================
-        // SAVE INBOUND - SESUAI STRUKTUR DATABASE
+        // SAVE INBOUND
         // ============================================================
         async function saveInbound() {
             if (isSubmitting) return;
@@ -766,16 +759,11 @@
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 
-                // Cari item dengan jenis yang dipilih
                 const selectedItem = selectedPiDetails.find(item => item.jenis === jenisTerpilih) || selectedPiDetails[0] || {};
 
-                // Hitung total pcs
-                const totalPcs = bentuk === 'sheet' ? qty_masuk * up_per_sheet : qty_masuk;
-
-                // Data sesuai struktur database
                 const data = {
                     no_pi: noPi,
-                    no_po: selectedItem.no_po || '',  // dari PI jika ada
+                    no_po: selectedItem.no_po || '',
                     tanggal_terima: tanggal_terima,
                     brand: selectedItem.brand || '',
                     jenis: jenisTerpilih,
@@ -783,18 +771,18 @@
                     size: selectedItem.size || '',
                     qty_sheet: bentuk === 'sheet' ? qty_masuk : 0,
                     up_per_sheet: bentuk === 'sheet' ? up_per_sheet : 1,
-                    qty_masuk: qty_masuk,  // qty masuk (sheet atau pcs)
+                    qty_masuk: qty_masuk,
                     qty_pi: selectedItem.qty_pi || 0,
                     status: 'DITERIMA',
                     notes: notes || null,
                     created_by: user?.email || 'Unknown',
-                    // Kolom tambahan
-                    pi_detail_id: selectedItem.id || null,
-                    pi_id: piId,
                     supplier: selectedItem.supplier || '',
                     qty_po: selectedItem.qty_po || null,
                     qty_pi_sheet: bentuk === 'sheet' ? qty_masuk : null,
                     qty_pi_pcs: bentuk === 'pcs' ? qty_masuk : null,
+                    // Kirim pi_id dan pi_detail_id (sekarang VARCHAR, aman!)
+                    pi_id: piId,
+                    pi_detail_id: selectedItem.id || null,
                 };
 
                 let result;
@@ -915,24 +903,29 @@
         }
 
         // ============================================================
-        // LOAD DATA
+        // LOAD DATA HISTORY
         // ============================================================
         async function loadData() {
             const container = document.getElementById('materialList');
             container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">⏳ Memuat...</div>';
+            
             const { data, error } = await sb
                 .from('material_inbound')
                 .select('*')
                 .order('created_at', { ascending: false });
+            
             if (error) {
                 container.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">❌ Error: ${error.message}</div>`;
                 return;
             }
+            
             allData = data || [];
+            
             if (allData.length === 0) {
                 container.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada barang masuk</div>`;
                 return;
             }
+            
             const statusMap = {
                 'DITERIMA': '📥 Diterima',
                 'QC1': '🔬 QC #1',
@@ -940,6 +933,7 @@
                 'QC2': '🔬 QC #2',
                 'KIRIM': '🏭 Kirim'
             };
+            
             const statusClass = {
                 'DITERIMA': 'status-diterima',
                 'QC1': 'status-qc1',
@@ -947,38 +941,80 @@
                 'QC2': 'status-qc2',
                 'KIRIM': 'status-kirim'
             };
-            let html = `<table><thead><tr>
-                <th>No PI</th><th>Brand</th><th>Jenis</th>
-                <th style="text-align:center;">Sheet</th>
-                <th style="text-align:center;">Up</th>
-                <th style="text-align:center;">Pcs</th>
-                <th style="text-align:center;">Status</th>
-                <th style="text-align:center;">Tgl Terima</th>
-                <th style="text-align:center;">Aksi</th>
-            </tr></thead><tbody>`;
+            
+            let html = `
+                <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="min-width:70px;">No PI</th>
+                            <th style="min-width:80px;">Brand</th>
+                            <th style="min-width:80px;">Jenis</th>
+                            <th style="min-width:100px;">Paper</th>
+                            <th style="min-width:50px;">Size</th>
+                            <th style="text-align:center;min-width:60px;">Qty PI</th>
+                            <th style="text-align:center;min-width:55px;">Sheet</th>
+                            <th style="text-align:center;min-width:45px;">Up</th>
+                            <th style="text-align:center;min-width:60px;">Pcs</th>
+                            <th style="text-align:center;min-width:100px;">Status</th>
+                            <th style="min-width:80px;">Catatan</th>
+                            <th style="text-align:center;min-width:90px;">Tgl Terima</th>
+                            <th style="text-align:center;min-width:200px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
             for (const item of allData) {
                 const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1);
-                html += `<tr>
-                    <td><strong>${item.no_pi}</strong></td>
-                    <td>${item.brand}</td>
-                    <td>${item.jenis || '-'}</td>
-                    <td style="text-align:center;">${item.qty_sheet || '-'}</td>
-                    <td style="text-align:center;">${item.up_per_sheet || '-'}</td>
-                    <td style="text-align:center; font-weight:bold; color:#3b82f6;">${totalPcs || item.qty_masuk || 0}</td>
-                    <td style="text-align:center;"><span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></td>
-                    <td style="text-align:center; font-size:11px; color:#64748b;">${item.tanggal_terima || '-'}</td>
-                    <td style="min-width:200px; text-align:center;">
-                        <button class="btn-small btn-detail" onclick="showDetail('${item.id}')">📋</button>
-                        <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')">✏️</button>
-                        ${item.status === 'DITERIMA' ? `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')">🔬</button>` : ''}
-                        ${item.status === 'QC1' ? `<button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')">⚙️</button>` : ''}
-                        ${item.status === 'DIECUT' ? `<button class="btn-small btn-qc" onclick="goToQC2('${item.id}')">🔬</button>` : ''}
-                        ${item.status === 'QC2' ? `<button class="btn-small btn-send" onclick="goToSend('${item.id}')">🏭</button>` : ''}
-                        <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')">🗑️</button>
-                    </td>
-                </tr>`;
+                const tanggal = item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-';
+                
+                html += `
+                    <tr>
+                        <td><strong>${item.no_pi || '-'}</strong></td>
+                        <td>${item.brand || '-'}</td>
+                        <td>${item.jenis || '-'}</td>
+                        <td style="font-size:11px;">${item.paper || '-'}</td>
+                        <td>${item.size || '-'}</td>
+                        <td style="text-align:center;">${item.qty_pi || 0}</td>
+                        <td style="text-align:center;">${item.qty_sheet || 0}</td>
+                        <td style="text-align:center;">${item.up_per_sheet || 1}</td>
+                        <td style="text-align:center; font-weight:bold; color:#3b82f6;">${totalPcs}</td>
+                        <td style="text-align:center;">
+                            <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">
+                                ${statusMap[item.status] || item.status || 'DITERIMA'}
+                            </span>
+                        </td>
+                        <td style="font-size:11px; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${item.notes || '-'}
+                        </td>
+                        <td style="text-align:center; font-size:11px; color:#64748b;">${tanggal}</td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            <button class="btn-small btn-detail" onclick="showDetail('${item.id}')" title="Detail">📋</button>
+                            <button class="btn-small btn-edit-small" onclick="editMaterial('${item.id}')" title="Edit">✏️</button>
+                            ${item.status === 'DITERIMA' ? 
+                                `<button class="btn-small btn-qc" onclick="goToQC('${item.id}')" title="QC #1">🔬</button>` : ''}
+                            ${item.status === 'QC1' ? 
+                                `<button class="btn-small btn-diecut" onclick="goToDiecut('${item.id}')" title="Diecut">⚙️</button>` : ''}
+                            ${item.status === 'DIECUT' ? 
+                                `<button class="btn-small btn-qc" onclick="goToQC2('${item.id}')" title="QC #2">🔬</button>` : ''}
+                            ${item.status === 'QC2' ? 
+                                `<button class="btn-small btn-send" onclick="goToSend('${item.id}')" title="Kirim Produksi">🏭</button>` : ''}
+                            <button class="btn-small btn-delete" onclick="deleteMaterial('${item.id}')" title="Hapus">🗑️</button>
+                        </td>
+                    </tr>
+                `;
             }
-            html += `</tbody></table>`;
+            
+            html += `
+                    </tbody>
+                </table>
+                </div>
+                <div style="margin-top:10px;font-size:12px;color:#94a3b8;text-align:center;">
+                    Total: ${allData.length} data
+                </div>
+            `;
+            
             container.innerHTML = html;
         }
 
@@ -990,9 +1026,13 @@
         function goToDiecut(id) { window.location.href = `diecut-process.html?material_id=${id}`; }
         function goToSend(id) { window.location.href = `production-send.html?material_id=${id}`; }
 
+        // ============================================================
+        // DETAIL MODAL
+        // ============================================================
         async function showDetail(id) {
             const { data: item } = await sb.from('material_inbound').select('*').eq('id', id).single();
             if (!item) return;
+            
             const statusMap = {
                 'DITERIMA': '📥 Diterima',
                 'QC1': '🔬 QC #1',
@@ -1000,6 +1040,7 @@
                 'QC2': '🔬 QC #2',
                 'KIRIM': '🏭 Kirim'
             };
+            
             const statusClass = {
                 'DITERIMA': 'status-diterima',
                 'QC1': 'status-qc1',
@@ -1007,32 +1048,82 @@
                 'QC2': 'status-qc2',
                 'KIRIM': 'status-kirim'
             };
+            
             const totalPcs = (item.qty_sheet || 0) * (item.up_per_sheet || 1);
-            let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div><strong>No PI:</strong> ${item.no_pi || '-'}</div>
-                <div><strong>Brand:</strong> ${item.brand || '-'}</div>
-                <div><strong>Jenis:</strong> ${item.jenis || '-'}</div>
-                <div><strong>Paper:</strong> ${item.paper || '-'}</div>
-                <div><strong>Size:</strong> ${item.size || '-'}</div>
-                <div><strong>Qty PI (Pcs):</strong> ${item.qty_pi || '-'}</div>
-                <div><strong>Qty Sheet:</strong> ${item.qty_sheet || '-'}</div>
-                <div><strong>Up/Sheet:</strong> ${item.up_per_sheet || '-'}</div>
-                <div><strong>Total Pcs:</strong> ${totalPcs || item.qty_masuk || 0} Pcs</div>
-                <div><strong>Status:</strong> <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">${statusMap[item.status] || item.status}</span></div>
-                <div><strong>Tanggal Terima:</strong> ${item.tanggal_terima || '-'}</div>
-                <div><strong>Catatan:</strong> ${item.notes || '-'}</div>
-            </div>`;
+            const tanggal = item.tanggal_terima ? new Date(item.tanggal_terima).toLocaleDateString('id-ID') : '-';
+            
+            let html = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                    <div><strong>No PI:</strong></div>
+                    <div>${item.no_pi || '-'}</div>
+                    
+                    <div><strong>Brand:</strong></div>
+                    <div>${item.brand || '-'}</div>
+                    
+                    <div><strong>Jenis:</strong></div>
+                    <div>${item.jenis || '-'}</div>
+                    
+                    <div><strong>Paper:</strong></div>
+                    <div>${item.paper || '-'}</div>
+                    
+                    <div><strong>Size:</strong></div>
+                    <div>${item.size || '-'}</div>
+                    
+                    <div><strong>Qty PI:</strong></div>
+                    <div>${item.qty_pi || 0} Pcs</div>
+                    
+                    <div><strong>Qty Sheet:</strong></div>
+                    <div>${item.qty_sheet || 0}</div>
+                    
+                    <div><strong>Up/Sheet:</strong></div>
+                    <div>${item.up_per_sheet || 1}</div>
+                    
+                    <div><strong>Total Pcs:</strong></div>
+                    <div><strong style="color:#3b82f6;">${totalPcs}</strong> Pcs</div>
+                    
+                    <div><strong>Status:</strong></div>
+                    <div>
+                        <span class="status-badge ${statusClass[item.status] || 'status-diterima'}">
+                            ${statusMap[item.status] || item.status || 'DITERIMA'}
+                        </span>
+                    </div>
+                    
+                    <div><strong>Tanggal Terima:</strong></div>
+                    <div>${tanggal}</div>
+                    
+                    <div><strong>Catatan:</strong></div>
+                    <div>${item.notes || '-'}</div>
+                    
+                    <div><strong>PI ID:</strong></div>
+                    <div>${item.pi_id || '-'}</div>
+                    
+                    <div><strong>PI Detail ID:</strong></div>
+                    <div>${item.pi_detail_id || '-'}</div>
+                    
+                    <div><strong>Created By:</strong></div>
+                    <div>${item.created_by || '-'}</div>
+                    
+                    <div><strong>Created At:</strong></div>
+                    <div>${item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-'}</div>
+                </div>
+            `;
+            
             document.getElementById('detailTitle').innerText = `📋 Detail - ${item.no_pi} (${item.brand})`;
             document.getElementById('detailContent').innerHTML = html;
             document.getElementById('detailModal').style.display = 'flex';
         }
 
+        // ============================================================
+        // DELETE
+        // ============================================================
         async function deleteMaterial(id) {
             if (!confirm('Yakin ingin menghapus material ini?')) return;
+            
             await sb.from('ng_tracking').delete().eq('material_inbound_id', id);
             await sb.from('qc_inspection').delete().eq('material_inbound_id', id);
             await sb.from('diecut_process').delete().eq('material_inbound_id', id);
             await sb.from('production_send').delete().eq('material_inbound_id', id);
+            
             const { error } = await sb.from('material_inbound').delete().eq('id', id);
             if (error) {
                 showToast('❌ Gagal: ' + error.message, 'error');
