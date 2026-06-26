@@ -8,86 +8,337 @@
     <script src="config.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* ============================================================ */
+        /* RESET & BASE                                                */
+        /* ============================================================ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f9;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
 
+        /* ============================================================ */
+        /* SIDEBAR - DESAIN BARU (GRADIENT MODERN)                      */
+        /* ============================================================ */
         .sidebar {
             position: fixed;
             top: 0;
-            left: -280px;
+            left: 0;
             width: 280px;
-            height: 100%;
-            background: #1e293b;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
             color: white;
-            transition: 0.3s;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
         }
-        .sidebar.open { left: 0; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
-        .sidebar-header h3 { font-size: 18px; }
-        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
-        .sidebar-menu { padding: 10px 0; }
-        .menu-item {
+
+        .sidebar.closed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* ===== SIDEBAR HEADER ===== */
+        .sidebar-header {
+            padding: 20px 20px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
+            justify-content: space-between;
+        }
+
+        .sidebar-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .sidebar-header .logo span:first-child {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 18px;
+        }
+
+        .sidebar-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            display: none;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-close-btn:hover {
+            transform: rotate(90deg);
+        }
+
+        /* ===== SIDEBAR MENU ===== */
+        .sidebar-menu {
+            list-style: none;
+            padding: 10px 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            padding: 0 16px;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
         }
-        .menu-item:hover { background: #334155; color: white; }
-        .menu-item.active { background: #3b82f6; color: white; }
-        .menu-item .icon { width: 30px; font-size: 20px; }
-        .menu-item .text { font-size: 14px; }
-        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
 
+        .sidebar-menu li a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .sidebar-menu li a.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .sidebar-menu li a .icon {
+            font-size: 18px;
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 8px 16px;
+        }
+
+        /* ===== SIDEBAR FOOTER ===== */
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-footer .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-footer .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+        }
+
+        .sidebar-footer .user-details {
+            flex: 1;
+        }
+
+        .sidebar-footer .user-details .name {
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+        }
+
+        .sidebar-footer .user-details .role {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .sidebar-footer .logout-btn-sidebar {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+
+        .sidebar-footer .logout-btn-sidebar:hover {
+            color: #ef4444;
+        }
+
+        /* ============================================================ */
+        /* OVERLAY                                                     */
+        /* ============================================================ */
         .overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 999;
             display: none;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
         }
-        .overlay.show { display: block; }
 
+        .overlay.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ============================================================ */
+        /* HEADER                                                       */
+        /* ============================================================ */
         .header {
             background: white;
-            padding: 15px;
+            padding: 15px 25px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             position: sticky;
             top: 0;
             z-index: 100;
+            border-radius: 0;
         }
+
+        .header .left-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
         .menu-toggle {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
             padding: 5px 10px;
-            border-radius: 8px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+
+        .menu-toggle:hover {
+            background: #f0f2f5;
+            transform: scale(1.05);
+        }
+
+        .menu-toggle .label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .logo-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .header .right-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header .user-email {
+            font-size: 14px;
+            color: #888;
+        }
+
         .logout-btn {
             background: #ef4444;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 8px 16px;
             border-radius: 8px;
             font-size: 12px;
             cursor: pointer;
+            transition: background 0.3s;
         }
 
-        .container { padding: 15px; max-width: 100%; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
 
+        /* ============================================================ */
+        /* MAIN CONTENT                                                */
+        /* ============================================================ */
+        .container {
+            padding: 15px;
+            max-width: 100%;
+            margin: 0 auto;
+            transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .container.expanded {
+            margin-left: 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ============================================================ */
+        /* FILTER BAR                                                  */
+        /* ============================================================ */
         .filter-bar {
             display: flex;
             gap: 10px;
@@ -115,11 +366,17 @@
         .btn-export { background: #10b981 !important; }
         .btn-danger { background: #ef4444 !important; }
 
+        /* ============================================================ */
+        /* TABLE                                                       */
+        /* ============================================================ */
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1200px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; position: sticky; top: 0; z-index: 10; }
 
+        /* ============================================================ */
+        /* KPI CARDS                                                   */
+        /* ============================================================ */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -130,13 +387,16 @@
             background: white;
             padding: 15px;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             text-align: center;
             border-left: 4px solid #64748b;
         }
         .kpi-value { font-size: 28px; font-weight: bold; color: #1e293b; }
         .kpi-label { font-size: 12px; color: #64748b; margin-top: 4px; }
 
+        /* ============================================================ */
+        /* BADGES                                                       */
+        /* ============================================================ */
         .status-badge {
             padding: 4px 10px;
             border-radius: 20px;
@@ -168,6 +428,9 @@
             color: #991b1b;
         }
 
+        /* ============================================================ */
+        /* TOAST                                                       */
+        /* ============================================================ */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -193,138 +456,126 @@
 
         .loading { text-align: center; padding: 40px; color: #94a3b8; font-size: 16px; }
 
+        /* ============================================================ */
+        /* RESPONSIVE                                                  */
+        /* ============================================================ */
         @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+            }
+            .sidebar-close-btn {
+                display: block;
+            }
+            .container {
+                margin-left: 0;
+                padding: 10px;
+            }
             .kpi-grid { grid-template-columns: repeat(2, 1fr); }
             th, td { font-size: 10px; padding: 6px 4px; }
             .filter-bar input, .filter-bar select { flex: 1; min-width: 100px; }
+            .menu-toggle .label { display: none; }
+            .header .user-email { display: none; }
+            .logo-header { font-size: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .header { padding: 10px 15px; flex-wrap: wrap; gap: 10px; }
+            .header .right-section { gap: 10px; }
         }
     </style>
 </head>
 <body>
 
     <!-- ============================================================ -->
-    <!-- SIDEBAR LENGKAP                                               -->
+    <!-- SIDEBAR - DESAIN BARU                                        -->
     <!-- ============================================================ -->
-    <div class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar">
+        <!-- Header -->
         <div class="sidebar-header">
-            <h3>📦 SUPPLY MATERIAL</h3>
-            <p>Manajemen Inventory</p>
+            <div class="logo">
+                <span>📦</span>
+                <span>SUPPLY MATERIAL</span>
+            </div>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn">✕</button>
         </div>
-        <div class="sidebar-menu">
-            <div class="menu-item" data-menu="dashboard">
-                <span class="icon">📊</span>
-                <span class="text">Dashboard</span>
-            </div>
-            <div class="menu-item" data-menu="pi-input">
-                <span class="icon">📝</span>
-                <span class="text">Input PI</span>
-            </div>
-            <div class="menu-item" data-menu="stock-in">
-                <span class="icon">📥</span>
-                <span class="text">Barang Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="stock-out">
-                <span class="icon">📤</span>
-                <span class="text">Barang Keluar</span>
-            </div>
-            <div class="menu-item" data-menu="stock-report">
-                <span class="icon">📋</span>
-                <span class="text">Stok Gudang</span>
-            </div>
-            <div class="menu-item" data-menu="stok-pendukung">
-                <span class="icon">📦</span>
-                <span class="text">Stok Pendukung</span>
-            </div>
-            <div class="menu-item" data-menu="barcode-generator">
-                <span class="icon">🏷️</span>
-                <span class="text">QR Code</span>
-            </div>
-            <div class="menu-item" data-menu="scan-barcode">
-                <span class="icon">📷</span>
-                <span class="text">Scan QR</span>
-            </div>
 
-            <div class="menu-divider"></div>
+        <!-- Menu -->
+        <ul class="sidebar-menu">
+            <!-- Menu Utama -->
+            <li><a href="#" data-menu="dashboard"><span class="icon">📊</span> Dashboard</a></li>
+            <li><a href="#" data-menu="pi-input"><span class="icon">📝</span> Input PI</a></li>
+            <li><a href="#" data-menu="stock-in"><span class="icon">📥</span> Barang Masuk</a></li>
+            <li><a href="#" data-menu="stock-out"><span class="icon">📤</span> Barang Keluar</a></li>
+            <li><a href="#" data-menu="stock-report"><span class="icon">📋</span> Stok Gudang</a></li>
+            <li><a href="#" data-menu="stok-pendukung"><span class="icon">📦</span> Stok Pendukung</a></li>
+            <li><a href="#" data-menu="barcode-generator"><span class="icon">🏷️</span> QR Code</a></li>
+            <li><a href="#" data-menu="scan-barcode"><span class="icon">📷</span> Scan QR</a></li>
 
-            <div class="menu-item" data-menu="material-tracking">
-                <span class="icon">📊</span>
-                <span class="text">Tracking Material</span>
-            </div>
-            <div class="menu-item" data-menu="material-inbound">
-                <span class="icon">📥</span>
-                <span class="text">Material Masuk</span>
-            </div>
-            <div class="menu-item" data-menu="qc-inspection">
-                <span class="icon">🔬</span>
-                <span class="text">QC Inspection</span>
-            </div>
-            <div class="menu-item" data-menu="diecut-process">
-                <span class="icon">⚙️</span>
-                <span class="text">Proses Diecut</span>
-            </div>
-            <div class="menu-item" data-menu="production-send">
-                <span class="icon">🏭</span>
-                <span class="text">Kirim Produksi</span>
-            </div>
-            <div class="menu-item active" data-menu="ng-report">
-                <span class="icon">📋</span>
-                <span class="text">Laporan NG</span>
-            </div>
+            <li class="menu-divider"></li>
 
-            <div class="menu-divider"></div>
+            <!-- Menu Material -->
+            <li><a href="#" data-menu="material-tracking"><span class="icon">📊</span> Tracking Material</a></li>
+            <li><a href="#" data-menu="material-inbound"><span class="icon">📥</span> Material Masuk</a></li>
+            <li><a href="#" data-menu="qc-inspection"><span class="icon">🔬</span> QC Inspection</a></li>
+            <li><a href="#" data-menu="diecut-process"><span class="icon">⚙️</span> Proses Diecut</a></li>
+            <li><a href="#" data-menu="production-send"><span class="icon">🏭</span> Kirim Produksi</a></li>
+            <li><a href="#" class="active" data-menu="ng-report"><span class="icon">📋</span> Laporan NG</a></li>
 
-            <div class="menu-item" data-menu="export-backup">
-                <span class="icon">💾</span>
-                <span class="text">Backup Data</span>
-            </div>
+            <li class="menu-divider"></li>
 
-            <div class="menu-divider"></div>
+            <!-- Backup Data -->
+            <li><a href="#" data-menu="export-backup"><span class="icon">💾</span> Backup Data</a></li>
 
-            <div class="menu-item" data-menu="executive">
-                <span class="icon">📈</span>
-                <span class="text">Laporan Eksekutif</span>
-            </div>
+            <li class="menu-divider"></li>
 
-            <div class="menu-divider"></div>
+            <!-- Laporan & Admin -->
+            <li><a href="#" data-menu="executive"><span class="icon">📈</span> Laporan Eksekutif</a></li>
+            <li><a href="#" data-menu="manage-users"><span class="icon">👥</span> Kelola User</a></li>
+            <li><a href="#" data-menu="log-aktivitas"><span class="icon">📜</span> Log Aktivitas</a></li>
 
-            <div class="menu-item menu-admin-only" data-menu="manage-users">
-                <span class="icon">👥</span>
-                <span class="text">Kelola User</span>
-            </div>
-            <div class="menu-item menu-admin-only" data-menu="log-aktivitas">
-                <span class="icon">📜</span>
-                <span class="text">Log Aktivitas</span>
-            </div>
+            <li class="menu-divider"></li>
 
-            <div class="menu-divider"></div>
+            <li><a href="#" data-menu="export"><span class="icon">📎</span> Export Data</a></li>
+        </ul>
 
-            <div class="menu-item" data-menu="export">
-                <span class="icon">📎</span>
-                <span class="text">Export Data</span>
-            </div>
-
-            <div class="menu-divider"></div>
-
-            <div class="menu-item" id="logoutMenu">
-                <span class="icon">🚪</span>
-                <span class="text">Logout</span>
+        <!-- Footer User -->
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="avatar">👤</div>
+                <div class="user-details">
+                    <div class="name" id="userName">User</div>
+                    <div class="role" id="userRole">Operator</div>
+                </div>
+                <button class="logout-btn-sidebar" id="logoutMenuSidebar">🚪</button>
             </div>
         </div>
-    </div>
+    </aside>
 
+    <!-- ============================================================ -->
+    <!-- OVERLAY                                                      -->
+    <!-- ============================================================ -->
     <div class="overlay" id="overlay"></div>
 
     <!-- ============================================================ -->
-    <!-- HEADER                                                        -->
+    <!-- HEADER                                                       -->
     <!-- ============================================================ -->
     <div class="header">
-        <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="logo">📦 SUPPLY MATERIAL</div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
+        <div class="left-section">
+            <button class="menu-toggle" id="menuToggle">
+                ☰
+                <span class="label">Menu</span>
+            </button>
+            <span class="logo-header">📋 Laporan NG</span>
+        </div>
+        <div class="right-section">
+            <span class="user-email" id="userEmail">user@email.com</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
     </div>
 
     <!-- ============================================================ -->
-    <!-- MAIN CONTENT                                                  -->
+    <!-- MAIN CONTENT                                                 -->
     <!-- ============================================================ -->
     <div class="container" id="mainContent">
         <div class="loading">⏳ Memuat data NG...</div>
@@ -411,6 +662,32 @@
         }
 
         // ============================================================
+        // SET USER INFO DI SIDEBAR
+        // ============================================================
+        async function setUserInfo() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (user) {
+                    var name = user.email ? user.email.split('@')[0] : 'User';
+                    document.getElementById('userName').textContent = name;
+                    document.getElementById('userEmail').textContent = user.email || 'user@email.com';
+                    
+                    const { data: profile } = await sb
+                        .from('user_profiles')
+                        .select('role')
+                        .eq('email', user.email)
+                        .single();
+                    
+                    if (profile) {
+                        document.getElementById('userRole').textContent = profile.role || 'Operator';
+                    }
+                }
+            } catch (err) {
+                console.error('Error get user info:', err);
+            }
+        }
+
+        // ============================================================
         // LOAD DATA
         // ============================================================
         async function loadData() {
@@ -470,7 +747,6 @@
             var filtered = allData.filter(function(item) {
                 var material = item.material_inbound || {};
                 
-                // Gabungkan semua field yang bisa dicari
                 var searchable = [
                     (material.no_pi || '').toLowerCase(),
                     (material.no_po || '').toLowerCase(),
@@ -483,7 +759,6 @@
 
                 var matchSearch = true;
                 if (searchText) {
-                    // Cari apakah searchText ada di searchable
                     matchSearch = searchable.indexOf(searchText) !== -1;
                 }
 
@@ -499,7 +774,7 @@
         }
 
         // ============================================================
-        // UPDATE TABLE - HANYA UPDATE TABEL
+        // UPDATE TABLE
         // ============================================================
         function updateTable(filtered) {
             var rows = '';
@@ -579,7 +854,7 @@
                 return jenisCount[b] - jenisCount[a];
             }).slice(0, 5);
 
-            // RENDER TABEL
+            // RENDER TABEL AWAL
             var rows = '';
             for (var k = 0; k < filtered.length; k++) {
                 var item = filtered[k];
@@ -758,18 +1033,15 @@
 
             container.innerHTML = html;
 
-            // Set nilai filter yang tersimpan
+            // Event listener untuk filter
             var searchInput = document.getElementById('searchInput');
             var filterProses = document.getElementById('filterProses');
             var filterJenisNg = document.getElementById('filterJenisNg');
             var filterBulan = document.getElementById('filterBulan');
 
-            // Event listener sudah terpasang via HTML oninput/onchange
-            // Tapi kita tetap pasang ulang untuk memastikan
             if (searchInput) {
                 searchInput.addEventListener('input', filterData);
                 searchInput.addEventListener('keyup', filterData);
-                // Fokus ke search
                 setTimeout(function() { searchInput.focus(); }, 100);
             }
             if (filterProses) filterProses.addEventListener('change', filterData);
@@ -871,29 +1143,45 @@
             window.location.href = files[menu] || 'dashboard.html';
         }
 
+        // ============================================================
+        // SIDEBAR FUNCTIONS
+        // ============================================================
         function openSidebar() {
-            var sidebar = getEl('sidebar');
-            var overlay = getEl('overlay');
-            if (sidebar) sidebar.classList.add('open');
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('overlay');
+            var container = document.querySelector('.container');
+            if (sidebar) {
+                sidebar.classList.remove('closed');
+                if (container) container.classList.remove('expanded');
+            }
             if (overlay) overlay.classList.add('show');
+            localStorage.setItem('sidebarOpen', 'true');
         }
 
         function closeSidebar() {
-            var sidebar = getEl('sidebar');
-            var overlay = getEl('overlay');
-            if (sidebar) sidebar.classList.remove('open');
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('overlay');
+            var container = document.querySelector('.container');
+            if (sidebar) {
+                sidebar.classList.add('closed');
+                if (container) container.classList.add('expanded');
+            }
             if (overlay) overlay.classList.remove('show');
+            localStorage.setItem('sidebarOpen', 'false');
         }
 
         function toggleSidebar() {
-            var sidebar = getEl('sidebar');
-            if (sidebar && sidebar.classList.contains('open')) {
-                closeSidebar();
-            } else {
+            var sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('closed')) {
                 openSidebar();
+            } else {
+                closeSidebar();
             }
         }
 
+        // ============================================================
+        // LOGOUT
+        // ============================================================
         async function logout() {
             await sb.auth.signOut();
             window.location.href = 'login.html';
@@ -903,26 +1191,56 @@
         // SETUP EVENT LISTENERS
         // ============================================================
         function setupEventListeners() {
-            var menuToggle = getEl('menuToggle');
+            var menuToggle = document.getElementById('menuToggle');
             if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
 
-            var overlay = getEl('overlay');
+            var sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+            if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+
+            var overlay = document.getElementById('overlay');
             if (overlay) overlay.addEventListener('click', closeSidebar);
 
-            var logoutBtn = getEl('logoutBtn');
+            var logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
-            var logoutMenu = getEl('logoutMenu');
-            if (logoutMenu) logoutMenu.addEventListener('click', logout);
+            var logoutMenuSidebar = document.getElementById('logoutMenuSidebar');
+            if (logoutMenuSidebar) logoutMenuSidebar.addEventListener('click', logout);
 
-            var menuItems = document.querySelectorAll('.menu-item[data-menu]');
+            // Menu klik
+            var menuItems = document.querySelectorAll('.sidebar-menu li a[data-menu]');
             for (var i = 0; i < menuItems.length; i++) {
                 (function(el) {
-                    el.addEventListener('click', function() {
-                        goToMenu(el.getAttribute('data-menu'));
+                    el.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        // Hapus active dari semua
+                        document.querySelectorAll('.sidebar-menu li a').forEach(function(l) {
+                            l.classList.remove('active');
+                        });
+                        // Tambah active ke yang diklik
+                        this.classList.add('active');
+                        goToMenu(this.getAttribute('data-menu'));
                     });
                 })(menuItems[i]);
             }
+
+            // Shortcut: Ctrl + B
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    toggleSidebar();
+                }
+            });
+
+            // Responsive: tutup sidebar di mobile
+            var resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
+                }, 300);
+            });
         }
 
         // ============================================================
@@ -930,8 +1248,19 @@
         // ============================================================
         async function init() {
             await cekSession();
+            await setUserInfo();
             setupEventListeners();
             await loadData();
+
+            // Load sidebar state dari localStorage
+            var savedState = localStorage.getItem('sidebarOpen');
+            var isMobile = window.innerWidth <= 768;
+
+            if (savedState === 'false' || isMobile) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
         }
 
         // Expose functions
