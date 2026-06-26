@@ -18,7 +18,7 @@
             left: -320px;
             width: 320px;
             height: 100vh;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            background: #1e293b;
             color: white;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1001;
@@ -30,15 +30,14 @@
             left: 0;
         }
 
-        /* Sidebar Header Modern */
+        /* Sidebar Header */
         .sidebar-modern .sidebar-header {
             padding: 25px 20px 20px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid #334155;
+            background: #0f172a;
             position: sticky;
             top: 0;
             z-index: 2;
-            backdrop-filter: blur(10px);
         }
 
         .sidebar-modern .sidebar-header .logo-wrapper {
@@ -70,6 +69,7 @@
             font-size: 18px;
             font-weight: 700;
             letter-spacing: 0.5px;
+            color: white;
         }
 
         .sidebar-modern .sidebar-header .brand p {
@@ -100,14 +100,14 @@
         /* Search di Sidebar */
         .sidebar-modern .sidebar-search {
             padding: 15px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            border-bottom: 1px solid #334155;
         }
 
         .sidebar-modern .sidebar-search input {
             width: 100%;
             padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #0f172a;
+            border: 1px solid #334155;
             border-radius: 10px;
             color: white;
             font-size: 13px;
@@ -120,12 +120,12 @@
         }
 
         .sidebar-modern .sidebar-search input:focus {
-            background: rgba(255, 255, 255, 0.1);
+            background: #0f172a;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
-        /* Menu Items Modern */
+        /* Menu Items - DIPERBAIKI dengan hover yang jelas */
         .sidebar-modern .sidebar-menu {
             padding: 10px 0 20px 0;
         }
@@ -133,8 +133,8 @@
         .sidebar-modern .menu-item {
             display: flex;
             align-items: center;
-            padding: 11px 20px 11px 24px;
-            color: #94a3b8;
+            padding: 12px 20px 12px 24px;
+            color: #cbd5e1;
             cursor: pointer;
             transition: all 0.25s;
             border-left: 3px solid transparent;
@@ -142,20 +142,21 @@
             gap: 14px;
         }
 
+        /* HOVER EFEK - SEPERTI CONTOH AWAL */
         .sidebar-modern .menu-item:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: #334155;
             color: white;
             border-left-color: #3b82f6;
         }
 
         .sidebar-modern .menu-item.active {
-            background: rgba(59, 130, 246, 0.12);
+            background: #3b82f6;
             color: white;
             border-left-color: #3b82f6;
         }
 
         .sidebar-modern .menu-item.active .icon {
-            color: #3b82f6;
+            color: white;
         }
 
         .sidebar-modern .menu-item .icon {
@@ -181,22 +182,16 @@
             font-weight: 600;
         }
 
-        .sidebar-modern .menu-item .arrow {
-            font-size: 12px;
-            color: #475569;
-            transition: transform 0.3s;
-        }
-
         .sidebar-modern .menu-divider {
             height: 1px;
-            background: rgba(255, 255, 255, 0.06);
+            background: #334155;
             margin: 8px 20px;
         }
 
         .sidebar-modern .menu-label {
             padding: 15px 24px 8px 24px;
             font-size: 11px;
-            color: #475569;
+            color: #64748b;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             font-weight: 600;
@@ -207,9 +202,8 @@
             position: sticky;
             bottom: 0;
             padding: 15px 20px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: #0f172a;
+            border-top: 1px solid #334155;
         }
 
         .sidebar-modern .sidebar-footer .user-info {
@@ -243,11 +237,11 @@
 
         .sidebar-modern .sidebar-footer .user-details .role {
             font-size: 11px;
-            color: #64748b;
+            color: #94a3b8;
         }
 
         .sidebar-modern .sidebar-footer .logout-icon {
-            color: #64748b;
+            color: #94a3b8;
             font-size: 18px;
             cursor: pointer;
             transition: all 0.3s;
@@ -420,8 +414,8 @@
         /* Scrollbar */
         .sidebar-modern::-webkit-scrollbar { width: 4px; }
         .sidebar-modern::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-modern::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
-        .sidebar-modern::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+        .sidebar-modern::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .sidebar-modern::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
 <body>
@@ -860,8 +854,7 @@
                     }
                 });
 
-                // Sembunyikan label dan divider jika tidak ada hasil
-                const labels = document.querySelectorAll('.sidebar-modern .menu-label');
+                // Sembunyikan label dan divider jika tidak ada hasil                const labels = document.querySelectorAll('.sidebar-modern .menu-label');
                 const dividers = document.querySelectorAll('.sidebar-modern .menu-divider');
                 
                 if (searchTerm !== '') {
@@ -962,13 +955,11 @@
                     nameEl.textContent = email.split('@')[0];
                     welcomeEl.textContent = '👋 Welcome, ' + email.split('@')[0];
                     
-                    // Cek role (contoh: admin)
                     const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single();
                     if (profile?.role === 'admin') {
                         roleEl.textContent = 'Administrator';
                     } else {
                         roleEl.textContent = 'User';
-                        // Sembunyikan menu admin
                         document.querySelectorAll('.menu-admin-only').forEach(el => el.style.display = 'none');
                     }
                 }
