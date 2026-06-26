@@ -100,6 +100,7 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 13px;
+            background: white;
         }
         .filter-bar input { flex: 2; min-width: 150px; }
         .filter-bar select { min-width: 120px; }
@@ -410,7 +411,7 @@
         }
 
         // ============================================================
-        // LOAD DATA - PERBAIKAN (hapus qty_pcs)
+        // LOAD DATA
         // ============================================================
         async function loadData() {
             var container = getEl('mainContent');
@@ -453,7 +454,7 @@
         }
 
         // ============================================================
-        // RENDER PAGE
+        // RENDER PAGE - DENGAN EVENT LISTENER YANG BENAR
         // ============================================================
         function renderPage() {
             var container = getEl('mainContent');
@@ -484,9 +485,7 @@
             });
             currentFiltered = filtered;
 
-            // ============================================================
             // HITUNG KPI
-            // ============================================================
             var totalNG = 0;
             var totalQC1 = 0;
             var totalDiecut = 0;
@@ -517,9 +516,7 @@
                 return jenisCount[b] - jenisCount[a];
             }).slice(0, 5);
 
-            // ============================================================
             // RENDER TABEL
-            // ============================================================
             var rows = '';
             for (var k = 0; k < filtered.length; k++) {
                 var item = filtered[k];
@@ -546,9 +543,7 @@
                 rows = '<tr><td colspan="11" style="text-align:center;padding:20px;color:#94a3b8;">📭 Belum ada data NG</td></tr>';
             }
 
-            // ============================================================
             // TOP 5 JENIS NG
-            // ============================================================
             var topJenisHtml = '';
             if (topJenis.length > 0) {
                 for (var t = 0; t < topJenis.length; t++) {
@@ -563,9 +558,7 @@
                 topJenisHtml = '<div style="padding:15px; color:#94a3b8; text-align:center;">Belum ada data NG</div>';
             }
 
-            // ============================================================
             // RINGKASAN NG PER BULAN
-            // ============================================================
             var bulanData = {};
             for (var b = 0; b < allData.length; b++) {
                 var item = allData[b];
@@ -597,9 +590,7 @@
                 bulanHtml = '<div style="padding:15px; color:#94a3b8; text-align:center;">Belum ada data NG per bulan</div>';
             }
 
-            // ============================================================
             // BUILD HTML
-            // ============================================================
             var html = '';
 
             html += '<div class="kpi-grid">' +
@@ -648,14 +639,14 @@
                 '</div>' +
                 '</div>' +
                 '<div class="filter-bar">' +
-                '<input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." oninput="filterData()">' +
-                '<select id="filterProses" onchange="filterData()">' +
+                '<input type="text" id="searchInput" placeholder="🔍 Cari No PI, PO, Brand, Jenis..." autofocus>' +
+                '<select id="filterProses">' +
                 '<option value="all">Semua Proses</option>' +
                 '<option value="QC1">🔬 QC #1 (Sheet)</option>' +
                 '<option value="DIECUT">⚙️ Diecut (Pcs)</option>' +
                 '<option value="QC2">🔬 QC #2 (Pcs)</option>' +
                 '</select>' +
-                '<select id="filterJenisNg" onchange="filterData()">' +
+                '<select id="filterJenisNg">' +
                 '<option value="all">Semua Jenis NG</option>' +
                 '<option value="CACAT PRINT">CACAT PRINT</option>' +
                 '<option value="SOBEK">SOBEK</option>' +
@@ -666,7 +657,7 @@
                 '<option value="BINTIK">BINTIK</option>' +
                 '<option value="GOES">GOES</option>' +
                 '</select>' +
-                '<select id="filterBulan" onchange="filterData()">' +
+                '<select id="filterBulan">' +
                 '<option value="all">Semua Bulan</option>' +
                 '<option value="2026-01">Jan 2026</option>' +
                 '<option value="2026-02">Feb 2026</option>' +
@@ -675,7 +666,7 @@
                 '<option value="2026-05">Mei 2026</option>' +
                 '<option value="2026-06">Jun 2026</option>' +
                 '</select>' +
-                '<button onclick="resetFilter()">🔄 Reset</button>' +
+                '<button id="resetFilterBtn">🔄 Reset</button>' +
                 '</div>' +
                 '<div class="table-wrapper">' +
                 '<table>' +
@@ -704,15 +695,27 @@
 
             container.innerHTML = html;
 
-            var newSearchInput = getEl('searchInput');
-            var newFilterProses = getEl('filterProses');
-            var newFilterJenis = getEl('filterJenisNg');
-            var newFilterBulan = getEl('filterBulan');
+            // ============================================================
+            // 🔥 PASANG EVENT LISTENER DENGAN CARA YANG BENAR
+            // ============================================================
+            var newSearch = document.getElementById('searchInput');
+            var newProses = document.getElementById('filterProses');
+            var newJenis = document.getElementById('filterJenisNg');
+            var newBulan = document.getElementById('filterBulan');
+            var resetBtn = document.getElementById('resetFilterBtn');
 
-            if (newSearchInput) newSearchInput.oninput = filterData;
-            if (newFilterProses) newFilterProses.onchange = filterData;
-            if (newFilterJenis) newFilterJenis.onchange = filterData;
-            if (newFilterBulan) newFilterBulan.onchange = filterData;
+            if (newSearch) {
+                newSearch.addEventListener('input', filterData);
+                newSearch.addEventListener('keyup', filterData);
+                // Fokus ke search input
+                setTimeout(function() {
+                    newSearch.focus();
+                }, 100);
+            }
+            if (newProses) newProses.addEventListener('change', filterData);
+            if (newJenis) newJenis.addEventListener('change', filterData);
+            if (newBulan) newBulan.addEventListener('change', filterData);
+            if (resetBtn) resetBtn.addEventListener('click', resetFilter);
         }
 
         // ============================================================
@@ -723,10 +726,10 @@
         }
 
         function resetFilter() {
-            var searchInput = getEl('searchInput');
-            var filterProses = getEl('filterProses');
-            var filterJenisNg = getEl('filterJenisNg');
-            var filterBulan = getEl('filterBulan');
+            var searchInput = document.getElementById('searchInput');
+            var filterProses = document.getElementById('filterProses');
+            var filterJenisNg = document.getElementById('filterJenisNg');
+            var filterBulan = document.getElementById('filterBulan');
 
             if (searchInput) searchInput.value = '';
             if (filterProses) filterProses.value = 'all';
@@ -775,7 +778,7 @@
         }
 
         // ============================================================
-        // EXPORT PDF (PRINT)
+        // EXPORT PDF
         // ============================================================
         function exportPDF() {
             if (currentFiltered.length === 0) {
