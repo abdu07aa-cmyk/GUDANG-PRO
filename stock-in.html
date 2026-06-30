@@ -92,13 +92,44 @@
         button:active { transform: scale(0.98); }
         .btn-hapus { background: #ef4444; width: auto; padding: 5px 10px; margin: 0; font-size: 12px; }
         .btn-export { background: #10b981; }
+        .btn-ambil { background: #8b5cf6; width: auto; padding: 5px 12px; margin: 2px; font-size: 12px; }
+        .btn-ambil:hover { background: #7c3aed; }
         
         .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
         .alert-success { background: #d1fae5; color: #065f46; }
         .alert-error { background: #fee2e2; color: #991b1b; }
+        .alert-warning { background: #fef3c7; color: #92400e; }
         
         .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
         .stok-info { background: #e0f2fe; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 13px; }
+        .stok-pendukung-item {
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .stok-pendukung-item .info {
+            flex: 1;
+            min-width: 150px;
+        }
+        .stok-pendukung-item .actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .stok-pendukung-item .actions input {
+            width: 80px;
+            padding: 5px;
+            margin: 0;
+            font-size: 12px;
+        }
         
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
@@ -113,6 +144,8 @@
             th, td { font-size: 10px; padding: 6px 4px; }
             .filter-row input { width: 100%; }
             .filter-row button { width: 100%; }
+            .stok-pendukung-item { flex-direction: column; align-items: stretch; }
+            .stok-pendukung-item .actions { justify-content: center; }
         }
     </style>
 </head>
@@ -124,7 +157,6 @@
         <p>Manajemen Inventory</p>
     </div>
     <div class="sidebar-menu">
-        <!-- Menu Utama -->
         <div class="menu-item" data-menu="dashboard">
             <span class="icon">📊</span>
             <span class="text">Dashboard</span>
@@ -160,7 +192,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- Menu Material -->
         <div class="menu-item" data-menu="material-tracking">
             <span class="icon">📊</span>
             <span class="text">Tracking Material</span>
@@ -188,7 +219,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU BACKUP DATA (BARU) -->
         <div class="menu-item" data-menu="export-backup">
             <span class="icon">💾</span>
             <span class="text">Backup Data</span>
@@ -196,7 +226,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- Menu Laporan -->
         <div class="menu-item" data-menu="executive">
             <span class="icon">📈</span>
             <span class="text">Laporan Eksekutif</span>
@@ -204,7 +233,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- Menu Admin -->
         <div class="menu-item menu-admin-only" data-menu="manage-users">
             <span class="icon">👥</span>
             <span class="text">Kelola User</span>
@@ -216,7 +244,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- Menu Export & Logout -->
         <div class="menu-item" data-menu="export">
             <span class="icon">📎</span>
             <span class="text">Export Data</span>
@@ -260,6 +287,7 @@
                 itemSelect.innerHTML = '<option value="">-- Pilih PI dulu --</option>';
                 document.getElementById('historyList').innerHTML = '<div class="info-text">Pilih PI dan item untuk melihat histori</div>';
                 document.getElementById('stokPendukungInfo').innerHTML = '';
+                document.getElementById('stokPendukungList').innerHTML = '';
                 return;
             }
             
@@ -279,17 +307,78 @@
             if (!itemId) {
                 document.getElementById('historyList').innerHTML = '<div class="info-text">Pilih item untuk melihat histori</div>';
                 document.getElementById('stokPendukungInfo').innerHTML = '';
+                document.getElementById('stokPendukungList').innerHTML = '';
                 return;
             }
             
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             
-            // Cek stok pendukung
-            const { data: stokPendukung } = await sb.from('stok_pendukung').select('*').ilike('nama', `%${item.jenis}%`);
+            // Cari stok pendukung yang cocok berdasarkan jenis/brand/size
+            let searchTerms = [];
+            if (item.jenis) searchTerms.push(item.jenis);
+            if (item.brand) searchTerms.push(item.brand);
+            if (item.size) searchTerms.push(item.size);
+            
+            let query = sb.from('stok_pendukung').select('*');
+            // Cari dengan LIKE untuk setiap kata kunci
+            let orConditions = [];
+            for (const term of searchTerms) {
+                if (term && term.length > 2) {
+                    orConditions.push(`nama.ilike.%${term}%`);
+                    orConditions.push(`kode.ilike.%${term}%`);
+                }
+            }
+            
+            let stokPendukung = [];
+            if (orConditions.length > 0) {
+                const { data } = await sb.from('stok_pendukung').select('*')
+                    .or(orConditions.join(','))
+                    .order('stok', { ascending: false });
+                stokPendukung = data || [];
+            }
+            
+            // Tampilkan daftar stok pendukung yang cocok
+            let listHtml = '';
+            if (stokPendukung.length > 0) {
+                listHtml = `<div class="card" style="background:#f0fdf4;border:2px solid #86efac;">
+                    <div class="card-title" style="font-size:14px;">📦 STOK PENDUKUNG YANG COCOK</div>`;
+                for (const sp of stokPendukung) {
+                    const kebutuhan = item.qty_pi;
+                    const stokTersedia = sp.stok;
+                    let status = stokTersedia >= kebutuhan ? '✅ Cukup' : '⚠️ Kurang';
+                    let statusColor = stokTersedia >= kebutuhan ? '#10b981' : '#ef4444';
+                    
+                    listHtml += `
+                        <div class="stok-pendukung-item">
+                            <div class="info">
+                                <strong>${sp.kode || '-'}</strong> - ${sp.nama}<br>
+                                <span style="font-size:11px;color:#64748b;">
+                                    Size: ${sp.size || '-'} | Stok: <b style="color:${statusColor};">${sp.stok}</b> | Min: ${sp.stok_minimum || 0}
+                                    ${sp.lokasi ? ' | Box: ' + sp.lokasi : ''}
+                                    <br>Kebutuhan PI: <b>${kebutuhan}</b> - ${status}
+                                </span>
+                            </div>
+                            <div class="actions">
+                                <input type="number" id="ambil_qty_${sp.id}" value="${Math.min(stokTersedia, kebutuhan)}" min="1" max="${stokTersedia}" style="width:70px;">
+                                <button class="btn-ambil" onclick="ambilDariStokPendukung(${sp.id}, ${itemId})">📥 Ambil</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                listHtml += `</div>`;
+            } else {
+                listHtml = `<div class="stok-info" style="background:#fef3c7;color:#92400e;">
+                    ℹ️ Tidak ada stok pendukung yang cocok dengan item ini
+                </div>`;
+            }
+            document.getElementById('stokPendukungList').innerHTML = listHtml;
+            
+            // Cek stok pendukung info (summary)
+            const { data: stokInfo } = await sb.from('stok_pendukung').select('*').ilike('nama', `%${item.jenis}%`);
             
             let stokHtml = '';
-            if (stokPendukung && stokPendukung.length > 0) {
-                for (const sp of stokPendukung) {
+            if (stokInfo && stokInfo.length > 0) {
+                for (const sp of stokInfo) {
                     const kebutuhan = item.qty_pi;
                     const stokTersedia = sp.stok;
                     let warning = '';
@@ -427,6 +516,85 @@
             }
         }
         
+        // FUNGSI BARU: Ambil dari Stok Pendukung
+        async function ambilDariStokPendukung(stokId, detailId) {
+            const qtyInput = document.getElementById(`ambil_qty_${stokId}`);
+            const qty = parseInt(qtyInput.value);
+            
+            if (!qty || qty <= 0) {
+                alert('Masukkan jumlah yang valid!');
+                return;
+            }
+            
+            // Ambil data stok pendukung
+            const { data: stokItem } = await sb.from('stok_pendukung').select('*').eq('id', stokId).single();
+            if (!stokItem) {
+                alert('Stok pendukung tidak ditemukan!');
+                return;
+            }
+            
+            if (qty > stokItem.stok) {
+                alert(`Stok tidak mencukupi! Stok tersedia: ${stokItem.stok}`);
+                return;
+            }
+            
+            // Ambil data PI detail
+            const { data: detailItem } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(detailId)).single();
+            if (!detailItem) {
+                alert('Item PI tidak ditemukan!');
+                return;
+            }
+            
+            // Konfirmasi
+            const confirmMsg = `Ambil ${qty} dari stok pendukung "${stokItem.nama}" (Stok: ${stokItem.stok}) untuk item "${detailItem.brand} - ${detailItem.jenis}"?`;
+            if (!confirm(confirmMsg)) return;
+            
+            const { data: { user } } = await sb.auth.getUser();
+            const tanggal = document.getElementById('tanggal_masuk').value || new Date().toISOString().split('T')[0];
+            
+            try {
+                // 1. Kurangi stok pendukung
+                const newStok = stokItem.stok - qty;
+                const { error: updateError } = await sb.from('stok_pendukung')
+                    .update({ stok: newStok })
+                    .eq('id', stokId);
+                
+                if (updateError) throw new Error('Gagal update stok pendukung: ' + updateError.message);
+                
+                // 2. Catat ke histori stok pendukung (KELUAR)
+                await sb.from('histori_stok_pendukung').insert([{
+                    stok_pendukung_id: stokId,
+                    jenis: 'KELUAR',
+                    qty: qty,
+                    keterangan: `Diambil untuk PI ${detailItem.pi_header.no_pi} - ${detailItem.brand} ${detailItem.jenis}`,
+                    created_by: user.email
+                }]);
+                
+                // 3. Catat ke barang masuk
+                const itemInfo = `${detailItem.pi_header.no_pi} - ${detailItem.brand} - ${detailItem.jenis}`;
+                const { error: masukError } = await sb.from('barang_masuk').insert([{
+                    detail_id: parseInt(detailId),
+                    tanggal: tanggal,
+                    qty: qty,
+                    keterangan: `Ambil dari stok pendukung: ${stokItem.nama} (${stokItem.kode || '-'})`,
+                    created_by: user.email
+                }]);
+                
+                if (masukError) throw new Error('Gagal mencatat barang masuk: ' + masukError.message);
+                
+                // 4. Log aktivitas
+                await addLog('AMBIL STOK PENDUKUNG', `${user.email} mengambil ${qty} dari ${stokItem.nama} untuk ${itemInfo}`);
+                
+                alert(`✅ Berhasil mengambil ${qty} dari stok pendukung!\nStok ${stokItem.nama} sekarang: ${newStok}`);
+                
+                // Refresh data
+                await onItemChange();
+                
+            } catch (error) {
+                alert('❌ Gagal: ' + error.message);
+            }
+        }
+        
         async function exportHistory() {
             if (!currentItemId) {
                 alert('Pilih item terlebih dahulu!');
@@ -479,11 +647,14 @@
                     </select>
                     
                     <div id="stokPendukungInfo"></div>
+                    <div id="stokPendukungList"></div>
+                    
+                    <hr style="margin:15px 0;border-color:#e2e8f0;">
                     
                     <label>Tanggal Masuk</label>
                     <input type="date" id="tanggal_masuk" value="${today}">
                     
-                    <label>Jumlah Masuk</label>
+                    <label>Jumlah Masuk (Manual)</label>
                     <input type="number" id="qty_masuk" placeholder="Qty">
                     
                     <label>Keterangan (opsional)</label>
@@ -515,30 +686,30 @@
             await loadPiList();
         }
         
- function goToMenu(menu) {
-    const files = {
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        'material-tracking': 'material-tracking.html',
-        'material-inbound': 'material-inbound.html',
-        'qc-inspection': 'qc-inspection.html',
-        'diecut-process': 'diecut-process.html',
-        'production-send': 'production-send.html',
-        'ng-report': 'ng-report.html',
-        'export-backup': 'export-backup.html',  // ← TAMBAHKAN INI
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+        function goToMenu(menu) {
+            const files = {
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                'export-backup': 'export-backup.html',
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
         
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
@@ -589,6 +760,7 @@
         window.simpanMasuk = simpanMasuk;
         window.hapusHistory = hapusHistory;
         window.exportHistory = exportHistory;
+        window.ambilDariStokPendukung = ambilDariStokPendukung;
         
         init();
     </script>
