@@ -313,19 +313,20 @@
             
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             
-            // Cari stok pendukung yang cocok berdasarkan jenis/brand/size
+            // Cari stok pendukung yang cocok berdasarkan jenis/brand/size/papers
             let searchTerms = [];
             if (item.jenis) searchTerms.push(item.jenis);
             if (item.brand) searchTerms.push(item.brand);
             if (item.size) searchTerms.push(item.size);
+            if (item.paper) searchTerms.push(item.paper); // Tambahkan paper dari PI
             
             let query = sb.from('stok_pendukung').select('*');
-            // Cari dengan LIKE untuk setiap kata kunci
             let orConditions = [];
             for (const term of searchTerms) {
                 if (term && term.length > 2) {
                     orConditions.push(`nama.ilike.%${term}%`);
                     orConditions.push(`kode.ilike.%${term}%`);
+                    orConditions.push(`papers.ilike.%${term}%`); // Tambahkan pencarian di papers
                 }
             }
             
@@ -335,6 +336,24 @@
                     .or(orConditions.join(','))
                     .order('stok', { ascending: false });
                 stokPendukung = data || [];
+            }
+            
+            // Jika tidak ada hasil, coba cari berdasarkan kata kunci yang lebih longgar
+            if (stokPendukung.length === 0 && item.jenis) {
+                const keywords = item.jenis.split(' ');
+                let looseConditions = [];
+                for (const kw of keywords) {
+                    if (kw.length > 2) {
+                        looseConditions.push(`nama.ilike.%${kw}%`);
+                        looseConditions.push(`papers.ilike.%${kw}%`);
+                    }
+                }
+                if (looseConditions.length > 0) {
+                    const { data } = await sb.from('stok_pendukung').select('*')
+                        .or(looseConditions.join(','))
+                        .order('stok', { ascending: false });
+                    if (data && data.length > 0) stokPendukung = data;
+                }
             }
             
             // Tampilkan daftar stok pendukung yang cocok
@@ -353,7 +372,7 @@
                             <div class="info">
                                 <strong>${sp.kode || '-'}</strong> - ${sp.nama}<br>
                                 <span style="font-size:11px;color:#64748b;">
-                                    Size: ${sp.size || '-'} | Stok: <b style="color:${statusColor};">${sp.stok}</b> | Min: ${sp.stok_minimum || 0}
+                                    Size: ${sp.size || '-'} | Papers: ${sp.papers || '-'} | Stok: <b style="color:${statusColor};">${sp.stok}</b> | Min: ${sp.stok_minimum || 0}
                                     ${sp.lokasi ? ' | Box: ' + sp.lokasi : ''}
                                     <br>Kebutuhan PI: <b>${kebutuhan}</b> - ${status}
                                 </span>
@@ -373,10 +392,26 @@
             }
             document.getElementById('stokPendukungList').innerHTML = listHtml;
             
-            // Cek stok pendukung info (summary)
-            const { data: stokInfo } = await sb.from('stok_pendukung').select('*').ilike('nama', `%${item.jenis}%`);
-            
+            // Cek stok pendukung info (summary) - tambahkan pencarian papers
             let stokHtml = '';
+            let searchPatterns = [];
+            if (item.jenis) searchPatterns.push(item.jenis);
+            if (item.paper) searchPatterns.push(item.paper);
+            
+            let stokInfo = [];
+            for (const pattern of searchPatterns) {
+                if (pattern && pattern.length > 2) {
+                    const { data } = await sb.from('stok_pendukung').select('*')
+                        .or(`nama.ilike.%${pattern}%,papers.ilike.%${pattern}%`);
+                    if (data && data.length > 0) {
+                        stokInfo = stokInfo.concat(data);
+                    }
+                }
+            }
+            
+            // Remove duplicates
+            stokInfo = stokInfo.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+            
             if (stokInfo && stokInfo.length > 0) {
                 for (const sp of stokInfo) {
                     const kebutuhan = item.qty_pi;
@@ -391,6 +426,7 @@
                         <div class="stok-info"> 
                             <strong>📦 INFO STOK PENDUKUNG:</strong><br>
                             Nama: ${sp.nama}<br>
+                            Papers: ${sp.papers || '-'}<br>
                             Stok Tersedia: <b>${stokTersedia}</b><br>
                             Kebutuhan PI (${item.pi_header.no_pi}): <b>${kebutuhan}</b><br>
                             ${warning}
@@ -576,7 +612,7 @@
                     detail_id: parseInt(detailId),
                     tanggal: tanggal,
                     qty: qty,
-                    keterangan: `Ambil dari stok pendukung: ${stokItem.nama} (${stokItem.kode || '-'})`,
+                    keterangan: `Ambil dari stok pendukung: ${stokItem.nama} (${stokItem.kode || '-'}) ${stokItem.papers ? 'Papers: ' + stokItem.papers : ''}`,
                     created_by: user.email
                 }]);
                 
