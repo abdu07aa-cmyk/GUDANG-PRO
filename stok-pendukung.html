@@ -88,7 +88,7 @@
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
         .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
@@ -261,6 +261,8 @@
             <input type="text" id="nama" placeholder="Contoh: Filter White" required>
             <label>Size</label>
             <input type="text" id="size" placeholder="Contoh: 10x10 cm / 1 roll">
+            <label>Papers</label>
+            <input type="text" id="papers" placeholder="Contoh: Art Paper 120gsm, HVS 80gsm">
             <label>Stok Awal</label>
             <input type="number" id="stok_awal" value="0" min="0">
             <label>Stok Minimum (Peringatan)</label>
@@ -339,14 +341,22 @@
                         </div>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari kode, nama, size, atau lokasi...">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari kode, nama, size, papers, atau lokasi...">
                         <button id="resetBtn">Reset</button>
                     </div>
                     <div class="table-wrapper">
                         <table style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Kode</th><th>Nama Material</th><th>Size</th><th>Stok</th><th>Stok Minimum</th><th>Lokasi Box</th><th>Aksi Stok</th><th>Aksi</th>
+                                    <th>Kode</th>
+                                    <th>Nama Material</th>
+                                    <th>Size</th>
+                                    <th>Papers</th>
+                                    <th>Stok</th>
+                                    <th>Stok Minimum</th>
+                                    <th>Lokasi Box</th>
+                                    <th>Aksi Stok</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody"></tbody>
@@ -381,6 +391,7 @@
                 const match = (item.kode || '').toLowerCase().indexOf(searchText) !== -1 ||
                               (item.nama || '').toLowerCase().indexOf(searchText) !== -1 ||
                               (item.size || '').toLowerCase().indexOf(searchText) !== -1 ||
+                              (item.papers || '').toLowerCase().indexOf(searchText) !== -1 ||
                               (item.lokasi || '').toLowerCase().indexOf(searchText) !== -1;
                 if (match) {
                     filtered.push(item);
@@ -399,7 +410,7 @@
             
             let rows = '';
             if (pageData.length === 0) {
-                rows = '<tr><td colspan="8" style="text-align:center;padding:20px;">Belum ada data. Klik "Tambah Material"</td></tr>';
+                rows = '<tr><td colspan="9" style="text-align:center;padding:20px;">Belum ada data. Klik "Tambah Material"</td></tr>';
             } else {
                 for (let i = 0; i < pageData.length; i++) {
                     const item = pageData[i];
@@ -410,6 +421,7 @@
                         '<td><b>' + (item.kode || '-') + '</b></td>' +
                         '<td>' + (item.nama || '-') + ' ' + minWarning + '</td>' +
                         '<td>' + (item.size || '-') + '</td>' +
+                        '<td>' + (item.papers || '-') + '</td>' +
                         '<td class="' + stokRendah + '"><b>' + item.stok + '</b> ' + (item.stok <= item.stok_minimum && item.stok_minimum > 0 ? '⚠️' : '') + '</td>' +
                         '<td>' + (item.stok_minimum || 0) + '</td>' +
                         '<td>' + (item.lokasi || '-') + '</td>' +
@@ -518,15 +530,15 @@
         
         function exportExcel() {
             if (currentFilteredData.length === 0) { alert('Tidak ada data'); return; }
-            var wsData = [['Kode', 'Nama Material', 'Size', 'Stok', 'Stok Minimum', 'Lokasi Box']];
+            var wsData = [['Kode', 'Nama Material', 'Size', 'Papers', 'Stok', 'Stok Minimum', 'Lokasi Box']];
             for (var i = 0; i < currentFilteredData.length; i++) {
                 var item = currentFilteredData[i];
-                wsData.push([item.kode || '-', item.nama || '-', item.size || '-', item.stok, item.stok_minimum || 0, item.lokasi || '-']);
+                wsData.push([item.kode || '-', item.nama || '-', item.size || '-', item.papers || '-', item.stok, item.stok_minimum || 0, item.lokasi || '-']);
             }
             var ws = XLSX.utils.aoa_to_sheet(wsData);
             var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Pendukung');
-            ws['!cols'] = [{wch:15}, {wch:25}, {wch:15}, {wch:10}, {wch:15}, {wch:15}];
+            ws['!cols'] = [{wch:15}, {wch:25}, {wch:15}, {wch:25}, {wch:10}, {wch:15}, {wch:15}];
             XLSX.writeFile(wb, 'Stok_Pendukung_' + new Date().toISOString().slice(0,10) + '.xlsx');
             alert('✅ Export berhasil!');
         }
@@ -537,6 +549,7 @@
             document.getElementById('kode').value = '';
             document.getElementById('nama').value = '';
             document.getElementById('size').value = '';
+            document.getElementById('papers').value = '';
             document.getElementById('stok_awal').value = '0';
             document.getElementById('stok_minimum').value = '0';
             document.getElementById('lokasi').value = '';
@@ -551,6 +564,7 @@
             document.getElementById('kode').value = item.kode || '';
             document.getElementById('nama').value = item.nama || '';
             document.getElementById('size').value = item.size || '';
+            document.getElementById('papers').value = item.papers || '';
             document.getElementById('stok_awal').value = item.stok;
             document.getElementById('stok_minimum').value = item.stok_minimum || 0;
             document.getElementById('lokasi').value = item.lokasi || '';
@@ -563,6 +577,7 @@
                 kode: document.getElementById('kode').value || null,
                 nama: document.getElementById('nama').value,
                 size: document.getElementById('size').value || null,
+                papers: document.getElementById('papers').value || null,
                 stok: parseInt(document.getElementById('stok_awal').value) || 0,
                 stok_minimum: parseInt(document.getElementById('stok_minimum').value) || 0,
                 lokasi: document.getElementById('lokasi').value || null
@@ -664,34 +679,34 @@
             }
         }
         
- function goToMenu(menu) {
-    const files = {
-        // MENU UTAMA
-        dashboard: 'dashboard.html',
-        'pi-input': 'pi-input.html',
-        'stock-in': 'stock-in.html',
-        'stock-out': 'stock-out.html',
-        'stock-report': 'stock-report.html',
-        'stok-pendukung': 'stok-pendukung.html',
-        'barcode-generator': 'barcode-generator.html',
-        'scan-barcode': 'scan-barcode.html',
-        
-        // MENU TRACKING MATERIAL (BARU)
-        'material-tracking': 'material-tracking.html',
-        'material-inbound': 'material-inbound.html',
-        'qc-inspection': 'qc-inspection.html',
-        'diecut-process': 'diecut-process.html',
-        'production-send': 'production-send.html',
-        'ng-report': 'ng-report.html',
-        
-        // MENU LAINNYA
-        executive: 'executive-report.html',
-        'manage-users': 'manage-users.html',
-        'log-aktivitas': 'log-aktivitas.html',
-        export: 'export-final3.html'
-    };
-    window.location.href = files[menu] || 'dashboard.html';
-}
+        function goToMenu(menu) {
+            const files = {
+                // MENU UTAMA
+                dashboard: 'dashboard.html',
+                'pi-input': 'pi-input.html',
+                'stock-in': 'stock-in.html',
+                'stock-out': 'stock-out.html',
+                'stock-report': 'stock-report.html',
+                'stok-pendukung': 'stok-pendukung.html',
+                'barcode-generator': 'barcode-generator.html',
+                'scan-barcode': 'scan-barcode.html',
+                
+                // MENU TRACKING MATERIAL (BARU)
+                'material-tracking': 'material-tracking.html',
+                'material-inbound': 'material-inbound.html',
+                'qc-inspection': 'qc-inspection.html',
+                'diecut-process': 'diecut-process.html',
+                'production-send': 'production-send.html',
+                'ng-report': 'ng-report.html',
+                
+                // MENU LAINNYA
+                executive: 'executive-report.html',
+                'manage-users': 'manage-users.html',
+                'log-aktivitas': 'log-aktivitas.html',
+                export: 'export-final3.html'
+            };
+            window.location.href = files[menu] || 'dashboard.html';
+        }
         
         function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
         function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
