@@ -143,7 +143,6 @@
         <p>Manajemen Inventory</p>
     </div>
     <div class="sidebar-menu">
-        <!-- MAIN MENU -->
         <div class="menu-item" data-menu="dashboard">
             <span class="icon">📊</span>
             <span class="text">Dashboard</span>
@@ -179,7 +178,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU TRACKING MATERIAL (BARU) -->
         <div class="menu-item" data-menu="material-tracking">
             <span class="icon">📊</span>
             <span class="text">Tracking Material</span>
@@ -207,7 +205,6 @@
 
         <div class="menu-divider"></div>
 
-        <!-- MENU LAINNYA -->
         <div class="menu-item" data-menu="executive">
             <span class="icon">📈</span>
             <span class="text">Laporan Eksekutif</span>
@@ -255,10 +252,10 @@
         <div class="modal-content">
             <h3 id="modalTitle">Tambah Material</h3>
             <input type="hidden" id="editId">
-            <label>Kode</label>
-            <input type="text" id="kode" placeholder="Contoh: FLT-001, BOX-01, DSP-01">
-            <label>Nama Material</label>
-            <input type="text" id="nama" placeholder="Contoh: Filter White" required>
+            <label>Brand</label>
+            <input type="text" id="brand" placeholder="Contoh: Toyota, Honda, Samsung" required>
+            <label>Jenis Material</label>
+            <input type="text" id="jenis" placeholder="Contoh: Filter, Box, Display" required>
             <label>Size</label>
             <input type="text" id="size" placeholder="Contoh: 10x10 cm / 1 roll">
             <label>Papers</label>
@@ -323,14 +320,13 @@
             const container = document.getElementById('mainContent');
             container.innerHTML = '<div style="text-align:center;padding:20px">Loading...</div>';
             
-            const { data, error } = await sb.from('stok_pendukung').select('*').order('kode');
+            const { data, error } = await sb.from('stok_pendukung').select('*').order('brand');
             if (error) {
                 container.innerHTML = '<div class="card">Error: ' + error.message + '</div>';
                 return;
             }
             allData = data || [];
             
-            // Buat HTML statis
             container.innerHTML = `
                 <div class="card">
                     <div class="card-title">
@@ -341,15 +337,15 @@
                         </div>
                     </div>
                     <div class="filter-bar">
-                        <input type="text" id="searchInput" placeholder="🔍 Cari kode, nama, size, papers, atau lokasi...">
+                        <input type="text" id="searchInput" placeholder="🔍 Cari brand, jenis, size, papers, atau lokasi...">
                         <button id="resetBtn">Reset</button>
                     </div>
                     <div class="table-wrapper">
                         <table style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Kode</th>
-                                    <th>Nama Material</th>
+                                    <th>Brand</th>
+                                    <th>Jenis Material</th>
                                     <th>Size</th>
                                     <th>Papers</th>
                                     <th>Stok</th>
@@ -388,8 +384,8 @@
             let filtered = [];
             for (let i = 0; i < allData.length; i++) {
                 const item = allData[i];
-                const match = (item.kode || '').toLowerCase().indexOf(searchText) !== -1 ||
-                              (item.nama || '').toLowerCase().indexOf(searchText) !== -1 ||
+                const match = (item.brand || '').toLowerCase().indexOf(searchText) !== -1 ||
+                              (item.jenis || '').toLowerCase().indexOf(searchText) !== -1 ||
                               (item.size || '').toLowerCase().indexOf(searchText) !== -1 ||
                               (item.papers || '').toLowerCase().indexOf(searchText) !== -1 ||
                               (item.lokasi || '').toLowerCase().indexOf(searchText) !== -1;
@@ -418,8 +414,8 @@
                     const minWarning = (item.stok <= item.stok_minimum && item.stok_minimum > 0) ? '<span class="stok-minimum-badge">⚠️ Menipis</span>' : '';
                     
                     rows += '<tr>' +
-                        '<td><b>' + (item.kode || '-') + '</b></td>' +
-                        '<td>' + (item.nama || '-') + ' ' + minWarning + '</td>' +
+                        '<td><b>' + (item.brand || '-') + '</b></td>' +
+                        '<td>' + (item.jenis || '-') + ' ' + minWarning + '</td>' +
                         '<td>' + (item.size || '-') + '</td>' +
                         '<td>' + (item.papers || '-') + '</td>' +
                         '<td class="' + stokRendah + '"><b>' + item.stok + '</b> ' + (item.stok <= item.stok_minimum && item.stok_minimum > 0 ? '⚠️' : '') + '</td>' +
@@ -473,10 +469,9 @@
             const item = allData.find(i => i.id === id);
             if (!item) return;
             
-            document.getElementById('historiTitle').innerText = '📜 Histori - ' + (item.nama || '-') + ' (' + (item.kode || '-') + ')';
+            document.getElementById('historiTitle').innerText = '📜 Histori - ' + (item.brand || '-') + ' - ' + (item.jenis || '-');
             document.getElementById('historiInfo').innerHTML = '<strong>Stok saat ini: ' + item.stok + '</strong>';
             
-            // Ambil histori dari database
             const { data: history } = await sb.from('histori_stok_pendukung').select('*').eq('stok_pendukung_id', id).order('created_at', { ascending: false });
             
             let rows = '';
@@ -502,11 +497,9 @@
         
         async function hapusHistori(historiId, stokId) {
             if (confirm('Yakin ingin menghapus histori ini? Stok akan kembali seperti sebelum transaksi.')) {
-                // Ambil data histori
                 const { data: histori } = await sb.from('histori_stok_pendukung').select('*').eq('id', historiId).single();
                 if (!histori) return;
                 
-                // Update stok (balikkan efek)
                 const { data: item } = await sb.from('stok_pendukung').select('stok').eq('id', stokId).single();
                 let newStok = item.stok;
                 if (histori.jenis === 'MASUK') {
@@ -530,10 +523,10 @@
         
         function exportExcel() {
             if (currentFilteredData.length === 0) { alert('Tidak ada data'); return; }
-            var wsData = [['Kode', 'Nama Material', 'Size', 'Papers', 'Stok', 'Stok Minimum', 'Lokasi Box']];
+            var wsData = [['Brand', 'Jenis Material', 'Size', 'Papers', 'Stok', 'Stok Minimum', 'Lokasi Box']];
             for (var i = 0; i < currentFilteredData.length; i++) {
                 var item = currentFilteredData[i];
-                wsData.push([item.kode || '-', item.nama || '-', item.size || '-', item.papers || '-', item.stok, item.stok_minimum || 0, item.lokasi || '-']);
+                wsData.push([item.brand || '-', item.jenis || '-', item.size || '-', item.papers || '-', item.stok, item.stok_minimum || 0, item.lokasi || '-']);
             }
             var ws = XLSX.utils.aoa_to_sheet(wsData);
             var wb = XLSX.utils.book_new();
@@ -546,8 +539,8 @@
         function showAddModal() {
             document.getElementById('modalTitle').innerText = 'Tambah Material';
             document.getElementById('editId').value = '';
-            document.getElementById('kode').value = '';
-            document.getElementById('nama').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('jenis').value = '';
             document.getElementById('size').value = '';
             document.getElementById('papers').value = '';
             document.getElementById('stok_awal').value = '0';
@@ -561,8 +554,8 @@
             if (!item) return;
             document.getElementById('modalTitle').innerText = 'Edit Material';
             document.getElementById('editId').value = item.id;
-            document.getElementById('kode').value = item.kode || '';
-            document.getElementById('nama').value = item.nama || '';
+            document.getElementById('brand').value = item.brand || '';
+            document.getElementById('jenis').value = item.jenis || '';
             document.getElementById('size').value = item.size || '';
             document.getElementById('papers').value = item.papers || '';
             document.getElementById('stok_awal').value = item.stok;
@@ -574,8 +567,8 @@
         async function simpanItem() {
             const id = document.getElementById('editId').value;
             const data = {
-                kode: document.getElementById('kode').value || null,
-                nama: document.getElementById('nama').value,
+                brand: document.getElementById('brand').value || null,
+                jenis: document.getElementById('jenis').value,
                 size: document.getElementById('size').value || null,
                 papers: document.getElementById('papers').value || null,
                 stok: parseInt(document.getElementById('stok_awal').value) || 0,
@@ -583,8 +576,8 @@
                 lokasi: document.getElementById('lokasi').value || null
             };
             
-            if (!data.nama) {
-                alert('Nama material wajib diisi!');
+            if (!data.jenis) {
+                alert('Jenis material wajib diisi!');
                 return;
             }
             
@@ -659,12 +652,10 @@
                 jenisHistori = 'KELUAR';
             }
             
-            // Update stok
             const { error } = await sb.from('stok_pendukung').update({ stok: newStok }).eq('id', id);
             if (error) {
                 alert('Gagal: ' + error.message);
             } else {
-                // Simpan ke histori
                 await sb.from('histori_stok_pendukung').insert([{
                     stok_pendukung_id: id,
                     jenis: jenisHistori,
@@ -681,7 +672,6 @@
         
         function goToMenu(menu) {
             const files = {
-                // MENU UTAMA
                 dashboard: 'dashboard.html',
                 'pi-input': 'pi-input.html',
                 'stock-in': 'stock-in.html',
@@ -690,16 +680,12 @@
                 'stok-pendukung': 'stok-pendukung.html',
                 'barcode-generator': 'barcode-generator.html',
                 'scan-barcode': 'scan-barcode.html',
-                
-                // MENU TRACKING MATERIAL (BARU)
                 'material-tracking': 'material-tracking.html',
                 'material-inbound': 'material-inbound.html',
                 'qc-inspection': 'qc-inspection.html',
                 'diecut-process': 'diecut-process.html',
                 'production-send': 'production-send.html',
                 'ng-report': 'ng-report.html',
-                
-                // MENU LAINNYA
                 executive: 'executive-report.html',
                 'manage-users': 'manage-users.html',
                 'log-aktivitas': 'log-aktivitas.html',
