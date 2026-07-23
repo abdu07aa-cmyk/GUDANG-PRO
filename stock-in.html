@@ -313,20 +313,20 @@
             
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             
-            // Cari stok pendukung yang cocok berdasarkan jenis/brand/size/papers
+            // Cari stok pendukung yang cocok berdasarkan BRAND dan JENIS
             let searchTerms = [];
-            if (item.jenis) searchTerms.push(item.jenis);
             if (item.brand) searchTerms.push(item.brand);
+            if (item.jenis) searchTerms.push(item.jenis);
             if (item.size) searchTerms.push(item.size);
-            if (item.paper) searchTerms.push(item.paper); // Tambahkan paper dari PI
+            if (item.paper) searchTerms.push(item.paper);
             
             let query = sb.from('stok_pendukung').select('*');
             let orConditions = [];
             for (const term of searchTerms) {
                 if (term && term.length > 2) {
-                    orConditions.push(`nama.ilike.%${term}%`);
-                    orConditions.push(`kode.ilike.%${term}%`);
-                    orConditions.push(`papers.ilike.%${term}%`); // Tambahkan pencarian di papers
+                    orConditions.push(`brand.ilike.%${term}%`);
+                    orConditions.push(`jenis.ilike.%${term}%`);
+                    orConditions.push(`papers.ilike.%${term}%`);
                 }
             }
             
@@ -344,10 +344,11 @@
                 let looseConditions = [];
                 for (const kw of keywords) {
                     if (kw.length > 2) {
-                        looseConditions.push(`nama.ilike.%${kw}%`);
-                        looseConditions.push(`papers.ilike.%${kw}%`);
+                        looseConditions.push(`jenis.ilike.%${kw}%`);
                     }
                 }
+                if (item.brand) looseConditions.push(`brand.ilike.%${item.brand}%`);
+                
                 if (looseConditions.length > 0) {
                     const { data } = await sb.from('stok_pendukung').select('*')
                         .or(looseConditions.join(','))
@@ -370,7 +371,7 @@
                     listHtml += `
                         <div class="stok-pendukung-item">
                             <div class="info">
-                                <strong>${sp.kode || '-'}</strong> - ${sp.nama}<br>
+                                <strong>${sp.brand || '-'}</strong> - ${sp.jenis || '-'}<br>
                                 <span style="font-size:11px;color:#64748b;">
                                     Size: ${sp.size || '-'} | Papers: ${sp.papers || '-'} | Stok: <b style="color:${statusColor};">${sp.stok}</b> | Min: ${sp.stok_minimum || 0}
                                     ${sp.lokasi ? ' | Box: ' + sp.lokasi : ''}
@@ -392,9 +393,10 @@
             }
             document.getElementById('stokPendukungList').innerHTML = listHtml;
             
-            // Cek stok pendukung info (summary) - tambahkan pencarian papers
+            // Cek stok pendukung info (summary) - berdasarkan brand dan jenis
             let stokHtml = '';
             let searchPatterns = [];
+            if (item.brand) searchPatterns.push(item.brand);
             if (item.jenis) searchPatterns.push(item.jenis);
             if (item.paper) searchPatterns.push(item.paper);
             
@@ -402,7 +404,7 @@
             for (const pattern of searchPatterns) {
                 if (pattern && pattern.length > 2) {
                     const { data } = await sb.from('stok_pendukung').select('*')
-                        .or(`nama.ilike.%${pattern}%,papers.ilike.%${pattern}%`);
+                        .or(`brand.ilike.%${pattern}%,jenis.ilike.%${pattern}%,papers.ilike.%${pattern}%`);
                     if (data && data.length > 0) {
                         stokInfo = stokInfo.concat(data);
                     }
@@ -425,7 +427,8 @@
                     stokHtml += `
                         <div class="stok-info"> 
                             <strong>📦 INFO STOK PENDUKUNG:</strong><br>
-                            Nama: ${sp.nama}<br>
+                            Brand: ${sp.brand || '-'}<br>
+                            Jenis: ${sp.jenis || '-'}<br>
                             Papers: ${sp.papers || '-'}<br>
                             Stok Tersedia: <b>${stokTersedia}</b><br>
                             Kebutuhan PI (${item.pi_header.no_pi}): <b>${kebutuhan}</b><br>
@@ -552,7 +555,7 @@
             }
         }
         
-        // FUNGSI BARU: Ambil dari Stok Pendukung
+        // FUNGSI: Ambil dari Stok Pendukung
         async function ambilDariStokPendukung(stokId, detailId) {
             const qtyInput = document.getElementById(`ambil_qty_${stokId}`);
             const qty = parseInt(qtyInput.value);
@@ -582,7 +585,7 @@
             }
             
             // Konfirmasi
-            const confirmMsg = `Ambil ${qty} dari stok pendukung "${stokItem.nama}" (Stok: ${stokItem.stok}) untuk item "${detailItem.brand} - ${detailItem.jenis}"?`;
+            const confirmMsg = `Ambil ${qty} dari stok pendukung "${stokItem.brand} - ${stokItem.jenis}" (Stok: ${stokItem.stok}) untuk item "${detailItem.brand} - ${detailItem.jenis}"?`;
             if (!confirm(confirmMsg)) return;
             
             const { data: { user } } = await sb.auth.getUser();
@@ -612,16 +615,16 @@
                     detail_id: parseInt(detailId),
                     tanggal: tanggal,
                     qty: qty,
-                    keterangan: `Ambil dari stok pendukung: ${stokItem.nama} (${stokItem.kode || '-'}) ${stokItem.papers ? 'Papers: ' + stokItem.papers : ''}`,
+                    keterangan: `Ambil dari stok pendukung: ${stokItem.brand} - ${stokItem.jenis} ${stokItem.papers ? '| Papers: ' + stokItem.papers : ''}`,
                     created_by: user.email
                 }]);
                 
                 if (masukError) throw new Error('Gagal mencatat barang masuk: ' + masukError.message);
                 
                 // 4. Log aktivitas
-                await addLog('AMBIL STOK PENDUKUNG', `${user.email} mengambil ${qty} dari ${stokItem.nama} untuk ${itemInfo}`);
+                await addLog('AMBIL STOK PENDUKUNG', `${user.email} mengambil ${qty} dari ${stokItem.brand} - ${stokItem.jenis} untuk ${itemInfo}`);
                 
-                alert(`✅ Berhasil mengambil ${qty} dari stok pendukung!\nStok ${stokItem.nama} sekarang: ${newStok}`);
+                alert(`✅ Berhasil mengambil ${qty} dari stok pendukung!\nStok ${stokItem.brand} - ${stokItem.jenis} sekarang: ${newStok}`);
                 
                 // Refresh data
                 await onItemChange();
