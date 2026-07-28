@@ -165,7 +165,7 @@
             <span class="icon">📝</span>
             <span class="text">Input PI</span>
         </div>
-        <div class="menu-item" data-menu="stock-in">
+        <div class="menu-item active" data-menu="stock-in">
             <span class="icon">📥</span>
             <span class="text">Barang Masuk</span>
         </div>
@@ -313,55 +313,30 @@
             
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             
-            // Cari stok pendukung yang cocok berdasarkan BRAND dan JENIS
-            let searchTerms = [];
-            if (item.brand) searchTerms.push(item.brand);
-            if (item.jenis) searchTerms.push(item.jenis);
-            if (item.size) searchTerms.push(item.size);
-            if (item.paper) searchTerms.push(item.paper);
-            
-            let query = sb.from('stok_pendukung').select('*');
-            let orConditions = [];
-            for (const term of searchTerms) {
-                if (term && term.length > 2) {
-                    orConditions.push(`brand.ilike.%${term}%`);
-                    orConditions.push(`jenis.ilike.%${term}%`);
-                    orConditions.push(`papers.ilike.%${term}%`);
-                }
-            }
-            
+            // ===== LOGIKA: COCOKKAN BRAND DAN JENIS SAMA PERSIS =====
             let stokPendukung = [];
-            if (orConditions.length > 0) {
-                const { data } = await sb.from('stok_pendukung').select('*')
-                    .or(orConditions.join(','))
-                    .order('stok', { ascending: false });
-                stokPendukung = data || [];
-            }
             
-            // Jika tidak ada hasil, coba cari berdasarkan kata kunci yang lebih longgar
-            if (stokPendukung.length === 0 && item.jenis) {
-                const keywords = item.jenis.split(' ');
-                let looseConditions = [];
-                for (const kw of keywords) {
-                    if (kw.length > 2) {
-                        looseConditions.push(`jenis.ilike.%${kw}%`);
-                    }
-                }
-                if (item.brand) looseConditions.push(`brand.ilike.%${item.brand}%`);
+            if (item.brand && item.jenis) {
+                const { data } = await sb.from('stok_pendukung')
+                    .select('*')
+                    .eq('brand', item.brand)
+                    .eq('jenis', item.jenis)
+                    .order('stok', { ascending: false });
                 
-                if (looseConditions.length > 0) {
-                    const { data } = await sb.from('stok_pendukung').select('*')
-                        .or(looseConditions.join(','))
-                        .order('stok', { ascending: false });
-                    if (data && data.length > 0) stokPendukung = data;
-                }
+                stokPendukung = data || [];
             }
             
             // Tampilkan daftar stok pendukung yang cocok
             let listHtml = '';
             if (stokPendukung.length > 0) {
                 listHtml = `<div class="card" style="background:#f0fdf4;border:2px solid #86efac;">
-                    <div class="card-title" style="font-size:14px;">📦 STOK PENDUKUNG YANG COCOK</div>`;
+                    <div class="card-title" style="font-size:14px;">
+                        📦 STOK PENDUKUNG TERSEDIA
+                        <span style="font-size:12px;color:#64748b;font-weight:normal;">
+                            ${item.brand} - ${item.jenis}
+                        </span>
+                    </div>`;
+                
                 for (const sp of stokPendukung) {
                     const kebutuhan = item.qty_pi;
                     const stokTersedia = sp.stok;
@@ -387,61 +362,44 @@
                 }
                 listHtml += `</div>`;
             } else {
-                listHtml = `<div class="stok-info" style="background:#fef3c7;color:#92400e;">
-                    ℹ️ Tidak ada stok pendukung yang cocok dengan item ini
-                </div>`;
+                listHtml = `
+                    <div class="stok-info" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b;">
+                        ⚠️ TIDAK ADA STOK PENDUKUNG UNTUK:<br>
+                        <strong>Brand: ${item.brand || '-'}</strong><br>
+                        <strong>Jenis: ${item.jenis || '-'}</strong>
+                    </div>
+                `;
             }
             document.getElementById('stokPendukungList').innerHTML = listHtml;
             
-            // Cek stok pendukung info (summary) - berdasarkan brand dan jenis
+            // ===== INFO STOK PENDUKUNG (SUMMARY) =====
             let stokHtml = '';
-            let searchPatterns = [];
-            if (item.brand) searchPatterns.push(item.brand);
-            if (item.jenis) searchPatterns.push(item.jenis);
-            if (item.paper) searchPatterns.push(item.paper);
-            
-            let stokInfo = [];
-            for (const pattern of searchPatterns) {
-                if (pattern && pattern.length > 2) {
-                    const { data } = await sb.from('stok_pendukung').select('*')
-                        .or(`brand.ilike.%${pattern}%,jenis.ilike.%${pattern}%,papers.ilike.%${pattern}%`);
-                    if (data && data.length > 0) {
-                        stokInfo = stokInfo.concat(data);
-                    }
+            if (stokPendukung.length > 0) {
+                let totalStok = 0;
+                for (const sp of stokPendukung) {
+                    totalStok += sp.stok;
                 }
-            }
-            
-            // Remove duplicates
-            stokInfo = stokInfo.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            
-            if (stokInfo && stokInfo.length > 0) {
-                for (const sp of stokInfo) {
-                    const kebutuhan = item.qty_pi;
-                    const stokTersedia = sp.stok;
-                    let warning = '';
-                    if (stokTersedia < kebutuhan) {
-                        warning = ' <span style="color:#ef4444; font-weight:bold">⚠️ STOK KURANG!</span>';
-                    } else {
-                        warning = ' <span style="color:#10b981">✅ Stok mencukupi</span>';
-                    }
-                    stokHtml += `
-                        <div class="stok-info"> 
-                            <strong>📦 INFO STOK PENDUKUNG:</strong><br>
-                            Brand: ${sp.brand || '-'}<br>
-                            Jenis: ${sp.jenis || '-'}<br>
-                            Papers: ${sp.papers || '-'}<br>
-                            Stok Tersedia: <b>${stokTersedia}</b><br>
-                            Kebutuhan PI (${item.pi_header.no_pi}): <b>${kebutuhan}</b><br>
-                            ${warning}
-                        </div>
-                    `;
-                }
+                
+                stokHtml = `
+                    <div class="stok-info" style="background:#d1fae5;border:1px solid #10b981;">
+                        <strong>✅ STOK TERSEDIA:</strong><br>
+                        Brand: ${item.brand}<br>
+                        Jenis: ${item.jenis}<br>
+                        Total Stok: <b style="color:#10b981;font-size:16px;">${totalStok}</b><br>
+                        Kebutuhan PI: ${item.qty_pi}
+                        ${totalStok >= item.qty_pi ? ' ✅ <span style="color:#10b981;">Stok mencukupi</span>' : ' ⚠️ <span style="color:#ef4444;">Stok kurang!</span>'}
+                    </div>
+                `;
             } else {
-                stokHtml = '<div class="info-text">ℹ️ Tidak ada stok pendukung yang cocok</div>';
+                stokHtml = `
+                    <div class="stok-info" style="background:#fef3c7;border:1px solid #f59e0b;">
+                        ⚠️ Stok pendukung untuk <strong>${item.brand} - ${item.jenis}</strong> tidak tersedia.
+                    </div>
+                `;
             }
             document.getElementById('stokPendukungInfo').innerHTML = stokHtml;
             
-            // Refresh histori dengan filter tanggal
+            // Refresh histori
             filterHistory(itemId);
         }
         
@@ -503,7 +461,7 @@
         }
         
         async function hapusHistory(id, itemId) {
-            if (confirm('Yakin ingin menghapus histori ini? Stok akan berkurang kembali.')) {
+            if (confirm('Yakin ingin menghapus histori ini?')) {
                 const { error } = await sb.from('barang_masuk').delete().eq('id', id);
                 if (error) {
                     alert('Gagal menghapus: ' + error.message);
@@ -565,7 +523,6 @@
                 return;
             }
             
-            // Ambil data stok pendukung
             const { data: stokItem } = await sb.from('stok_pendukung').select('*').eq('id', stokId).single();
             if (!stokItem) {
                 alert('Stok pendukung tidak ditemukan!');
@@ -577,14 +534,12 @@
                 return;
             }
             
-            // Ambil data PI detail
             const { data: detailItem } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(detailId)).single();
             if (!detailItem) {
                 alert('Item PI tidak ditemukan!');
                 return;
             }
             
-            // Konfirmasi
             const confirmMsg = `Ambil ${qty} dari stok pendukung "${stokItem.brand} - ${stokItem.jenis}" (Stok: ${stokItem.stok}) untuk item "${detailItem.brand} - ${detailItem.jenis}"?`;
             if (!confirm(confirmMsg)) return;
             
@@ -626,7 +581,6 @@
                 
                 alert(`✅ Berhasil mengambil ${qty} dari stok pendukung!\nStok ${stokItem.brand} - ${stokItem.jenis} sekarang: ${newStok}`);
                 
-                // Refresh data
                 await onItemChange();
                 
             } catch (error) {
