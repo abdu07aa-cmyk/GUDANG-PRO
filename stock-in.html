@@ -94,6 +94,8 @@
         .btn-export { background: #10b981; }
         .btn-ambil { background: #8b5cf6; width: auto; padding: 5px 12px; margin: 2px; font-size: 12px; }
         .btn-ambil:hover { background: #7c3aed; }
+        .badge-general { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 5px; }
+        .badge-habis { background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 5px; }
         
         .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
         .alert-success { background: #d1fae5; color: #065f46; }
@@ -313,27 +315,50 @@
             
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             
-            // ===== LOGIKA: COCOKKAN BRAND DAN JENIS SAMA PERSIS =====
+            // ===== LOGIKA PENCARIAN STOK =====
             let stokPendukung = [];
+            let isGeneralStock = false;
             
+            // STEP 1: Cari yang SAMA PERSIS (Brand + Jenis) dengan stok > 0
             if (item.brand && item.jenis) {
-                const { data } = await sb.from('stok_pendukung')
+                const { data: exactMatch } = await sb.from('stok_pendukung')
                     .select('*')
                     .eq('brand', item.brand)
                     .eq('jenis', item.jenis)
+                    .gt('stok', 0)  // Hanya stok > 0
                     .order('stok', { ascending: false });
                 
-                stokPendukung = data || [];
+                if (exactMatch && exactMatch.length > 0) {
+                    stokPendukung = exactMatch;
+                }
             }
             
-            // Tampilkan daftar stok pendukung yang cocok
+            // STEP 2: Jika tidak ada yang sama persis, cari GENERAL STOCK
+            if (stokPendukung.length === 0 && item.jenis) {
+                const { data: generalStock } = await sb.from('stok_pendukung')
+                    .select('*')
+                    .eq('brand', 'GENERAL')
+                    .eq('jenis', item.jenis)
+                    .gt('stok', 0)  // Hanya stok > 0
+                    .order('stok', { ascending: false });
+                
+                if (generalStock && generalStock.length > 0) {
+                    stokPendukung = generalStock;
+                    isGeneralStock = true;
+                }
+            }
+            
+            // Tampilkan daftar stok pendukung
             let listHtml = '';
             if (stokPendukung.length > 0) {
+                const titleText = isGeneralStock ? '🟡 STOK UMUM (GENERAL)' : '📦 STOK PENDUKUNG TERSEDIA';
+                
                 listHtml = `<div class="card" style="background:#f0fdf4;border:2px solid #86efac;">
                     <div class="card-title" style="font-size:14px;">
-                        📦 STOK PENDUKUNG TERSEDIA
+                        ${titleText}
                         <span style="font-size:12px;color:#64748b;font-weight:normal;">
-                            ${item.brand} - ${item.jenis}
+                            ${item.brand || '-'} - ${item.jenis}
+                            ${isGeneralStock ? ' <span class="badge-general">GENERAL</span>' : ''}
                         </span>
                     </div>`;
                 
@@ -342,11 +367,14 @@
                     const stokTersedia = sp.stok;
                     let status = stokTersedia >= kebutuhan ? '✅ Cukup' : '⚠️ Kurang';
                     let statusColor = stokTersedia >= kebutuhan ? '#10b981' : '#ef4444';
+                    const isGeneral = sp.brand === 'GENERAL';
                     
                     listHtml += `
                         <div class="stok-pendukung-item">
                             <div class="info">
-                                <strong>${sp.brand || '-'}</strong> - ${sp.jenis || '-'}<br>
+                                <strong>${sp.brand || '-'}</strong> - ${sp.jenis || '-'}
+                                ${isGeneral ? ' <span class="badge-general">GENERAL</span>' : ''}
+                                <br>
                                 <span style="font-size:11px;color:#64748b;">
                                     Size: ${sp.size || '-'} | Papers: ${sp.papers || '-'} | Stok: <b style="color:${statusColor};">${sp.stok}</b> | Min: ${sp.stok_minimum || 0}
                                     ${sp.lokasi ? ' | Box: ' + sp.lokasi : ''}
@@ -367,6 +395,8 @@
                         ⚠️ TIDAK ADA STOK PENDUKUNG UNTUK:<br>
                         <strong>Brand: ${item.brand || '-'}</strong><br>
                         <strong>Jenis: ${item.jenis || '-'}</strong>
+                        <br><br>
+                        <span style="font-size:11px;">💡 Tips: Pastikan stok tersedia di tabel Stok Pendukung</span>
                     </div>
                 `;
             }
@@ -383,7 +413,9 @@
                 stokHtml = `
                     <div class="stok-info" style="background:#d1fae5;border:1px solid #10b981;">
                         <strong>✅ STOK TERSEDIA:</strong><br>
-                        Brand: ${item.brand}<br>
+                        ${isGeneralStock ? '🟡 Stok Umum (GENERAL)' : '📌 Stok Khusus Brand'}
+                        ${!isGeneralStock ? 'Brand: ' + item.brand : ''}
+                        <br>
                         Jenis: ${item.jenis}<br>
                         Total Stok: <b style="color:#10b981;font-size:16px;">${totalStok}</b><br>
                         Kebutuhan PI: ${item.qty_pi}
@@ -394,6 +426,7 @@
                 stokHtml = `
                     <div class="stok-info" style="background:#fef3c7;border:1px solid #f59e0b;">
                         ⚠️ Stok pendukung untuk <strong>${item.brand} - ${item.jenis}</strong> tidak tersedia.
+                        <br><span style="font-size:11px;">Cek ketersediaan di tabel Stok Pendukung.</span>
                     </div>
                 `;
             }
@@ -540,7 +573,8 @@
                 return;
             }
             
-            const confirmMsg = `Ambil ${qty} dari stok pendukung "${stokItem.brand} - ${stokItem.jenis}" (Stok: ${stokItem.stok}) untuk item "${detailItem.brand} - ${detailItem.jenis}"?`;
+            const brandDisplay = stokItem.brand || 'GENERAL';
+            const confirmMsg = `Ambil ${qty} dari stok pendukung "${brandDisplay} - ${stokItem.jenis}" (Stok: ${stokItem.stok}) untuk item "${detailItem.brand} - ${detailItem.jenis}"?`;
             if (!confirm(confirmMsg)) return;
             
             const { data: { user } } = await sb.auth.getUser();
@@ -566,20 +600,21 @@
                 
                 // 3. Catat ke barang masuk
                 const itemInfo = `${detailItem.pi_header.no_pi} - ${detailItem.brand} - ${detailItem.jenis}`;
+                const brandDisplay2 = stokItem.brand || 'GENERAL';
                 const { error: masukError } = await sb.from('barang_masuk').insert([{
                     detail_id: parseInt(detailId),
                     tanggal: tanggal,
                     qty: qty,
-                    keterangan: `Ambil dari stok pendukung: ${stokItem.brand} - ${stokItem.jenis} ${stokItem.papers ? '| Papers: ' + stokItem.papers : ''}`,
+                    keterangan: `Ambil dari stok pendukung: ${brandDisplay2} - ${stokItem.jenis} ${stokItem.papers ? '| Papers: ' + stokItem.papers : ''}`,
                     created_by: user.email
                 }]);
                 
                 if (masukError) throw new Error('Gagal mencatat barang masuk: ' + masukError.message);
                 
                 // 4. Log aktivitas
-                await addLog('AMBIL STOK PENDUKUNG', `${user.email} mengambil ${qty} dari ${stokItem.brand} - ${stokItem.jenis} untuk ${itemInfo}`);
+                await addLog('AMBIL STOK PENDUKUNG', `${user.email} mengambil ${qty} dari ${brandDisplay2} - ${stokItem.jenis} untuk ${itemInfo}`);
                 
-                alert(`✅ Berhasil mengambil ${qty} dari stok pendukung!\nStok ${stokItem.brand} - ${stokItem.jenis} sekarang: ${newStok}`);
+                alert(`✅ Berhasil mengambil ${qty} dari stok pendukung!\nStok ${brandDisplay2} - ${stokItem.jenis} sekarang: ${newStok}`);
                 
                 await onItemChange();
                 
