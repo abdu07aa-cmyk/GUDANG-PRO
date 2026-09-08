@@ -391,7 +391,7 @@
         const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
         document.getElementById('edit_no_pi').value = header.no_pi;
         document.getElementById('edit_tanggal_pi').value = header.tanggal;
-        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId);
+        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId).order('id', { ascending: true });
         itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
         renderItemForm();
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
