@@ -644,7 +644,11 @@
             if (stokMenipis.length > 0) {
                 warningHtml = '<div class="warning-card"><strong>⚠️ PERINGATAN STOK MENIPIS</strong><div style="margin-top:8px">';
                 for (const item of stokMenipis) {
-                    warningHtml += '<div class="warning-item">📦 <b>' + (item.nama || '-') + '</b> (Kode: ' + (item.kode || '-') + ')<br>' +
+                    const namaTampil = (item.brand && item.brand !== 'GENERAL')
+                        ? (item.brand + ' - ' + (item.jenis || '-'))
+                        : ('🟡 GENERAL - ' + (item.jenis || '-'));
+                    warningHtml += '<div class="warning-item">📦 <b>' + namaTampil + '</b><br>' +
+                        'Size: ' + (item.size || '-') + ' | Papers: ' + (item.papers || '-') + (item.lokasi ? ' | Box: ' + item.lokasi : '') + '<br>' +
                         'Stok: <b>' + item.stok + '</b> | Minimum: ' + (item.stok_minimum || 0) + '</div>';
                 }
                 warningHtml += '</div></div>';
