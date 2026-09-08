@@ -293,7 +293,7 @@
                 return;
             }
             
-            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId));
+            const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId)).order('id', { ascending: true });
             
             let options = '<option value="">-- Pilih Item --</option>';
             for (const item of details) {
