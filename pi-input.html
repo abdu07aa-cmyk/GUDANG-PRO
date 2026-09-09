@@ -372,7 +372,8 @@
         let options = '<option value="">-- Pilih PI yang akan diedit --</option>';
         if (headers) {
             for (const h of headers) {
-                options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`;
+                const label = h.is_archived ? `📦 [ARSIP] ${h.no_pi} - ${h.tanggal}` : `${h.no_pi} - ${h.tanggal}`;
+                options += `<option value="${h.id}">${label}</option>`;
             }
         }
         document.getElementById('edit_pi_select').innerHTML = options;
@@ -385,16 +386,49 @@
             document.getElementById('edit_tanggal_pi').value = '';
             document.getElementById('itemContainerEdit').innerHTML = '';
             document.getElementById('msgInput').innerHTML = '';
+            const btnArsipReset = document.getElementById('btnArsip');
+            if (btnArsipReset) btnArsipReset.textContent = '📦 Arsipkan PI';
             return;
         }
         editingPiId = piId;
         const { data: header } = await sb.from('pi_header').select('*').eq('id', piId).single();
         document.getElementById('edit_no_pi').value = header.no_pi;
         document.getElementById('edit_tanggal_pi').value = header.tanggal;
+        const btnArsip = document.getElementById('btnArsip');
+        if (btnArsip) {
+            btnArsip.textContent = header.is_archived ? '📤 Buka dari Arsip' : '📦 Arsipkan PI';
+        }
         const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId).order('id', { ascending: true });
         itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
         renderItemForm();
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
+    }
+    
+    async function toggleArsipPi() {
+        const piId = document.getElementById('edit_pi_select').value;
+        if (!piId) { showToast('❌ Pilih PI terlebih dahulu!', 'error'); return; }
+        
+        const { data: header } = await sb.from('pi_header').select('no_pi, is_archived').eq('id', piId).single();
+        if (!header) { showToast('❌ PI tidak ditemukan!', 'error'); return; }
+        
+        const newState = !header.is_archived;
+        const actionText = newState ? 'diarsipkan' : 'dibuka dari arsip';
+        const confirmText = newState
+            ? `Arsipkan PI "${header.no_pi}"?\n\nPI ini akan disembunyikan dari tampilan utama Dashboard, tapi datanya TIDAK dihapus dan bisa dibuka lagi kapan saja.`
+            : `Buka PI "${header.no_pi}" dari arsip?\n\nPI ini akan muncul kembali di tampilan utama Dashboard.`;
+        
+        if (!confirm(confirmText)) return;
+        
+        const { error } = await sb.from('pi_header').update({ is_archived: newState }).eq('id', piId);
+        if (error) {
+            showToast('❌ Gagal: ' + error.message, 'error');
+            return;
+        }
+        
+        showToast(`✅ PI berhasil ${actionText}!`, 'success');
+        await loadPiList();
+        document.getElementById('edit_pi_select').value = piId;
+        await onSelectPiForEdit();
     }
     
     async function simpanPiBaru() {
@@ -603,6 +637,7 @@
                     <input type="date" id="edit_tanggal_pi">
                     <div id="itemContainerEdit"></div>
                     <button onclick="updatePi()" style="background:#f59e0b">✏️ Update PI</button>
+                    <button onclick="toggleArsipPi()" style="background:#64748b; margin-top:10px" id="btnArsip">📦 Arsipkan PI</button>
                     <button onclick="hapusPi()" style="background:#dc2626; margin-top:10px">🗑️ Hapus PI</button>
                 </div>
             </div>
@@ -725,6 +760,7 @@
     window.simpanPiBaru = simpanPiBaru;
     window.updatePi = updatePi;
     window.hapusPi = hapusPi;
+    window.toggleArsipPi = toggleArsipPi;
     window.switchMode = switchMode;
     window.onSelectPiForEdit = onSelectPiForEdit;
     window.renderItemForm = renderItemForm;
