@@ -247,7 +247,7 @@
         let currentItemId = null;
         
         async function loadPiList() {
-            const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
+            const { data: headers } = await sb.from('pi_header').select('*').eq('is_archived', false).order('created_at', { ascending: false });
             let options = '<option value="">-- Pilih No PI --</option>';
             if (headers) {
                 for (const h of headers) {
