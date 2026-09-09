@@ -627,7 +627,8 @@
                     keluar: totalKeluar,
                     stok: totalMasuk - totalKeluar,
                     status: status,
-                    statusClass: statusClass
+                    statusClass: statusClass,
+                    archived: header?.is_archived || false
                 });
             }
             
@@ -670,8 +671,13 @@
                             <option value="proses">🔄 Proses</option>
                             <option value="belum">❌ Belum</option>
                         </select>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#64748b;white-space:nowrap;background:#f8fafc;padding:8px 14px;border-radius:10px;border:1px solid #e2e8f0;cursor:pointer;">
+                            <input type="checkbox" id="showArchived" onchange="filterData()" style="width:auto;margin:0;cursor:pointer;">
+                            📦 Tampilkan PI Arsip
+                        </label>
                         <button onclick="resetFilter()">Reset</button>
                     </div>
+                    <div id="archiveInfo" style="font-size:12px;color:#94a3b8;margin-bottom:10px;"></div>
                     <div class="table-wrapper">
                         <table style="width:100%">
                             <thead>
@@ -697,8 +703,15 @@
         function filterData() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
+            const showArchived = document.getElementById('showArchived').checked;
             
             let filtered = [...allData];
+            
+            const totalArsip = allData.filter(item => item.archived).length;
+            
+            if (!showArchived) {
+                filtered = filtered.filter(item => !item.archived);
+            }
             
             if (search) {
                 filtered = filtered.filter(item => 
@@ -716,8 +729,10 @@
             
             let rows = '';
             for (const item of filtered) {
-                rows += '<tr>' +
-                    '<td><b>' + item.no_pi + '</b></td>' +
+                const arsipBadge = item.archived ? ' <span style="font-size:10px;background:#e2e8f0;color:#64748b;padding:2px 8px;border-radius:10px;margin-left:4px;">📦 ARSIP</span>' : '';
+                const rowStyle = item.archived ? ' style="opacity:0.65;"' : '';
+                rows += '<tr' + rowStyle + '>' +
+                    '<td><b>' + item.no_pi + '</b>' + arsipBadge + '</td>' +
                     '<td>' + item.brand + '</td>' +
                     '<td>' + item.jenis + '</td>' +
                     '<td>' + item.paper + '</td>' +
@@ -735,19 +750,35 @@
             }
             
             document.getElementById('tableBody').innerHTML = rows;
+            
+            const archiveInfoEl = document.getElementById('archiveInfo');
+            if (archiveInfoEl) {
+                if (totalArsip > 0) {
+                    archiveInfoEl.textContent = showArchived
+                        ? `📦 Menampilkan termasuk ${totalArsip} PI yang diarsipkan`
+                        : `📦 ${totalArsip} PI sudah diarsipkan dan disembunyikan dari tampilan ini (centang "Tampilkan PI Arsip" untuk melihat)`;
+                } else {
+                    archiveInfoEl.textContent = '';
+                }
+            }
         }
         
         function resetFilter() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterStatus').value = 'all';
+            document.getElementById('showArchived').checked = false;
             filterData();
         }
         
         function exportExcel() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
+            const showArchived = document.getElementById('showArchived').checked;
             
             let filtered = [...allData];
+            if (!showArchived) {
+                filtered = filtered.filter(item => !item.archived);
+            }
             if (search) {
                 filtered = filtered.filter(item => 
                     item.no_pi.toLowerCase().includes(search) ||
