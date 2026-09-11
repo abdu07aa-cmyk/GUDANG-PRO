@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Dashboard - SUPPLY MATERIAL</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -594,7 +590,7 @@
             container.innerHTML = '<div style="text-align:center;padding:20px">Loading...</div>';
             
             const { data: headers } = await sb.from('pi_header').select('*').order('created_at', { ascending: false });
-            const { data: details } = await sb.from('pi_detail').select('*');
+            const { data: details } = await sb.from('pi_detail').select('*').order('pi_id', { ascending: false }).order('id', { ascending: true });
             const { data: masuk } = await sb.from('barang_masuk').select('*');
             const { data: keluar } = await sb.from('barang_keluar').select('*');
             
