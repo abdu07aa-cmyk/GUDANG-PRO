@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Input PI - SUPPLY MATERIAL</title>
     <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
@@ -298,7 +298,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-    let itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+    let itemList = [{ id: null, brand: '', jenis: '', paper: '', size: '', qty: '' }];
     let brandList = [], jenisList = [], paperList = [], sizeList = [];
     let mode = 'new';
     let editingPiId = null;
@@ -354,7 +354,7 @@
     }
     
     function tambahItem() {
-        itemList.push({ brand: '', jenis: '', paper: '', size: '', qty: '' });
+        itemList.push({ id: null, brand: '', jenis: '', paper: '', size: '', qty: '' });
         renderItemForm();
     }
     
@@ -403,7 +403,7 @@
             btnArsip.textContent = header.is_archived ? '📤 Buka dari Arsip' : '📦 Arsipkan PI';
         }
         const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', piId).order('id', { ascending: true });
-        itemList = details.map(d => ({ brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
+        itemList = details.map(d => ({ id: d.id, brand: d.brand, jenis: d.jenis, paper: d.paper || '', size: d.size || '', qty: d.qty_pi }));
         renderItemForm();
         document.getElementById('msgInput').innerHTML = '<div class="alert alert-success">✅ Data PI dimuat, silakan edit</div>';
     }
@@ -485,23 +485,32 @@
             showToast('❌ ' + headerError.message, 'error');
             return;
         }
-        const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId);
-        for (let i = 0; i < validItems.length; i++) {
-            const item = validItems[i];
-            if (existingDetails && existingDetails[i]) {
-                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', existingDetails[i].id);
+        const { data: existingDetails } = await sb.from('pi_detail').select('*').eq('pi_id', editingPiId).order('id', { ascending: true });
+        
+        // ✅ COCOKKAN BERDASARKAN ID ASLI, BUKAN URUTAN/POSISI
+        // Ini mencegah data "tertukar" ke item lain saat urutan berubah
+        for (const item of validItems) {
+            if (item.id) {
+                // Item lama: update HANYA baris dengan id ini, apapun urutannya
+                await sb.from('pi_detail').update({ brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) }).eq('id', item.id);
             } else {
+                // Item baru (ditambahkan saat edit): insert baris baru
                 await sb.from('pi_detail').insert({ pi_id: editingPiId, brand: item.brand, jenis: item.jenis, paper: item.paper || null, size: item.size || null, qty_pi: parseInt(item.qty) });
             }
         }
-        if (existingDetails && existingDetails.length > validItems.length) {
-            for (let i = validItems.length; i < existingDetails.length; i++) {
-                const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-                const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', existingDetails[i].id).limit(1);
-                if (masuk.length === 0 && keluar.length === 0) {
-                    await sb.from('pi_detail').delete().eq('id', existingDetails[i].id);
-                } else {
-                    showToast(`⚠️ Item "${existingDetails[i].brand} - ${existingDetails[i].jenis}" tidak bisa dihapus (ada transaksi)`, 'warning');
+        
+        // ✅ HAPUS item lama yang sudah tidak ada di form (dicocokkan by ID, bukan posisi)
+        const keptIds = new Set(validItems.filter(item => item.id).map(item => item.id));
+        if (existingDetails) {
+            for (const detail of existingDetails) {
+                if (!keptIds.has(detail.id)) {
+                    const { data: masuk } = await sb.from('barang_masuk').select('id').eq('detail_id', detail.id).limit(1);
+                    const { data: keluar } = await sb.from('barang_keluar').select('id').eq('detail_id', detail.id).limit(1);
+                    if ((!masuk || masuk.length === 0) && (!keluar || keluar.length === 0)) {
+                        await sb.from('pi_detail').delete().eq('id', detail.id);
+                    } else {
+                        showToast(`⚠️ Item "${detail.brand} - ${detail.jenis}" tidak bisa dihapus (ada transaksi)`, 'warning');
+                    }
                 }
             }
         }
@@ -579,7 +588,7 @@
         document.getElementById('msgInputEdit').innerHTML = '<div class="alert alert-success">✅ PI berhasil dihapus! Daftar sudah diperbarui.</div>';
 
         await loadPiList();
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        itemList = [{ id: null, brand: '', jenis: '', paper: '', size: '', qty: '' }];
         await switchMode('new');
         window.location.reload();
         
@@ -590,7 +599,7 @@
 }
     
     function resetForm() {
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        itemList = [{ id: null, brand: '', jenis: '', paper: '', size: '', qty: '' }];
         document.getElementById('no_pi').value = '';
         renderItemForm();
     }
@@ -612,7 +621,7 @@
         document.getElementById('msgInputEdit').innerHTML = '';
         document.getElementById('msgInput').innerHTML = '';
         await loadPiList();
-        itemList = [{ brand: '', jenis: '', paper: '', size: '', qty: '' }];
+        itemList = [{ id: null, brand: '', jenis: '', paper: '', size: '', qty: '' }];
         renderItemForm();
     }
 }
