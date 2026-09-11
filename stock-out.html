@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Barang Keluar - SUPPLY MATERIAL</title>
     <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
@@ -279,6 +279,7 @@
             if (!piId) {
                 itemSelect.innerHTML = '<option value="">-- Pilih PI dulu --</option>';
                 document.getElementById('historyList').innerHTML = '<div class="info-text">Pilih PI dan item untuk melihat histori</div>';
+                document.getElementById('itemInfo').innerHTML = '';
                 document.getElementById('stokInfo').innerHTML = '';
                 return;
             }
@@ -294,7 +295,7 @@
                 if (keluar) keluar.forEach(k => totalKeluar += k.qty);
                 const stok = totalMasuk - totalKeluar;
                 
-                options += `<option value="${item.id}" data-stok="${stok}">
+                options += `<option value="${item.id}" data-stok="${stok}" data-qtypi="${item.qty_pi}" data-totalkeluar="${totalKeluar}" data-brand="${item.brand || '-'}" data-jenis="${item.jenis || '-'}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}">
                     ${item.brand} | ${item.jenis} | Paper:${item.paper || '-'} | Size:${item.size || '-'} | Qty PI: ${item.qty_pi} | Stok: ${stok}
                 </option>`;
             }
@@ -307,10 +308,50 @@
             const stok = parseInt(selected?.getAttribute('data-stok') || 0);
             currentStok = stok;
             currentItemId = select.value;
-            document.getElementById('stokInfo').innerHTML = `<div class="stok-info">📊 Stok tersedia: ${stok}</div>`;
             
             const itemId = select.value;
-            if (!itemId) return;
+            
+            if (!itemId) {
+                document.getElementById('itemInfo').innerHTML = '';
+                document.getElementById('stokInfo').innerHTML = '';
+                return;
+            }
+            
+            // ===== INFO ITEM & STATUS KECUKUPAN QTY PI =====
+            const qtyPi = parseInt(selected.getAttribute('data-qtypi') || 0);
+            const totalKeluar = parseInt(selected.getAttribute('data-totalkeluar') || 0);
+            const brand = selected.getAttribute('data-brand') || '-';
+            const jenis = selected.getAttribute('data-jenis') || '-';
+            const paper = selected.getAttribute('data-paper') || '-';
+            const size = selected.getAttribute('data-size') || '-';
+            
+            let statusText = '', statusBg = '', statusColor = '';
+            if (totalKeluar >= qtyPi) {
+                statusText = '✅ SELESAI - Sudah Cukup';
+                statusBg = '#d1fae5'; statusColor = '#065f46';
+            } else if (totalKeluar > 0) {
+                statusText = `🔄 PROSES - Kurang ${qtyPi - totalKeluar}`;
+                statusBg = '#fef3c7'; statusColor = '#92400e';
+            } else {
+                statusText = '❌ BELUM ADA YANG KELUAR';
+                statusBg = '#fee2e2'; statusColor = '#991b1b';
+            }
+            
+            document.getElementById('itemInfo').innerHTML = `
+                <div class="stok-info" style="background:#f8fafc;border:1px solid #e2e8f0;">
+                    <strong>📄 Info Item:</strong><br>
+                    Brand: <b>${brand}</b> | Jenis: <b>${jenis}</b><br>
+                    Paper: ${paper} | Size: ${size}<br>
+                    <br>
+                    Qty PI (Kebutuhan): <b>${qtyPi}</b><br>
+                    Sudah Keluar: <b>${totalKeluar}</b><br>
+                    <div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:${statusBg};color:${statusColor};font-weight:600;display:inline-block;">
+                        ${statusText}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('stokInfo').innerHTML = `<div class="stok-info">📊 Stok tersedia (Masuk - Keluar): ${stok}</div>`;
             
             const { data: history } = await sb.from('barang_keluar').select('*').eq('detail_id', parseInt(itemId)).order('tanggal', { ascending: false });
             if (!history || history.length === 0) {
@@ -491,6 +532,7 @@ function goToMenu(menu) {
                     <div id="msg"></div>
                     <select id="pi_select" onchange="onPiChange()"><option>Loading...</option></select>
                     <select id="item_select" onchange="onItemChange()"><option>-- Pilih PI dulu --</option></select>
+                    <div id="itemInfo"></div>
                     <div id="stokInfo"></div>
                     <input type="date" id="tanggal_keluar" value="${today}">
                     <input type="number" id="qty_keluar" placeholder="Jumlah Keluar">
