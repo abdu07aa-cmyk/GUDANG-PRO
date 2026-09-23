@@ -628,7 +628,8 @@
                     stok: totalMasuk - totalKeluar,
                     status: status,
                     statusClass: statusClass,
-                    archived: header?.is_archived || false
+                    archived: header?.is_archived || false,
+                    detailId: detail.id
                 });
             }
             
@@ -683,7 +684,7 @@
                             <thead>
                                 <tr>
                                     <th>No PI</th><th>Brand</th><th>Jenis</th><th>Paper</th><th>Size</th>
-                                    <th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok</th><th>Status</th>
+                                    <th>Qty PI</th><th>Masuk</th><th>Keluar</th><th>Stok</th><th>Status</th><th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody"></tbody>
@@ -731,6 +732,10 @@
             for (const item of filtered) {
                 const arsipBadge = item.archived ? ' <span style="font-size:10px;background:#e2e8f0;color:#64748b;padding:2px 8px;border-radius:10px;margin-left:4px;">📦 ARSIP</span>' : '';
                 const rowStyle = item.archived ? ' style="opacity:0.65;"' : '';
+                const bisaTarik = item.keluar >= item.qty_pi && item.stok > 0;
+                const aksiCell = bisaTarik
+                    ? '<button onclick="tarikDashboard(' + item.detailId + ')" style="background:#8b5cf6;padding:6px 10px;font-size:11px;width:auto;white-space:nowrap;">📦 Tarik</button>'
+                    : '<span style="color:#cbd5e1;">-</span>';
                 rows += '<tr' + rowStyle + '>' +
                     '<td><b>' + item.no_pi + '</b>' + arsipBadge + '</td>' +
                     '<td>' + item.brand + '</td>' +
@@ -742,11 +747,12 @@
                     '<td>' + item.keluar + '</td>' +
                     '<td><b>' + item.stok + '</b></td>' +
                     '<td><span class="' + item.statusClass + '">' + item.status + '</span></td>' +
+                    '<td style="text-align:center;">' + aksiCell + '</td>' +
                     '</tr>';
             }
             
             if (filtered.length === 0) {
-                rows = '<tr><td colspan="10">Tidak ada data yang cocok</td></tr>';
+                rows = '<tr><td colspan="11">Tidak ada data yang cocok</td></tr>';
             }
             
             document.getElementById('tableBody').innerHTML = rows;
@@ -802,6 +808,118 @@
             XLSX.utils.book_append_sheet(wb, ws, 'Stok Gudang');
             XLSX.writeFile(wb, 'Stok_Gudang_' + new Date().toISOString().slice(0,10) + '.xlsx');
             alert('✅ Export berhasil!');
+        }
+        
+        // ============================================================
+        // TARIK KELEBIHAN BARANG MASUK KE STOK PENDUKUNG
+        // ============================================================
+        function normEq(a, b) {
+            return (a || '') === (b || '');
+        }
+        
+        async function doTarikKeStokPendukung(detailId, jumlahTarik, kategoriBrand, onSuccess) {
+            const { data: detailItem } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', detailId).single();
+            if (!detailItem) { alert('❌ Item tidak ditemukan!'); return; }
+            
+            const { data: masukData } = await sb.from('barang_masuk').select('qty').eq('detail_id', detailId);
+            const { data: keluarData } = await sb.from('barang_keluar').select('qty').eq('detail_id', detailId);
+            let totalMasuk = 0, totalKeluar = 0;
+            if (masukData) masukData.forEach(m => totalMasuk += m.qty);
+            if (keluarData) keluarData.forEach(k => totalKeluar += k.qty);
+            const sisa = totalMasuk - totalKeluar;
+            
+            if (totalKeluar < detailItem.qty_pi) {
+                alert('❌ PI ini belum SELESAI (barang keluar belum mencapai Qty PI), tidak bisa ditarik ke Stok Pendukung!');
+                return;
+            }
+            if (!jumlahTarik || jumlahTarik <= 0 || jumlahTarik > sisa) {
+                alert(`❌ Jumlah tidak valid! Sisa saat ini: ${sisa}`);
+                return;
+            }
+            
+            const targetBrand = kategoriBrand === 'general' ? 'GENERAL' : (detailItem.brand || 'GENERAL');
+            const noPi = detailItem.pi_header?.no_pi || '-';
+            
+            const confirmMsg = `Tarik ${jumlahTarik} dari PI "${noPi}" (${detailItem.brand} - ${detailItem.jenis}) ke Stok Pendukung sebagai "${targetBrand}"?\n\nBarang ini akan tercatat KELUAR dari PI, dan MASUK ke Stok Pendukung.`;
+            if (!confirm(confirmMsg)) return;
+            
+            const { data: { user } } = await sb.auth.getUser();
+            const today = new Date().toISOString().split('T')[0];
+            
+            try {
+                const { data: candidates } = await sb.from('stok_pendukung')
+                    .select('*')
+                    .eq('brand', targetBrand)
+                    .eq('jenis', detailItem.jenis);
+                const existingStok = (candidates || []).find(c => normEq(c.size, detailItem.size) && normEq(c.papers, detailItem.paper));
+                
+                let stokPendukungId;
+                if (existingStok) {
+                    const newStok = existingStok.stok + jumlahTarik;
+                    const { error: updateErr } = await sb.from('stok_pendukung').update({ stok: newStok }).eq('id', existingStok.id);
+                    if (updateErr) throw new Error('Gagal update stok pendukung: ' + updateErr.message);
+                    stokPendukungId = existingStok.id;
+                } else {
+                    const { data: newRow, error: insertErr } = await sb.from('stok_pendukung').insert([{
+                        brand: targetBrand,
+                        jenis: detailItem.jenis,
+                        size: detailItem.size || null,
+                        papers: detailItem.paper || null,
+                        stok: jumlahTarik,
+                        stok_minimum: 0
+                    }]).select();
+                    if (insertErr) throw new Error('Gagal membuat stok pendukung baru: ' + insertErr.message);
+                    stokPendukungId = newRow[0].id;
+                }
+                
+                await sb.from('histori_stok_pendukung').insert([{
+                    stok_pendukung_id: stokPendukungId,
+                    jenis: 'MASUK',
+                    qty: jumlahTarik,
+                    keterangan: `Sisa dari PI ${noPi} - ${detailItem.brand} ${detailItem.jenis} (sudah SELESAI)`,
+                    created_by: user.email
+                }]);
+                
+                const { error: keluarErr } = await sb.from('barang_keluar').insert([{
+                    detail_id: detailId,
+                    tanggal: today,
+                    qty: jumlahTarik,
+                    keterangan: `Ditarik ke Stok Pendukung (${targetBrand})`,
+                    created_by: user.email
+                }]);
+                if (keluarErr) throw new Error('Gagal mencatat barang keluar: ' + keluarErr.message);
+                
+                if (typeof addLog === 'function') {
+                    await addLog('TARIK KE STOK PENDUKUNG', `${user.email} menarik ${jumlahTarik} dari PI ${noPi} - ${detailItem.brand} ${detailItem.jenis} ke Stok Pendukung (${targetBrand})`);
+                }
+                
+                alert(`✅ Berhasil menarik ${jumlahTarik} ke Stok Pendukung sebagai "${targetBrand}"!`);
+                
+                if (onSuccess) await onSuccess();
+                
+            } catch (error) {
+                alert('❌ Gagal: ' + error.message);
+            }
+        }
+        
+        async function tarikDashboard(detailId) {
+            const item = allData.find(d => d.detailId === detailId);
+            if (!item) { alert('❌ Data tidak ditemukan!'); return; }
+            
+            const jumlahStr = prompt(`Tarik berapa banyak dari sisa PI "${item.no_pi}" (${item.brand} - ${item.jenis})?\n\nSisa saat ini: ${item.stok}`, item.stok);
+            if (jumlahStr === null) return;
+            const jumlah = parseInt(jumlahStr);
+            if (!jumlah || jumlah <= 0 || jumlah > item.stok) {
+                alert(`❌ Jumlah tidak valid! Harus antara 1 - ${item.stok}`);
+                return;
+            }
+            
+            const pakaiGeneral = confirm(`Simpan sebagai stok GENERAL (bisa dipakai brand apapun)?\n\nOK = GENERAL\nBatal = Simpan sebagai brand khusus "${item.brand}"`);
+            const kategori = pakaiGeneral ? 'general' : 'brand';
+            
+            await doTarikKeStokPendukung(detailId, jumlah, kategori, async () => {
+                await loadData();
+            });
         }
         
         function goToMenu(menu) {
@@ -1008,6 +1126,7 @@
 
         // Expose functions ke global
         window.filterData = filterData;
+        window.tarikDashboard = tarikDashboard;
         window.resetFilter = resetFilter;
         window.exportExcel = exportExcel;
         window.openSidebar = openSidebarModern;
