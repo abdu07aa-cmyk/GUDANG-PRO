@@ -337,6 +337,25 @@
                 statusBg = '#fee2e2'; statusColor = '#991b1b';
             }
             
+            // ===== BLOK TARIK KE STOK PENDUKUNG (hanya jika SELESAI & masih ada sisa) =====
+            let tarikBlock = '';
+            if (totalKeluar >= qtyPi && stok > 0) {
+                tarikBlock = `
+                    <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #cbd5e1;">
+                        <strong style="color:#92400e;">⚠️ Ada sisa ${stok} barang yang sudah tidak terpakai untuk PI ini</strong>
+                        <div style="margin-top:8px;">
+                            <label style="font-size:12px;display:block;">Jumlah yang ditarik ke Stok Pendukung</label>
+                            <input type="number" id="tarikQty" value="${stok}" min="1" max="${stok}">
+                            <div style="display:flex;gap:16px;margin:6px 0;font-size:13px;flex-wrap:wrap;">
+                                <label style="display:flex;align-items:center;gap:4px;width:auto;"><input type="radio" name="tarikKategori" value="brand" checked style="width:auto;margin:0;"> Simpan sebagai brand "${brand}"</label>
+                                <label style="display:flex;align-items:center;gap:4px;width:auto;"><input type="radio" name="tarikKategori" value="general" style="width:auto;margin:0;"> Simpan sebagai GENERAL</label>
+                            </div>
+                            <button type="button" onclick="tarikKeStokPendukungOut(${itemId})" style="background:#8b5cf6;">📦 Tarik ke Stok Pendukung</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
             document.getElementById('itemInfo').innerHTML = `
                 <div class="stok-info" style="background:#f8fafc;border:1px solid #e2e8f0;">
                     <strong>📄 Info Item:</strong><br>
@@ -348,6 +367,7 @@
                     <div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:${statusBg};color:${statusColor};font-weight:600;display:inline-block;">
                         ${statusText}
                     </div>
+                    ${tarikBlock}
                 </div>
             `;
             
@@ -370,6 +390,116 @@
             }
             html += '</tbody></tr></div>';
             document.getElementById('historyList').innerHTML = html;
+        }
+        
+        // ============================================================
+        // TARIK KELEBIHAN BARANG MASUK KE STOK PENDUKUNG
+        // ============================================================
+        function normEq(a, b) {
+            return (a || '') === (b || '');
+        }
+        
+        async function doTarikKeStokPendukung(detailId, jumlahTarik, kategoriBrand, onSuccess) {
+            const { data: detailItem } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', detailId).single();
+            if (!detailItem) { alert('❌ Item tidak ditemukan!'); return; }
+            
+            const { data: masukData } = await sb.from('barang_masuk').select('qty').eq('detail_id', detailId);
+            const { data: keluarData } = await sb.from('barang_keluar').select('qty').eq('detail_id', detailId);
+            let totalMasuk = 0, totalKeluar = 0;
+            if (masukData) masukData.forEach(m => totalMasuk += m.qty);
+            if (keluarData) keluarData.forEach(k => totalKeluar += k.qty);
+            const sisa = totalMasuk - totalKeluar;
+            
+            if (totalKeluar < detailItem.qty_pi) {
+                alert('❌ PI ini belum SELESAI (barang keluar belum mencapai Qty PI), tidak bisa ditarik ke Stok Pendukung!');
+                return;
+            }
+            if (!jumlahTarik || jumlahTarik <= 0 || jumlahTarik > sisa) {
+                alert(`❌ Jumlah tidak valid! Sisa saat ini: ${sisa}`);
+                return;
+            }
+            
+            const targetBrand = kategoriBrand === 'general' ? 'GENERAL' : (detailItem.brand || 'GENERAL');
+            const noPi = detailItem.pi_header?.no_pi || '-';
+            
+            const confirmMsg = `Tarik ${jumlahTarik} dari PI "${noPi}" (${detailItem.brand} - ${detailItem.jenis}) ke Stok Pendukung sebagai "${targetBrand}"?\n\nBarang ini akan tercatat KELUAR dari PI, dan MASUK ke Stok Pendukung.`;
+            if (!confirm(confirmMsg)) return;
+            
+            const { data: { user } } = await sb.auth.getUser();
+            const today = new Date().toISOString().split('T')[0];
+            
+            try {
+                const { data: candidates } = await sb.from('stok_pendukung')
+                    .select('*')
+                    .eq('brand', targetBrand)
+                    .eq('jenis', detailItem.jenis);
+                const existingStok = (candidates || []).find(c => normEq(c.size, detailItem.size) && normEq(c.papers, detailItem.paper));
+                
+                let stokPendukungId;
+                if (existingStok) {
+                    const newStok = existingStok.stok + jumlahTarik;
+                    const { error: updateErr } = await sb.from('stok_pendukung').update({ stok: newStok }).eq('id', existingStok.id);
+                    if (updateErr) throw new Error('Gagal update stok pendukung: ' + updateErr.message);
+                    stokPendukungId = existingStok.id;
+                } else {
+                    const { data: newRow, error: insertErr } = await sb.from('stok_pendukung').insert([{
+                        brand: targetBrand,
+                        jenis: detailItem.jenis,
+                        size: detailItem.size || null,
+                        papers: detailItem.paper || null,
+                        stok: jumlahTarik,
+                        stok_minimum: 0
+                    }]).select();
+                    if (insertErr) throw new Error('Gagal membuat stok pendukung baru: ' + insertErr.message);
+                    stokPendukungId = newRow[0].id;
+                }
+                
+                await sb.from('histori_stok_pendukung').insert([{
+                    stok_pendukung_id: stokPendukungId,
+                    jenis: 'MASUK',
+                    qty: jumlahTarik,
+                    keterangan: `Sisa dari PI ${noPi} - ${detailItem.brand} ${detailItem.jenis} (sudah SELESAI)`,
+                    created_by: user.email
+                }]);
+                
+                const { error: keluarErr } = await sb.from('barang_keluar').insert([{
+                    detail_id: detailId,
+                    tanggal: today,
+                    qty: jumlahTarik,
+                    keterangan: `Ditarik ke Stok Pendukung (${targetBrand})`,
+                    created_by: user.email
+                }]);
+                if (keluarErr) throw new Error('Gagal mencatat barang keluar: ' + keluarErr.message);
+                
+                if (typeof addLog === 'function') {
+                    await addLog('TARIK KE STOK PENDUKUNG', `${user.email} menarik ${jumlahTarik} dari PI ${noPi} - ${detailItem.brand} ${detailItem.jenis} ke Stok Pendukung (${targetBrand})`);
+                }
+                
+                alert(`✅ Berhasil menarik ${jumlahTarik} ke Stok Pendukung sebagai "${targetBrand}"!`);
+                
+                if (onSuccess) await onSuccess();
+                
+            } catch (error) {
+                alert('❌ Gagal: ' + error.message);
+            }
+        }
+        
+        async function tarikKeStokPendukungOut(detailId) {
+            const qtyInput = document.getElementById('tarikQty');
+            const jumlah = parseInt(qtyInput.value);
+            const kategori = document.querySelector('input[name="tarikKategori"]:checked')?.value || 'brand';
+            
+            await doTarikKeStokPendukung(detailId, jumlah, kategori, async () => {
+                await onPiChange();
+                const itemSelect = document.getElementById('item_select');
+                for (let i = 0; i < itemSelect.options.length; i++) {
+                    if (itemSelect.options[i].value == String(detailId)) {
+                        itemSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+                await onItemChange();
+            });
         }
         
         async function hapusHistory(id) {
@@ -559,6 +689,7 @@ function goToMenu(menu) {
         window.onItemChange = onItemChange;
         window.simpanKeluar = simpanKeluar;
         window.hapusHistory = hapusHistory;
+        window.tarikKeStokPendukungOut = tarikKeStokPendukungOut;
         
         init();
     </script>
