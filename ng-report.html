@@ -601,6 +601,7 @@
     <script>
         var allData = [];
         var currentFiltered = [];
+        var ngDenom = { totalProsesQC1: 0, totalProsesDiecut: 0, totalProsesQC2: 0 };
 
         function getEl(id) {
             return document.getElementById(id);
@@ -659,6 +660,12 @@
             });
         }
 
+        function pctColor(pct) {
+            if (pct <= 0) return '#10b981';
+            if (pct <= 5) return '#f59e0b';
+            return '#ef4444';
+        }
+
         // ============================================================
         // CEK SESSION
         // ============================================================
@@ -697,6 +704,31 @@
         }
 
         // ============================================================
+        // AMBIL DATA PEMBAGI UNTUK HITUNG % NG PER TAHAP
+        // ============================================================
+        async function loadDenominator() {
+            ngDenom = { totalProsesQC1: 0, totalProsesDiecut: 0, totalProsesQC2: 0 };
+            try {
+                const { data: qcData } = await sb.from('qc_inspection').select('qc_number, qty_ok, qty_ng, qty_rework');
+                if (qcData) {
+                    qcData.forEach(function(q) {
+                        var total = (q.qty_ok || 0) + (q.qty_ng || 0) + (q.qty_rework || 0);
+                        if (q.qc_number === 1) ngDenom.totalProsesQC1 += total;
+                        else if (q.qc_number === 2) ngDenom.totalProsesQC2 += total;
+                    });
+                }
+                const { data: diecutData } = await sb.from('diecut_process').select('qty_pcs_out');
+                if (diecutData) {
+                    diecutData.forEach(function(d) {
+                        ngDenom.totalProsesDiecut += (d.qty_pcs_out || 0);
+                    });
+                }
+            } catch (err) {
+                console.error('Gagal memuat data pembagi %NG:', err);
+            }
+        }
+
+        // ============================================================
         // LOAD DATA
         // ============================================================
         async function loadData() {
@@ -729,6 +761,9 @@
 
                 allData = response.data || [];
                 currentFiltered = allData.slice(0);
+
+                await loadDenominator();
+
                 renderPage();
 
             } catch (err) {
@@ -859,6 +894,11 @@
             }
             var uniqueMaterial = Object.keys(materialIds).length;
 
+            // % NG PER TAHAP (dari total yang diproses di tahap itu)
+            var pctQC1 = ngDenom.totalProsesQC1 > 0 ? (totalQC1 / ngDenom.totalProsesQC1 * 100) : 0;
+            var pctDiecut = ngDenom.totalProsesDiecut > 0 ? (totalDiecut / ngDenom.totalProsesDiecut * 100) : 0;
+            var pctQC2 = ngDenom.totalProsesQC2 > 0 ? (totalQC2 / ngDenom.totalProsesQC2 * 100) : 0;
+
             var topJenis = Object.keys(jenisCount).sort(function(a, b) {
                 return jenisCount[b] - jenisCount[a];
             }).slice(0, 5);
@@ -943,19 +983,19 @@
             html += '<div class="kpi-grid">' +
                 '<div class="kpi-card" style="border-left-color:#ef4444;">' +
                 '<div class="kpi-value" style="color:#ef4444;">' + totalNG + '</div>' +
-                '<div class="kpi-label">❌ Total NG</div>' +
+                '<div class="kpi-label">❌ Total NG (semua satuan)</div>' +
                 '</div>' +
-                '<div class="kpi-card" style="border-left-color:#f59e0b;">' +
-                '<div class="kpi-value" style="color:#f59e0b;">' + totalQC1 + '</div>' +
-                '<div class="kpi-label">🔬 QC #1 (Sheet)</div>' +
+                '<div class="kpi-card" style="border-left-color:' + pctColor(pctQC1) + ';">' +
+                '<div class="kpi-value" style="color:' + pctColor(pctQC1) + ';">' + pctQC1.toFixed(1) + '%</div>' +
+                '<div class="kpi-label">🔬 QC #1: ' + totalQC1 + ' / ' + ngDenom.totalProsesQC1 + ' Sheet</div>' +
                 '</div>' +
-                '<div class="kpi-card" style="border-left-color:#3b82f6;">' +
-                '<div class="kpi-value" style="color:#3b82f6;">' + totalDiecut + '</div>' +
-                '<div class="kpi-label">⚙️ Diecut (Pcs)</div>' +
+                '<div class="kpi-card" style="border-left-color:' + pctColor(pctDiecut) + ';">' +
+                '<div class="kpi-value" style="color:' + pctColor(pctDiecut) + ';">' + pctDiecut.toFixed(1) + '%</div>' +
+                '<div class="kpi-label">⚙️ Diecut: ' + totalDiecut + ' / ' + ngDenom.totalProsesDiecut + ' Pcs</div>' +
                 '</div>' +
-                '<div class="kpi-card" style="border-left-color:#9d174d;">' +
-                '<div class="kpi-value" style="color:#9d174d;">' + totalQC2 + '</div>' +
-                '<div class="kpi-label">🔬 QC #2 (Pcs)</div>' +
+                '<div class="kpi-card" style="border-left-color:' + pctColor(pctQC2) + ';">' +
+                '<div class="kpi-value" style="color:' + pctColor(pctQC2) + ';">' + pctQC2.toFixed(1) + '%</div>' +
+                '<div class="kpi-label">🔬 QC #2: ' + totalQC2 + ' / ' + ngDenom.totalProsesQC2 + ' Pcs</div>' +
                 '</div>' +
                 '<div class="kpi-card" style="border-left-color:#64748b;">' +
                 '<div class="kpi-value">' + uniqueMaterial + '</div>' +
