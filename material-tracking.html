@@ -402,6 +402,89 @@
             return '#94a3b8';
         }
 
+        // ============================================================
+        // RINGKASAN KEKURANGAN & NG PER ITEM PI
+        // ============================================================
+        function computeRingkasan(data) {
+            const groups = {};
+            for (const item of data) {
+                const key = item.pi_detail_id || (item.no_pi + '|' + item.brand + '|' + item.jenis);
+                if (!groups[key]) {
+                    groups[key] = {
+                        no_pi: item.no_pi || '-',
+                        brand: item.brand || '-',
+                        jenis: item.jenis || '-',
+                        qtyPi: item.qty_pi || 0,
+                        upPerSheet: item.up_per_sheet || 1,
+                        totalDiterima: 0,
+                        ngQC1Sheet: 0,
+                        ngDiecutPcs: 0,
+                        ngQC2Pcs: 0,
+                        totalTerkirim: 0
+                    };
+                }
+                const g = groups[key];
+                g.totalDiterima += (item.qty_pcs || 0);
+
+                const ngList = item.ng_tracking || [];
+                for (const ng of ngList) {
+                    if (ng.proses === 'QC1') g.ngQC1Sheet += (ng.qty_ng || 0);
+                    else if (ng.proses === 'DIECUT') g.ngDiecutPcs += (ng.qty_ng || 0);
+                    else if (ng.proses === 'QC2') g.ngQC2Pcs += (ng.qty_ng || 0);
+                }
+
+                const sendList = item.production_send || [];
+                for (const s of sendList) {
+                    g.totalTerkirim += (s.qty_pcs || 0);
+                }
+            }
+
+            return Object.values(groups).map(g => {
+                const ngTotalPcs = (g.ngQC1Sheet * g.upPerSheet) + g.ngDiecutPcs + g.ngQC2Pcs;
+                const target = g.qtyPi || 0;
+                const kurangSupplier = target > 0 ? Math.max(0, ((target - g.totalDiterima) / target) * 100) : 0;
+                const ngPercent = g.totalDiterima > 0 ? (ngTotalPcs / g.totalDiterima) * 100 : 0;
+                const kurangProduksi = target > 0 ? Math.max(0, ((target - g.totalTerkirim) / target) * 100) : 0;
+                return {
+                    ...g,
+                    ngTotalPcs,
+                    kurangSupplier,
+                    ngPercent,
+                    kurangProduksi
+                };
+            });
+        }
+
+        function pctColor(pct) {
+            if (pct <= 0) return '#10b981';
+            if (pct <= 5) return '#f59e0b';
+            return '#ef4444';
+        }
+
+        function renderRingkasanTable(ringkasan) {
+            let rows = '';
+            for (const r of ringkasan) {
+                rows += `
+                    <tr>
+                        <td><strong>${r.no_pi}</strong></td>
+                        <td>${r.brand}</td>
+                        <td>${r.jenis}</td>
+                        <td style="text-align:center;">${r.qtyPi.toLocaleString()}</td>
+                        <td style="text-align:center;">${r.totalDiterima.toLocaleString()}</td>
+                        <td style="text-align:center;font-weight:bold;color:${pctColor(r.kurangSupplier)};">${r.kurangSupplier.toFixed(1)}%</td>
+                        <td style="text-align:center;">${r.ngTotalPcs.toLocaleString()}</td>
+                        <td style="text-align:center;font-weight:bold;color:${pctColor(r.ngPercent)};">${r.ngPercent.toFixed(1)}%</td>
+                        <td style="text-align:center;">${r.totalTerkirim.toLocaleString()}</td>
+                        <td style="text-align:center;font-weight:bold;color:${pctColor(r.kurangProduksi)};">${r.kurangProduksi.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }
+            if (ringkasan.length === 0) {
+                rows = `<tr><td colspan="10" style="text-align:center;padding:20px;">Belum ada data</td></tr>`;
+            }
+            return rows;
+        }
+
         function renderPage() {
             const searchText = document.getElementById('searchInput')?.value?.toLowerCase() || '';
             const statusFilter = document.getElementById('statusFilter')?.value || 'all';
@@ -428,6 +511,19 @@
                     item.ng_tracking.forEach(ng => totalNg += ng.qty_ng || 0);
                 }
             });
+
+            // Ringkasan per item PI (untuk % kekurangan & NG)
+            const ringkasan = computeRingkasan(allData);
+            let totalDiterimaAll = 0, totalNgPcsAll = 0, totalQtyPiAll = 0, totalTerkirimAll = 0;
+            for (const r of ringkasan) {
+                totalDiterimaAll += r.totalDiterima;
+                totalNgPcsAll += r.ngTotalPcs;
+                totalQtyPiAll += r.qtyPi;
+                totalTerkirimAll += r.totalTerkirim;
+            }
+            const ngPercentOverall = totalDiterimaAll > 0 ? (totalNgPcsAll / totalDiterimaAll) * 100 : 0;
+            const kurangSupplierOverall = totalQtyPiAll > 0 ? Math.max(0, ((totalQtyPiAll - totalDiterimaAll) / totalQtyPiAll) * 100) : 0;
+            const kurangProduksiOverall = totalQtyPiAll > 0 ? Math.max(0, ((totalQtyPiAll - totalTerkirimAll) / totalQtyPiAll) * 100) : 0;
 
             let rows = '';
             for (const item of filtered) {
@@ -499,9 +595,43 @@
                         <div class="kpi-value" style="color:#3b82f6">${diterima}</div>
                         <div class="kpi-label">📥 Diterima (QC)</div>
                     </div>
-                    <div class="kpi-card" style="border-left:4px solid #ef4444">
-                        <div class="kpi-value" style="color:#ef4444">${totalNg}</div>
-                        <div class="kpi-label">❌ Total NG</div>
+                    <div class="kpi-card" style="border-left:4px solid ${pctColor(kurangSupplierOverall)}">
+                        <div class="kpi-value" style="color:${pctColor(kurangSupplierOverall)}">${kurangSupplierOverall.toFixed(1)}%</div>
+                        <div class="kpi-label">📉 Kurang dari Supplier</div>
+                    </div>
+                    <div class="kpi-card" style="border-left:4px solid ${pctColor(ngPercentOverall)}">
+                        <div class="kpi-value" style="color:${pctColor(ngPercentOverall)}">${ngPercentOverall.toFixed(1)}%</div>
+                        <div class="kpi-label">❌ NG (${totalNg} pcs*sheet)</div>
+                    </div>
+                    <div class="kpi-card" style="border-left:4px solid ${pctColor(kurangProduksiOverall)}">
+                        <div class="kpi-value" style="color:${pctColor(kurangProduksiOverall)}">${kurangProduksiOverall.toFixed(1)}%</div>
+                        <div class="kpi-label">📉 Kurang ke Produksi</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>📊 Ringkasan Kekurangan & NG per Item PI</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table style="min-width:1100px;">
+                            <thead>
+                                <tr>
+                                    <th>No PI</th><th>Brand</th><th>Jenis</th>
+                                    <th style="text-align:center;">Qty PI<br>(Target)</th>
+                                    <th style="text-align:center;">Diterima<br>Supplier</th>
+                                    <th style="text-align:center;">% Kurang<br>Supplier</th>
+                                    <th style="text-align:center;">Total NG</th>
+                                    <th style="text-align:center;">% NG</th>
+                                    <th style="text-align:center;">Terkirim<br>Produksi</th>
+                                    <th style="text-align:center;">% Kurang<br>Produksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>${renderRingkasanTable(ringkasan)}</tbody>
+                        </table>
+                    </div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:8px;">
+                        📌 % NG dihitung dari total NG (QC1 dikonversi ke pcs via Up/Sheet) dibagi total pcs yang diterima dari supplier.
                     </div>
                 </div>
 
