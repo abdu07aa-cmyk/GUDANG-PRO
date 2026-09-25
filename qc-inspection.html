@@ -677,7 +677,7 @@
             
             const { data, error } = await sb
                 .from('material_inbound')
-                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id, pi_detail_id')
                 .in('status', statusFilter)
                 .order('created_at', { ascending: false });
 
@@ -714,6 +714,7 @@
                     option.dataset.noPo = item.no_po;
                     option.dataset.brand = item.brand;
                     option.dataset.jenis = item.jenis;
+                    option.dataset.piDetailId = item.pi_detail_id || '';
                     select.appendChild(option);
                 }
             }
@@ -1111,7 +1112,7 @@
     // ✅ AMBIL DATA MATERIAL
     const { data: material } = await sb
         .from('material_inbound')
-        .select('no_pi, no_po, brand, jenis, qty_sheet, up_per_sheet, status, id')
+        .select('no_pi, no_po, brand, jenis, qty_sheet, up_per_sheet, status, id, pi_detail_id')
         .eq('id', qc.material_inbound_id)
         .single();
 
@@ -1166,6 +1167,7 @@
             option.dataset.noPo = material.no_po;
             option.dataset.brand = material.brand;
             option.dataset.jenis = material.jenis;
+            option.dataset.piDetailId = material.pi_detail_id || '';
             select.appendChild(option);
             select.value = material.no_pi;
         }
@@ -1379,6 +1381,26 @@
                         deskripsi: notes || `NG dari QC #${qcNumber} (Hasil: ${hasil})`,
                         created_by: user?.email || 'Unknown'
                     });
+
+                    // ✅ OTOMATIS KURANGI STOK GUDANG (hanya saat input BARU, bukan edit)
+                    if (!editId) {
+                        const piDetailId = selectedOption.dataset.piDetailId;
+                        if (piDetailId) {
+                            const upPerSheetVal = parseInt(selectedOption.dataset.upPerSheet) || 1;
+                            const qtyNgPcs = qcNumber === 1 ? (qty_ng * upPerSheetVal) : qty_ng;
+                            try {
+                                await sb.from('barang_keluar').insert([{
+                                    detail_id: parseInt(piDetailId),
+                                    tanggal: tanggal_qc,
+                                    qty: qtyNgPcs,
+                                    keterangan: `NG QC#${qcNumber} (otomatis, ${qty_ng} ${unitLabel})`,
+                                    created_by: user?.email || 'Unknown'
+                                }]);
+                            } catch (syncErr) {
+                                console.error('Gagal sinkron NG ke Stok Gudang:', syncErr);
+                            }
+                        }
+                    }
                 }
 
                 const actionText = editId ? 'diupdate' : 'disimpan';
