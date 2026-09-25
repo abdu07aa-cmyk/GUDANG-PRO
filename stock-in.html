@@ -579,6 +579,12 @@
             // Total dalam PCS - inilah yang disimpan ke barang_masuk (konsisten dengan Dashboard & Stok Gudang)
             const totalPcs = bentuk === 'sheet' ? (qtyInput * upPerSheet) : qtyInput;
             
+            // Catatan asal satuan, otomatis ditempel ke keterangan biar kelihatan di histori
+            const asalSatuan = bentuk === 'sheet'
+                ? `[📄 ${qtyInput} Sheet × ${upPerSheet} Up]`
+                : `[📦 ${qtyInput} Pcs langsung]`;
+            const keteranganFinal = keterangan ? `${asalSatuan} ${keterangan}` : asalSatuan;
+            
             const { data: { user } } = await sb.auth.getUser();
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
             const noPi = item?.pi_header?.no_pi || '-';
@@ -588,7 +594,7 @@
                 detail_id: parseInt(itemId),
                 tanggal: tanggal,
                 qty: totalPcs,
-                keterangan: keterangan || '-',
+                keterangan: keteranganFinal,
                 created_by: user.email
             }]);
             
