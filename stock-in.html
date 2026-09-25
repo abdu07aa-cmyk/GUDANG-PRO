@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Barang Masuk - SUPPLY MATERIAL</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
@@ -285,6 +281,49 @@
             document.getElementById('pi_select').innerHTML = options;
         }
         
+        // ============================================================
+        // TOGGLE BENTUK BARANG (SHEET/PCS) - UNTUK SINKRON KE MATERIAL TRACKING
+        // ============================================================
+        function toggleBentukMasuk() {
+            const bentuk = document.querySelector('input[name="bentuk_masuk"]:checked');
+            if (!bentuk) return;
+            const value = bentuk.value;
+            const labelQty = document.getElementById('labelQtyMasuk');
+            const qtyInput = document.getElementById('qty_masuk');
+            const upRow = document.getElementById('upSheetRow');
+            const upInput = document.getElementById('up_per_sheet_masuk');
+            if (!labelQty || !qtyInput || !upRow || !upInput) return;
+            
+            if (value === 'sheet') {
+                labelQty.textContent = 'Jumlah Masuk (Sheet)';
+                qtyInput.placeholder = 'Jumlah sheet masuk';
+                upRow.style.display = 'block';
+                upInput.required = true;
+            } else {
+                labelQty.textContent = 'Jumlah Masuk (Pcs)';
+                qtyInput.placeholder = 'Jumlah pcs masuk';
+                upRow.style.display = 'none';
+                upInput.value = 1;
+                upInput.required = false;
+            }
+            hitungTotalPcsMasuk();
+        }
+        
+        function hitungTotalPcsMasuk() {
+            const bentuk = document.querySelector('input[name="bentuk_masuk"]:checked');
+            const value = bentuk ? bentuk.value : 'sheet';
+            const qty = parseInt(document.getElementById('qty_masuk')?.value) || 0;
+            const up = parseInt(document.getElementById('up_per_sheet_masuk')?.value) || 1;
+            const totalPcs = value === 'sheet' ? (qty * up) : qty;
+            const textEl = document.getElementById('totalPcsMasukText');
+            if (textEl) {
+                textEl.textContent = value === 'sheet'
+                    ? `${qty} Sheet × ${up} = ${totalPcs.toLocaleString()} Pcs`
+                    : `${totalPcs.toLocaleString()} Pcs`;
+            }
+            return totalPcs;
+        }
+        
         async function onPiChange() {
             const piId = document.getElementById('pi_select').value;
             const itemSelect = document.getElementById('item_select');
@@ -513,41 +552,91 @@
         async function simpanMasuk() {
             const piId = document.getElementById('pi_select').value;
             const itemId = document.getElementById('item_select').value;
-            const qty = document.getElementById('qty_masuk').value;
+            const qtyInputRaw = document.getElementById('qty_masuk').value;
             const tanggal = document.getElementById('tanggal_masuk').value;
             const keterangan = document.getElementById('keterangan').value;
+            const supplier = document.getElementById('supplier_masuk')?.value?.trim() || '';
+            const suratJalan = document.getElementById('surat_jalan_masuk')?.value?.trim() || '';
+            const bentukEl = document.querySelector('input[name="bentuk_masuk"]:checked');
+            const bentuk = bentukEl ? bentukEl.value : 'sheet';
+            const upPerSheet = parseInt(document.getElementById('up_per_sheet_masuk')?.value) || 1;
             
-            if (!piId || !itemId || !qty || !tanggal) {
+            if (!piId || !itemId || !qtyInputRaw || !tanggal) {
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">Pilih PI, Item, isi Qty dan Tanggal!</div>';
                 return;
             }
             
-            if (parseInt(qty) <= 0) {
+            const qtyInput = parseInt(qtyInputRaw);
+            if (qtyInput <= 0) {
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">Qty harus lebih dari 0!</div>';
                 return;
             }
+            if (bentuk === 'sheet' && upPerSheet < 1) {
+                document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">Up/Sheet harus lebih dari 0!</div>';
+                return;
+            }
+            
+            // Total dalam PCS - inilah yang disimpan ke barang_masuk (konsisten dengan Dashboard & Stok Gudang)
+            const totalPcs = bentuk === 'sheet' ? (qtyInput * upPerSheet) : qtyInput;
             
             const { data: { user } } = await sb.auth.getUser();
             const { data: item } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', parseInt(itemId)).single();
-            const itemInfo = `${item?.pi_header?.no_pi} - ${item?.brand} - ${item?.jenis}`;
+            const noPi = item?.pi_header?.no_pi || '-';
+            const itemInfo = `${noPi} - ${item?.brand} - ${item?.jenis}`;
             
             const { error } = await sb.from('barang_masuk').insert([{
                 detail_id: parseInt(itemId),
                 tanggal: tanggal,
-                qty: parseInt(qty),
+                qty: totalPcs,
                 keterangan: keterangan || '-',
                 created_by: user.email
             }]);
             
             if (error) {
                 document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
-            } else {
-                await addLog('BARANG MASUK', `${user.email} mencatat barang masuk ${qty} untuk ${itemInfo}`);
-                document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-success">✅ Barang Masuk dicatat!</div>';
-                document.getElementById('qty_masuk').value = '';
-                document.getElementById('keterangan').value = '';
-                await onItemChange();
+                return;
             }
+            
+            await addLog('BARANG MASUK', `${user.email} mencatat barang masuk ${totalPcs} pcs untuk ${itemInfo}`);
+            
+            // ✅ OTOMATIS BUAT JUGA DI MATERIAL TRACKING (status DITERIMA) - biar tidak input dobel
+            let trackingMsg = '';
+            try {
+                const { error: miError } = await sb.from('material_inbound').insert([{
+                    no_pi: noPi,
+                    no_po: '-',
+                    surat_jalan: suratJalan || '-',
+                    tanggal_terima: tanggal,
+                    supplier: supplier || '',
+                    brand: item?.brand || '',
+                    jenis: item?.jenis || '',
+                    paper: item?.paper || '',
+                    size: item?.size || '',
+                    qty_sheet: bentuk === 'sheet' ? qtyInput : 0,
+                    up_per_sheet: bentuk === 'sheet' ? upPerSheet : 1,
+                    qty_masuk: qtyInput,
+                    qty_pi: item?.qty_pi || 0,
+                    status: 'DITERIMA',
+                    notes: keterangan || null,
+                    created_by: user.email,
+                    qty_pi_sheet: bentuk === 'sheet' ? qtyInput : null,
+                    qty_pi_pcs: bentuk === 'pcs' ? qtyInput : null,
+                    pi_id: piId,
+                    pi_detail_id: parseInt(itemId)
+                }]);
+                if (miError) throw miError;
+                trackingMsg = ' + Otomatis masuk ke Material Tracking!';
+            } catch (miErr) {
+                trackingMsg = ' (⚠️ Gagal sinkron ke Material Tracking: ' + miErr.message + ')';
+            }
+            
+            document.getElementById('msgTransaksi').innerHTML = '<div class="alert alert-success">✅ Barang Masuk dicatat!' + trackingMsg + '</div>';
+            document.getElementById('qty_masuk').value = '';
+            document.getElementById('keterangan').value = '';
+            document.getElementById('supplier_masuk').value = '';
+            document.getElementById('surat_jalan_masuk').value = '';
+            hitungTotalPcsMasuk();
+            await onItemChange();
         }
         
         // FUNGSI: Ambil dari Stok Pendukung
@@ -686,13 +775,35 @@
                     <label>Tanggal Masuk</label>
                     <input type="date" id="tanggal_masuk" value="${today}">
                     
-                    <label>Jumlah Masuk (Manual)</label>
-                    <input type="number" id="qty_masuk" placeholder="Qty">
+                    <label>Bentuk Barang</label>
+                    <div style="display:flex;gap:16px;margin:5px 0 10px 0;font-size:14px;">
+                        <label style="display:flex;align-items:center;gap:6px;width:auto;"><input type="radio" name="bentuk_masuk" value="sheet" checked onchange="toggleBentukMasuk()" style="width:auto;margin:0;"> 📄 Sheet</label>
+                        <label style="display:flex;align-items:center;gap:6px;width:auto;"><input type="radio" name="bentuk_masuk" value="pcs" onchange="toggleBentukMasuk()" style="width:auto;margin:0;"> 📦 Pcs</label>
+                    </div>
+                    
+                    <label id="labelQtyMasuk">Jumlah Masuk (Sheet)</label>
+                    <input type="number" id="qty_masuk" placeholder="Jumlah sheet masuk" oninput="hitungTotalPcsMasuk()">
+                    
+                    <div id="upSheetRow">
+                        <label>Up / Sheet (pcs per lembar)</label>
+                        <input type="number" id="up_per_sheet_masuk" placeholder="Contoh: 20" value="1" min="1" oninput="hitungTotalPcsMasuk()">
+                    </div>
+                    
+                    <div class="stok-info" id="calcInfoMasuk" style="background:#e0f2fe;">
+                        📊 Total: <b id="totalPcsMasukText">0 Pcs</b>
+                    </div>
+                    
+                    <label>Supplier (opsional)</label>
+                    <input type="text" id="supplier_masuk" placeholder="Nama supplier">
+                    
+                    <label>No Surat Jalan / DO (opsional)</label>
+                    <input type="text" id="surat_jalan_masuk" placeholder="No surat jalan">
                     
                     <label>Keterangan (opsional)</label>
                     <input type="text" id="keterangan" placeholder="Keterangan">
                     
                     <button onclick="simpanMasuk()">📥 Simpan Barang Masuk</button>
+                    <span class="info-text">✅ Otomatis tercatat juga di Material Tracking (status DITERIMA) — tidak perlu input ulang di Material Masuk.</span>
                 </div>
                 
                 <div class="card">
@@ -714,6 +825,8 @@
             document.getElementById('filter_tgl_akhir').addEventListener('change', () => {
                 if (currentItemId) filterHistory(currentItemId);
             });
+            
+            toggleBentukMasuk();
             
             await loadPiList();
         }
@@ -790,6 +903,8 @@
         window.onPiChange = onPiChange;
         window.onItemChange = onItemChange;
         window.simpanMasuk = simpanMasuk;
+        window.toggleBentukMasuk = toggleBentukMasuk;
+        window.hitungTotalPcsMasuk = hitungTotalPcsMasuk;
         window.hapusHistory = hapusHistory;
         window.exportHistory = exportHistory;
         window.ambilDariStokPendukung = ambilDariStokPendukung;
