@@ -827,7 +827,7 @@
             
             const { data, error } = await sb
                 .from('material_inbound')
-                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id')
+                .select('no_pi, no_po, brand, jenis, status, qty_sheet, up_per_sheet, id, pi_detail_id')
                 .eq('status', 'QC1')
                 .order('created_at', { ascending: false });
 
@@ -856,6 +856,7 @@
                     option.dataset.noPo = item.no_po;
                     option.dataset.brand = item.brand;
                     option.dataset.jenis = item.jenis;
+                    option.dataset.piDetailId = item.pi_detail_id || '';
                     select.appendChild(option);
                 }
             }
@@ -1280,6 +1281,7 @@
 
                 showToast('✅ Data diecut berhasil diupdate!', 'success');
                 showMessage('✅ Data diecut berhasil diupdate!', 'success');
+                showToast('ℹ️ Catatan: Stok Gudang TIDAK ikut disesuaikan otomatis untuk edit ini. Perubahan NG hanya berlaku untuk sinkronisasi otomatis pada input baru.', 'info');
 
                 isEditMode = false;
                 document.getElementById('editId').value = '';
@@ -1484,6 +1486,24 @@
                         deskripsi: notes || 'NG dari proses diecut',
                         created_by: user?.email || 'Unknown'
                     });
+
+                    // ✅ OTOMATIS KURANGI STOK GUDANG (NG Diecut sudah dalam satuan Pcs)
+                    const select = document.getElementById('selectNoPi');
+                    const selectedOption = select ? select.options[select.selectedIndex] : null;
+                    const piDetailId = selectedOption ? selectedOption.dataset.piDetailId : '';
+                    if (piDetailId) {
+                        try {
+                            await sb.from('barang_keluar').insert([{
+                                detail_id: parseInt(piDetailId),
+                                tanggal: tanggal_diecut,
+                                qty: qty_ng_diecut,
+                                keterangan: `NG Diecut (otomatis, ${qty_ng_diecut} Pcs)`,
+                                created_by: user?.email || 'Unknown'
+                            }]);
+                        } catch (syncErr) {
+                            console.error('Gagal sinkron NG Diecut ke Stok Gudang:', syncErr);
+                        }
+                    }
                 }
 
                 showMessage(`✅ Proses Diecut berhasil! Yield: ${yieldPercent}%`, 'success');
