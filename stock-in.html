@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Barang Masuk - SUPPLY MATERIAL</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
@@ -537,16 +541,80 @@
         }
         
         async function hapusHistory(id, itemId) {
-            if (confirm('Yakin ingin menghapus histori ini?')) {
+            const { data: row } = await sb.from('barang_masuk').select('*').eq('id', id).single();
+            if (!row) { alert('Data histori tidak ditemukan!'); return; }
+            
+            const dariStokPendukung = (row.keterangan || '').startsWith('Ambil dari stok pendukung');
+            
+            // ===== KASUS 1: histori biasa (bukan dari Stok Pendukung) =====
+            if (!dariStokPendukung) {
+                if (!confirm('Yakin ingin menghapus histori ini?')) return;
                 const { error } = await sb.from('barang_masuk').delete().eq('id', id);
-                if (error) {
-                    alert('Gagal menghapus: ' + error.message);
-                } else {
-                    await addLog('HAPUS HISTORI', `Menghapus histori barang masuk ID ${id}`);
-                    alert('Histori berhasil dihapus');
-                    await onItemChange();
-                }
+                if (error) { alert('Gagal menghapus: ' + error.message); return; }
+                await addLog('HAPUS HISTORI', `Menghapus histori barang masuk ID ${id}`);
+                alert('Histori berhasil dihapus');
+                await onItemChange();
+                return;
             }
+            
+            // ===== KASUS 2: histori hasil "Ambil dari Stok Pendukung" → stok dikembalikan =====
+            const { data: detailItem } = await sb.from('pi_detail').select('*, pi_header(no_pi)').eq('id', row.detail_id).single();
+            const noPi = detailItem?.pi_header?.no_pi || '-';
+            
+            // Cari catatan pengambilan asli di histori stok pendukung (untuk tahu stok mana yang harus dikembalikan)
+            const { data: caris } = await sb.from('histori_stok_pendukung')
+                .select('*')
+                .eq('jenis', 'KELUAR')
+                .eq('qty', row.qty)
+                .eq('keterangan', `Diambil untuk PI ${noPi} - ${detailItem?.brand} ${detailItem?.jenis}`)
+                .order('id', { ascending: false })
+                .limit(1);
+            const asal = caris && caris.length > 0 ? caris[0] : null;
+            
+            let stokAsal = null;
+            if (asal) {
+                const { data: sp } = await sb.from('stok_pendukung').select('*').eq('id', asal.stok_pendukung_id).single();
+                stokAsal = sp;
+            }
+            
+            if (!stokAsal) {
+                if (!confirm(`Histori ini berasal dari Stok Pendukung, tapi stok asalnya tidak ditemukan otomatis.\n\nJika dihapus, ${row.qty} TIDAK akan kembali ke Stok Pendukung otomatis (harus ditambah manual di menu Stok Pendukung).\n\nTetap hapus?`)) return;
+                const { error } = await sb.from('barang_masuk').delete().eq('id', id);
+                if (error) { alert('Gagal menghapus: ' + error.message); return; }
+                await addLog('HAPUS HISTORI', `Menghapus histori barang masuk ID ${id} (dari stok pendukung, stok TIDAK dikembalikan otomatis)`);
+                alert('Histori dihapus. Ingat: stok belum dikembalikan otomatis.');
+                await onItemChange();
+                return;
+            }
+            
+            const namaStok = `${stokAsal.brand || 'GENERAL'} - ${stokAsal.jenis}`;
+            if (!confirm(`Hapus histori ini dan KEMBALIKAN ${row.qty} ke Stok Pendukung "${namaStok}"?\n\nStok sekarang: ${stokAsal.stok} → menjadi ${stokAsal.stok + row.qty}`)) return;
+            
+            const { data: { user } } = await sb.auth.getUser();
+            
+            const { error: delErr } = await sb.from('barang_masuk').delete().eq('id', id);
+            if (delErr) { alert('Gagal menghapus: ' + delErr.message); return; }
+            
+            // Baca stok terbaru lalu tambahkan kembali
+            const { data: spTerbaru } = await sb.from('stok_pendukung').select('stok').eq('id', stokAsal.id).single();
+            const stokBaru = (spTerbaru?.stok ?? stokAsal.stok) + row.qty;
+            const { error: updErr } = await sb.from('stok_pendukung').update({ stok: stokBaru }).eq('id', stokAsal.id);
+            if (updErr) {
+                alert('Histori sudah dihapus, tapi GAGAL mengembalikan stok: ' + updErr.message + '\nTambahkan ' + row.qty + ' manual di menu Stok Pendukung.');
+                return;
+            }
+            
+            await sb.from('histori_stok_pendukung').insert([{
+                stok_pendukung_id: stokAsal.id,
+                jenis: 'MASUK',
+                qty: row.qty,
+                keterangan: `Dikembalikan (batal ambil untuk PI ${noPi} - ${detailItem?.brand} ${detailItem?.jenis})`,
+                created_by: user.email
+            }]);
+            
+            await addLog('BATAL AMBIL STOK PENDUKUNG', `${user.email} membatalkan pengambilan ${row.qty} dari ${namaStok} untuk PI ${noPi}, stok dikembalikan`);
+            alert(`✅ Histori dihapus dan ${row.qty} dikembalikan ke Stok Pendukung.\nStok ${namaStok} sekarang: ${stokBaru}`);
+            await onItemChange();
         }
         
         async function simpanMasuk() {
