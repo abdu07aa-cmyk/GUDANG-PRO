@@ -286,13 +286,22 @@
             
             const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId)).order('id', { ascending: true });
             
+            // ✅ CEPAT: ambil masuk & keluar SEMUA item sekaligus (2 query paralel, bukan 2 per item)
+            const detailIds = (details || []).map(d => d.id);
+            const masukMap = {}, keluarMap = {};
+            if (detailIds.length > 0) {
+                const [masukRes, keluarRes] = await Promise.all([
+                    sb.from('barang_masuk').select('detail_id, qty').in('detail_id', detailIds),
+                    sb.from('barang_keluar').select('detail_id, qty').in('detail_id', detailIds)
+                ]);
+                (masukRes.data || []).forEach(m => { masukMap[m.detail_id] = (masukMap[m.detail_id] || 0) + m.qty; });
+                (keluarRes.data || []).forEach(k => { keluarMap[k.detail_id] = (keluarMap[k.detail_id] || 0) + k.qty; });
+            }
+            
             let options = '<option value="">-- Pilih Item --</option>';
-            for (const item of details) {
-                const { data: masuk } = await sb.from('barang_masuk').select('qty').eq('detail_id', item.id);
-                const { data: keluar } = await sb.from('barang_keluar').select('qty').eq('detail_id', item.id);
-                let totalMasuk = 0, totalKeluar = 0;
-                if (masuk) masuk.forEach(m => totalMasuk += m.qty);
-                if (keluar) keluar.forEach(k => totalKeluar += k.qty);
+            for (const item of (details || [])) {
+                const totalMasuk = masukMap[item.id] || 0;
+                const totalKeluar = keluarMap[item.id] || 0;
                 const stok = totalMasuk - totalKeluar;
                 
                 options += `<option value="${item.id}" data-stok="${stok}" data-qtypi="${item.qty_pi}" data-totalkeluar="${totalKeluar}" data-brand="${item.brand || '-'}" data-jenis="${item.jenis || '-'}" data-paper="${item.paper || '-'}" data-size="${item.size || '-'}">
