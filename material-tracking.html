@@ -325,6 +325,7 @@
     <script>
         let allData = [];
         let currentFiltered = [];
+        let keluarBersihMap = {};
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
@@ -361,6 +362,24 @@
             }
 
             allData = materials || [];
+            
+            // ✅ Ambil Barang Keluar per pi_detail_id (sumber "terkirim ke produksi" yang sebenarnya dipakai)
+            // NG otomatis (keterangan diawali "NG ") DIKECUALIKAN karena itu bukan pengiriman ke produksi
+            keluarBersihMap = {};
+            const detailIds = [...new Set(allData.map(d => d.pi_detail_id).filter(Boolean))];
+            if (detailIds.length > 0) {
+                const { data: keluarData } = await sb
+                    .from('barang_keluar')
+                    .select('detail_id, qty, keterangan')
+                    .in('detail_id', detailIds);
+                (keluarData || []).forEach(k => {
+                    const isNgOtomatis = (k.keterangan || '').startsWith('NG ');
+                    if (!isNgOtomatis) {
+                        keluarBersihMap[k.detail_id] = (keluarBersihMap[k.detail_id] || 0) + (k.qty || 0);
+                    }
+                });
+            }
+            
             currentFiltered = [...allData];
             renderPage();
         }
@@ -416,6 +435,7 @@
                         jenis: item.jenis || '-',
                         qtyPi: item.qty_pi || 0,
                         upPerSheet: item.up_per_sheet || 1,
+                        piDetailId: item.pi_detail_id || null,
                         totalDiterima: 0,
                         ngQC1Sheet: 0,
                         ngDiecutPcs: 0,
@@ -432,10 +452,14 @@
                     else if (ng.proses === 'DIECUT') g.ngDiecutPcs += (ng.qty_ng || 0);
                     else if (ng.proses === 'QC2') g.ngQC2Pcs += (ng.qty_ng || 0);
                 }
-
-                const sendList = item.production_send || [];
-                for (const s of sendList) {
-                    g.totalTerkirim += (s.qty_pcs || 0);
+            }
+            
+            // ✅ "Terkirim ke produksi" diambil dari Barang Keluar (sumber yang sebenarnya dipakai),
+            // bukan dari tabel Kirim Produksi yang mungkin tidak dipakai
+            for (const key in groups) {
+                const g = groups[key];
+                if (g.piDetailId) {
+                    g.totalTerkirim = keluarBersihMap[g.piDetailId] || 0;
                 }
             }
 
@@ -631,7 +655,8 @@
                         </table>
                     </div>
                     <div style="font-size:11px;color:#94a3b8;margin-top:8px;">
-                        📌 % NG dihitung dari total NG (QC1 dikonversi ke pcs via Up/Sheet) dibagi total pcs yang diterima dari supplier.
+                        📌 % NG dihitung dari total NG (QC1 dikonversi ke pcs via Up/Sheet) dibagi total pcs yang diterima dari supplier.<br>
+                        📌 "Terkirim Produksi" diambil dari Barang Keluar (bukan dari halaman Kirim Produksi), dan NG otomatis TIDAK dihitung sebagai terkirim.
                     </div>
                 </div>
 
