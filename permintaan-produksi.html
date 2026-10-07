@@ -15,79 +15,35 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
 
         .sidebar {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: #1e293b;
-            color: white;
-            transition: 0.3s;
-            z-index: 1000;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+            background: #1e293b; color: white; transition: 0.3s; z-index: 1000;
+            overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.2);
         }
         .sidebar.open { left: 0; }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
         .sidebar-header h3 { font-size: 18px; }
         .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
         .sidebar-menu { padding: 10px 0; }
-        .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #cbd5e1;
-            cursor: pointer;
-        }
+        .menu-item { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; cursor: pointer; }
         .menu-item:hover { background: #334155; color: white; }
         .menu-item.active { background: #3b82f6; color: white; }
         .menu-item .icon { width: 30px; font-size: 20px; }
         .menu-item .text { font-size: 14px; }
         .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
 
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
         .overlay.show { display: block; }
 
         .header {
-            background: white;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: white; padding: 15px; display: flex; align-items: center;
+            justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
         }
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-        }
+        .menu-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px 10px; border-radius: 8px; }
         .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
 
-        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 1000px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
 
@@ -101,9 +57,18 @@
         .alert-error { background: #fee2e2; color: #991b1b; }
         .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
 
+        .item-row {
+            display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;
+            background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;
+        }
+        .item-row select { flex: 2; min-width: 200px; margin: 0; }
+        .item-row input { flex: 1; min-width: 90px; margin: 0; }
+        .item-row .btn-remove { flex: 0; width: auto; background: #ef4444; padding: 10px 14px; margin: 0; }
+        .btn-add { background: #10b981; margin-top: 5px; }
+
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; vertical-align: top; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
 
         .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
@@ -111,14 +76,23 @@
 
         .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
         .status-pending { background: #fef3c7; color: #92400e; }
+        .status-disetujui { background: #dbeafe; color: #1e40af; }
+        .status-ditolak { background: #fee2e2; color: #991b1b; }
         .status-selesai { background: #d1fae5; color: #065f46; }
 
-        .btn-proses { background: #8b5cf6; width: auto; padding: 6px 12px; margin: 0; font-size: 12px; }
+        .btn-small { width: auto; padding: 6px 10px; margin: 2px 2px 2px 0; font-size: 11px; }
+        .btn-setujui { background: #10b981; }
+        .btn-setujui:hover { background: #059669; }
+        .btn-tolak { background: #ef4444; }
+        .btn-tolak:hover { background: #dc2626; }
+        .btn-proses { background: #8b5cf6; }
         .btn-proses:hover { background: #7c3aed; }
+        .qty-approve-input { width: 70px; display: inline-block; padding: 5px; margin: 0 4px; font-size: 12px; }
 
         @media (max-width: 600px) {
             th, td { font-size: 10px; padding: 6px 4px; }
             .filter-row select { width: 100%; }
+            .item-row { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -136,12 +110,12 @@
         <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
         <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
         <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+        <div class="menu-item active" data-menu="permintaan-produksi"><span class="icon">🙋</span><span class="text">Permintaan Produksi</span></div>
         <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
         <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
 
         <div class="menu-divider"></div>
 
-        <div class="menu-item active" data-menu="permintaan-produksi"><span class="icon">🙋</span><span class="text">Permintaan Produksi</span></div>
         <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
         <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
         <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
@@ -174,6 +148,8 @@
 
 <script>
     let isAdminUser = false;
+    let reqItemList = [{ detailId: '', qty: '' }];
+    let piItemOptions = []; // {id, brand, jenis, paper, size}
 
     async function loadPiList() {
         const { data: headers } = await sb.from('pi_header').select('*').eq('is_archived', false).order('created_at', { ascending: false });
@@ -188,75 +164,119 @@
 
     async function onReqPiChange() {
         const piId = document.getElementById('req_pi_select').value;
-        const itemSelect = document.getElementById('req_item_select');
         if (!piId) {
-            itemSelect.innerHTML = '<option value="">-- Pilih PI dulu --</option>';
+            piItemOptions = [];
+            reqItemList = [{ detailId: '', qty: '' }];
+            renderItemRows();
             return;
         }
         const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId)).order('id', { ascending: true });
-        let options = '<option value="">-- Pilih Item --</option>';
-        for (const item of (details || [])) {
-            options += `<option value="${item.id}" data-brand="${item.brand || '-'}" data-jenis="${item.jenis || '-'}">
-                ${item.brand} | ${item.jenis} | Paper:${item.paper || '-'} | Size:${item.size || '-'}
-            </option>`;
+        piItemOptions = details || [];
+        reqItemList = [{ detailId: '', qty: '' }];
+        renderItemRows();
+    }
+
+    function itemOptionsHtml(selectedId) {
+        let html = '<option value="">-- Pilih Item --</option>';
+        for (const it of piItemOptions) {
+            const sel = String(it.id) === String(selectedId) ? 'selected' : '';
+            html += `<option value="${it.id}" ${sel}>${it.brand} | ${it.jenis} | Paper:${it.paper || '-'} | Size:${it.size || '-'}</option>`;
         }
-        itemSelect.innerHTML = options;
+        return html;
+    }
+
+    function renderItemRows() {
+        const container = document.getElementById('reqItemContainer');
+        if (!container) return;
+        let html = '';
+        for (let i = 0; i < reqItemList.length; i++) {
+            html += `
+                <div class="item-row">
+                    <select onchange="updateReqItem(${i}, 'detailId', this.value)">${itemOptionsHtml(reqItemList[i].detailId)}</select>
+                    <input type="number" placeholder="Qty" value="${reqItemList[i].qty}" onchange="updateReqItem(${i}, 'qty', this.value)">
+                    <button type="button" class="btn-remove" onclick="hapusReqItem(${i})">✖</button>
+                </div>
+            `;
+        }
+        html += `<button type="button" class="btn-add" onclick="tambahReqItem()">+ Tambah Jenis Lain (dari PI yang sama)</button>`;
+        container.innerHTML = html;
+    }
+
+    function tambahReqItem() {
+        if (piItemOptions.length === 0) { alert('Pilih No PI dulu!'); return; }
+        reqItemList.push({ detailId: '', qty: '' });
+        renderItemRows();
+    }
+
+    function hapusReqItem(index) {
+        if (reqItemList.length > 1) {
+            reqItemList.splice(index, 1);
+            renderItemRows();
+        } else {
+            alert('Minimal 1 item!');
+        }
+    }
+
+    function updateReqItem(index, field, value) {
+        reqItemList[index][field] = value;
     }
 
     async function simpanPermintaan() {
         const piId = document.getElementById('req_pi_select').value;
-        const itemSelect = document.getElementById('req_item_select');
-        const itemId = itemSelect.value;
-        const qty = document.getElementById('req_qty').value;
         const tanggalButuh = document.getElementById('req_tanggal').value;
         const catatan = document.getElementById('req_catatan').value;
 
-        if (!piId || !itemId || !qty) {
-            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Pilih PI, Item, dan isi Qty!</div>';
-            return;
-        }
-        if (parseInt(qty) <= 0) {
-            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Qty harus lebih dari 0!</div>';
+        if (!piId) { document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Pilih No PI dulu!</div>'; return; }
+
+        const validItems = reqItemList.filter(it => it.detailId && it.qty && parseInt(it.qty) > 0);
+        if (validItems.length === 0) {
+            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Pilih minimal 1 item dan isi Qty!</div>';
             return;
         }
 
-        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-        const brand = selectedOption.getAttribute('data-brand');
-        const jenis = selectedOption.getAttribute('data-jenis');
         const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
         const { data: { user } } = await sb.auth.getUser();
+        const batchId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-        const { error } = await sb.from('permintaan_produksi').insert([{
-            pi_id: parseInt(piId),
-            detail_id: parseInt(itemId),
-            no_pi: header?.no_pi || '-',
-            brand: brand,
-            jenis: jenis,
-            qty_diminta: parseInt(qty),
-            tanggal_dibutuhkan: tanggalButuh || null,
-            catatan: catatan || null,
-            status: 'PENDING',
-            requested_by: user.email
-        }]);
+        const rows = validItems.map(it => {
+            const detail = piItemOptions.find(d => String(d.id) === String(it.detailId));
+            return {
+                pi_id: parseInt(piId),
+                detail_id: parseInt(it.detailId),
+                no_pi: header?.no_pi || '-',
+                brand: detail?.brand || '-',
+                jenis: detail?.jenis || '-',
+                qty_diminta: parseInt(it.qty),
+                tanggal_dibutuhkan: tanggalButuh || null,
+                catatan: catatan || null,
+                status: 'PENDING',
+                requested_by: user.email,
+                batch_id: batchId
+            };
+        });
+
+        const { error } = await sb.from('permintaan_produksi').insert(rows);
 
         if (error) {
             document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
         } else {
             if (typeof addLog === 'function') {
-                try { await addLog('PERMINTAAN PRODUKSI', `${user.email} meminta ${qty} ${brand} - ${jenis} (PI ${header?.no_pi})`); } catch(e) {}
+                try { await addLog('PERMINTAAN PRODUKSI', `${user.email} mengajukan ${rows.length} jenis untuk PI ${header?.no_pi}`); } catch(e) {}
             }
-            document.getElementById('msgReq').innerHTML = '<div class="alert alert-success">✅ Permintaan berhasil diajukan! Gudang akan memprosesnya.</div>';
-            document.getElementById('req_qty').value = '';
+            document.getElementById('msgReq').innerHTML = `<div class="alert alert-success">✅ ${rows.length} permintaan berhasil diajukan! Menunggu persetujuan gudang.</div>`;
             document.getElementById('req_tanggal').value = '';
             document.getElementById('req_catatan').value = '';
+            document.getElementById('req_pi_select').value = '';
+            piItemOptions = [];
+            reqItemList = [{ detailId: '', qty: '' }];
+            renderItemRows();
             await loadDaftarPermintaan();
         }
     }
 
     async function loadDaftarPermintaan() {
         const filterStatus = document.getElementById('filterStatusReq')?.value || 'all';
-        let query = sb.from('permintaan_produksi').select('*').order('status', { ascending: true }).order('created_at', { ascending: false });
-        const { data, error } = await query;
+        const { data, error } = await sb.from('permintaan_produksi').select('*').order('batch_id', { ascending: false }).order('id', { ascending: true });
 
         const container = document.getElementById('daftarPermintaanList');
         if (error) {
@@ -271,18 +291,37 @@
             return;
         }
 
+        const statusMap = {
+            PENDING: '<span class="status-badge status-pending">⏳ PENDING</span>',
+            DISETUJUI: '<span class="status-badge status-disetujui">✅ DISETUJUI</span>',
+            DITOLAK: '<span class="status-badge status-ditolak">❌ DITOLAK</span>',
+            SELESAI: '<span class="status-badge status-selesai">📦 SELESAI</span>'
+        };
+
         let html = '<div class="table-wrapper"><table><thead><tr>' +
-            '<th>No PI</th><th>Brand</th><th>Jenis</th><th>Qty Diminta</th><th>Butuh Tgl</th><th>Diminta Oleh</th><th>Status</th><th>Aksi</th>' +
+            '<th>No PI</th><th>Brand</th><th>Jenis</th><th>Qty Diminta</th><th>Diminta Oleh</th><th>Status</th><th>Aksi</th>' +
             '</tr></thead><tbody>';
 
         for (const r of rows) {
-            const statusBadge = r.status === 'SELESAI'
-                ? '<span class="status-badge status-selesai">✅ SELESAI</span>'
-                : '<span class="status-badge status-pending">⏳ PENDING</span>';
-
             let aksi = '-';
-            if (r.status === 'PENDING' && isAdminUser) {
-                aksi = `<button class="btn-proses" onclick="prosesPermintaan(${r.id})">🚚 Proses</button>`;
+            if (r.status === 'PENDING') {
+                if (isAdminUser) {
+                    aksi = `
+                        <div style="white-space:nowrap;">
+                            <input type="number" class="qty-approve-input" id="approveQty_${r.id}" value="${r.qty_diminta}" min="1">
+                            <button class="btn-small btn-setujui" onclick="setujuiPermintaan(${r.id})">✅ Setujui</button>
+                            <button class="btn-small btn-tolak" onclick="tolakPermintaan(${r.id})">❌ Tolak</button>
+                        </div>
+                    `;
+                } else {
+                    aksi = '<span class="info-text">Menunggu persetujuan gudang</span>';
+                }
+            } else if (r.status === 'DISETUJUI') {
+                aksi = isAdminUser
+                    ? `<button class="btn-small btn-proses" onclick="prosesPermintaan(${r.id})">🚚 Proses (${r.approved_qty})</button>`
+                    : `<span class="info-text">Disetujui: ${r.approved_qty}, menunggu diproses gudang</span>`;
+            } else if (r.status === 'DITOLAK') {
+                aksi = `<span class="info-text" style="color:#991b1b;">Alasan: ${r.alasan_tolak || '-'}</span>`;
             } else if (r.status === 'SELESAI') {
                 aksi = `<span class="info-text">Qty diberikan: ${r.qty_diberikan ?? '-'}</span>`;
             }
@@ -292,14 +331,56 @@
                 <td>${r.brand}</td>
                 <td>${r.jenis}</td>
                 <td>${r.qty_diminta}</td>
-                <td>${r.tanggal_dibutuhkan || '-'}</td>
                 <td style="font-size:11px;">${r.requested_by || '-'}</td>
-                <td>${statusBadge}</td>
+                <td>${statusMap[r.status] || r.status}</td>
                 <td>${aksi}</td>
             </tr>`;
         }
         html += '</tbody></table></div>';
         container.innerHTML = html;
+    }
+
+    async function setujuiPermintaan(id) {
+        const qtyInput = document.getElementById('approveQty_' + id);
+        const approvedQty = parseInt(qtyInput.value);
+        if (!approvedQty || approvedQty <= 0) { alert('Qty disetujui tidak valid!'); return; }
+
+        const { data: r } = await sb.from('permintaan_produksi').select('*').eq('id', id).single();
+        if (!confirm(`Setujui permintaan "${r.brand} - ${r.jenis}" sebanyak ${approvedQty}?${approvedQty != r.qty_diminta ? '\n(Beda dari yang diminta: ' + r.qty_diminta + ')' : ''}`)) return;
+
+        const { data: { user } } = await sb.auth.getUser();
+        const { error } = await sb.from('permintaan_produksi').update({
+            status: 'DISETUJUI',
+            approved_qty: approvedQty,
+            approved_by: user.email,
+            approved_at: new Date().toISOString()
+        }).eq('id', id);
+
+        if (error) { alert('Gagal: ' + error.message); return; }
+        if (typeof addLog === 'function') {
+            try { await addLog('SETUJUI PERMINTAAN', `${user.email} menyetujui permintaan #${id} (${r.brand} - ${r.jenis}) sebanyak ${approvedQty}`); } catch(e) {}
+        }
+        await loadDaftarPermintaan();
+    }
+
+    async function tolakPermintaan(id) {
+        const alasan = prompt('Alasan menolak permintaan ini?');
+        if (alasan === null) return;
+        if (!alasan.trim()) { alert('Alasan wajib diisi!'); return; }
+
+        const { data: { user } } = await sb.auth.getUser();
+        const { error } = await sb.from('permintaan_produksi').update({
+            status: 'DITOLAK',
+            alasan_tolak: alasan.trim(),
+            approved_by: user.email,
+            approved_at: new Date().toISOString()
+        }).eq('id', id);
+
+        if (error) { alert('Gagal: ' + error.message); return; }
+        if (typeof addLog === 'function') {
+            try { await addLog('TOLAK PERMINTAAN', `${user.email} menolak permintaan #${id}: ${alasan.trim()}`); } catch(e) {}
+        }
+        await loadDaftarPermintaan();
     }
 
     function prosesPermintaan(id) {
@@ -309,7 +390,7 @@
                 request_id: r.id,
                 pi_id: r.pi_id,
                 item_id: r.detail_id,
-                qty: r.qty_diminta
+                qty: r.approved_qty
             });
             window.location.href = 'stock-out.html?' + params.toString();
         });
@@ -326,22 +407,17 @@
                     <option value="">Loading...</option>
                 </select>
 
-                <label>Pilih Item Barang</label>
-                <select id="req_item_select">
-                    <option value="">-- Pilih PI dulu --</option>
-                </select>
-
-                <label>Jumlah Diminta</label>
-                <input type="number" id="req_qty" placeholder="Qty">
+                <label>Item yang Diminta</label>
+                <div id="reqItemContainer"></div>
 
                 <label>Tanggal Dibutuhkan (opsional)</label>
                 <input type="date" id="req_tanggal">
 
-                <label>Catatan (opsional)</label>
+                <label>Catatan (opsional, berlaku untuk semua item di atas)</label>
                 <textarea id="req_catatan" placeholder="Contoh: untuk line A, urgent, dll."></textarea>
 
                 <button onclick="simpanPermintaan()">🙋 Ajukan Permintaan</button>
-                <span class="info-text">📌 Permintaan akan langsung masuk antrian dan diproses oleh gudang via Barang Keluar.</span>
+                <span class="info-text">📌 Bisa pilih beberapa jenis sekaligus dari PI yang sama. Setiap jenis akan disetujui/ditolak terpisah oleh gudang.</span>
             </div>
 
             <div class="card">
@@ -350,7 +426,9 @@
                     <select id="filterStatusReq" onchange="loadDaftarPermintaan()">
                         <option value="all">Semua Status</option>
                         <option value="PENDING">⏳ Pending</option>
-                        <option value="SELESAI">✅ Selesai</option>
+                        <option value="DISETUJUI">✅ Disetujui</option>
+                        <option value="DITOLAK">❌ Ditolak</option>
+                        <option value="SELESAI">📦 Selesai</option>
                     </select>
                 </div>
                 <div id="daftarPermintaanList">
@@ -358,32 +436,21 @@
                 </div>
             </div>
         `;
+        renderItemRows();
         await loadPiList();
         await loadDaftarPermintaan();
     }
 
     function goToMenu(menu) {
         const files = {
-            dashboard: 'dashboard.html',
-            'pi-input': 'pi-input.html',
-            'stock-in': 'stock-in.html',
-            'stock-out': 'stock-out.html',
-            'stock-report': 'stock-report.html',
-            'stok-pendukung': 'stok-pendukung.html',
-            'barcode-generator': 'barcode-generator.html',
-            'scan-barcode': 'scan-barcode.html',
-            'permintaan-produksi': 'permintaan-produksi.html',
-            'material-tracking': 'material-tracking.html',
-            'material-inbound': 'material-inbound.html',
-            'qc-inspection': 'qc-inspection.html',
-            'diecut-process': 'diecut-process.html',
-            'production-send': 'production-send.html',
-            'ng-report': 'ng-report.html',
-            'export-backup': 'export-backup.html',
-            executive: 'executive-report.html',
-            'manage-users': 'manage-users.html',
-            'log-aktivitas': 'log-aktivitas.html',
-            export: 'export-final3.html'
+            dashboard: 'dashboard.html', 'pi-input': 'pi-input.html', 'stock-in': 'stock-in.html',
+            'stock-out': 'stock-out.html', 'stock-report': 'stock-report.html', 'stok-pendukung': 'stok-pendukung.html',
+            'barcode-generator': 'barcode-generator.html', 'scan-barcode': 'scan-barcode.html',
+            'permintaan-produksi': 'permintaan-produksi.html', 'material-tracking': 'material-tracking.html',
+            'material-inbound': 'material-inbound.html', 'qc-inspection': 'qc-inspection.html',
+            'diecut-process': 'diecut-process.html', 'production-send': 'production-send.html',
+            'ng-report': 'ng-report.html', 'export-backup': 'export-backup.html', executive: 'executive-report.html',
+            'manage-users': 'manage-users.html', 'log-aktivitas': 'log-aktivitas.html', export: 'export-final3.html'
         };
         window.location.href = files[menu] || 'dashboard.html';
     }
@@ -430,8 +497,13 @@
     }
 
     window.onReqPiChange = onReqPiChange;
+    window.tambahReqItem = tambahReqItem;
+    window.hapusReqItem = hapusReqItem;
+    window.updateReqItem = updateReqItem;
     window.simpanPermintaan = simpanPermintaan;
     window.loadDaftarPermintaan = loadDaftarPermintaan;
+    window.setujuiPermintaan = setujuiPermintaan;
+    window.tolakPermintaan = tolakPermintaan;
     window.prosesPermintaan = prosesPermintaan;
 
     init();
