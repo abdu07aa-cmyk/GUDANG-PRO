@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Permintaan Produksi - SUPPLY MATERIAL</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; overflow-x: hidden; }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #334155; background: #0f172a; }
+        .sidebar-header h3 { font-size: 18px; }
+        .sidebar-header p { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+        .sidebar-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .menu-item:hover { background: #334155; color: white; }
+        .menu-item.active { background: #3b82f6; color: white; }
+        .menu-item .icon { width: 30px; font-size: 20px; }
+        .menu-item .text { font-size: 14px; }
+        .menu-divider { height: 1px; background: #334155; margin: 10px 20px; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show { display: block; }
+
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+
+        input, button, select, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        button { background: #3b82f6; color: white; border: none; cursor: pointer; }
+        button:active { transform: scale(0.98); }
+        textarea { min-height: 60px; resize: vertical; }
+
+        .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+        .alert-success { background: #d1fae5; color: #065f46; }
+        .alert-error { background: #fee2e2; color: #991b1b; }
+        .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        th { background: #f8fafc; color: #64748b; font-weight: 500; }
+
+        .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .filter-row select { width: auto; flex: 1; min-width: 140px; }
+
+        .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-selesai { background: #d1fae5; color: #065f46; }
+
+        .btn-proses { background: #8b5cf6; width: auto; padding: 6px 12px; margin: 0; font-size: 12px; }
+        .btn-proses:hover { background: #7c3aed; }
+
+        @media (max-width: 600px) {
+            th, td { font-size: 10px; padding: 6px 4px; }
+            .filter-row select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>📦 SUPPLY MATERIAL</h3>
+        <p>Manajemen Inventory</p>
+    </div>
+    <div class="sidebar-menu">
+        <div class="menu-item" data-menu="dashboard"><span class="icon">📊</span><span class="text">Dashboard</span></div>
+        <div class="menu-item" data-menu="pi-input"><span class="icon">📝</span><span class="text">Input PI</span></div>
+        <div class="menu-item" data-menu="stock-in"><span class="icon">📥</span><span class="text">Barang Masuk</span></div>
+        <div class="menu-item" data-menu="stock-out"><span class="icon">📤</span><span class="text">Barang Keluar</span></div>
+        <div class="menu-item" data-menu="stock-report"><span class="icon">📋</span><span class="text">Stok Gudang</span></div>
+        <div class="menu-item" data-menu="stok-pendukung"><span class="icon">📦</span><span class="text">Stok Pendukung</span></div>
+        <div class="menu-item" data-menu="barcode-generator"><span class="icon">🏷️</span><span class="text">QR Code</span></div>
+        <div class="menu-item" data-menu="scan-barcode"><span class="icon">📷</span><span class="text">Scan QR</span></div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-item active" data-menu="permintaan-produksi"><span class="icon">🙋</span><span class="text">Permintaan Produksi</span></div>
+        <div class="menu-item" data-menu="material-tracking"><span class="icon">📊</span><span class="text">Tracking Material</span></div>
+        <div class="menu-item" data-menu="material-inbound"><span class="icon">📥</span><span class="text">Material Masuk</span></div>
+        <div class="menu-item" data-menu="qc-inspection"><span class="icon">🔬</span><span class="text">QC Inspection</span></div>
+        <div class="menu-item" data-menu="diecut-process"><span class="icon">⚙️</span><span class="text">Proses Diecut</span></div>
+        <div class="menu-item" data-menu="production-send"><span class="icon">🏭</span><span class="text">Kirim Produksi</span></div>
+        <div class="menu-item" data-menu="ng-report"><span class="icon">📋</span><span class="text">Laporan NG</span></div>
+
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="export-backup"><span class="icon">💾</span><span class="text">Backup Data</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="executive"><span class="icon">📈</span><span class="text">Laporan Eksekutif</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item menu-admin-only" data-menu="manage-users"><span class="icon">👥</span><span class="text">Kelola User</span></div>
+        <div class="menu-item menu-admin-only" data-menu="log-aktivitas"><span class="icon">📜</span><span class="text">Log Aktivitas</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" data-menu="export"><span class="icon">📎</span><span class="text">Export Data</span></div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" id="logoutMenu"><span class="icon">🚪</span><span class="text">Logout</span></div>
+    </div>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<div class="header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <div class="logo">📦 SUPPLY MATERIAL</div>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
+
+<div class="container" id="mainContent"></div>
+
+<script>
+    let isAdminUser = false;
+
+    async function loadPiList() {
+        const { data: headers } = await sb.from('pi_header').select('*').eq('is_archived', false).order('created_at', { ascending: false });
+        let options = '<option value="">-- Pilih No PI --</option>';
+        if (headers) {
+            for (const h of headers) {
+                options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`;
+            }
+        }
+        document.getElementById('req_pi_select').innerHTML = options;
+    }
+
+    async function onReqPiChange() {
+        const piId = document.getElementById('req_pi_select').value;
+        const itemSelect = document.getElementById('req_item_select');
+        if (!piId) {
+            itemSelect.innerHTML = '<option value="">-- Pilih PI dulu --</option>';
+            return;
+        }
+        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId)).order('id', { ascending: true });
+        let options = '<option value="">-- Pilih Item --</option>';
+        for (const item of (details || [])) {
+            options += `<option value="${item.id}" data-brand="${item.brand || '-'}" data-jenis="${item.jenis || '-'}">
+                ${item.brand} | ${item.jenis} | Paper:${item.paper || '-'} | Size:${item.size || '-'}
+            </option>`;
+        }
+        itemSelect.innerHTML = options;
+    }
+
+    async function simpanPermintaan() {
+        const piId = document.getElementById('req_pi_select').value;
+        const itemSelect = document.getElementById('req_item_select');
+        const itemId = itemSelect.value;
+        const qty = document.getElementById('req_qty').value;
+        const tanggalButuh = document.getElementById('req_tanggal').value;
+        const catatan = document.getElementById('req_catatan').value;
+
+        if (!piId || !itemId || !qty) {
+            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Pilih PI, Item, dan isi Qty!</div>';
+            return;
+        }
+        if (parseInt(qty) <= 0) {
+            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Qty harus lebih dari 0!</div>';
+            return;
+        }
+
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        const brand = selectedOption.getAttribute('data-brand');
+        const jenis = selectedOption.getAttribute('data-jenis');
+        const { data: header } = await sb.from('pi_header').select('no_pi').eq('id', piId).single();
+        const { data: { user } } = await sb.auth.getUser();
+
+        const { error } = await sb.from('permintaan_produksi').insert([{
+            pi_id: parseInt(piId),
+            detail_id: parseInt(itemId),
+            no_pi: header?.no_pi || '-',
+            brand: brand,
+            jenis: jenis,
+            qty_diminta: parseInt(qty),
+            tanggal_dibutuhkan: tanggalButuh || null,
+            catatan: catatan || null,
+            status: 'PENDING',
+            requested_by: user.email
+        }]);
+
+        if (error) {
+            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
+        } else {
+            if (typeof addLog === 'function') {
+                try { await addLog('PERMINTAAN PRODUKSI', `${user.email} meminta ${qty} ${brand} - ${jenis} (PI ${header?.no_pi})`); } catch(e) {}
+            }
+            document.getElementById('msgReq').innerHTML = '<div class="alert alert-success">✅ Permintaan berhasil diajukan! Gudang akan memprosesnya.</div>';
+            document.getElementById('req_qty').value = '';
+            document.getElementById('req_tanggal').value = '';
+            document.getElementById('req_catatan').value = '';
+            await loadDaftarPermintaan();
+        }
+    }
+
+    async function loadDaftarPermintaan() {
+        const filterStatus = document.getElementById('filterStatusReq')?.value || 'all';
+        let query = sb.from('permintaan_produksi').select('*').order('status', { ascending: true }).order('created_at', { ascending: false });
+        const { data, error } = await query;
+
+        const container = document.getElementById('daftarPermintaanList');
+        if (error) {
+            container.innerHTML = '<div class="info-text">❌ Error: ' + error.message + '</div>';
+            return;
+        }
+
+        let rows = (data || []).filter(r => filterStatus === 'all' || r.status === filterStatus);
+
+        if (rows.length === 0) {
+            container.innerHTML = '<div class="info-text" style="padding:15px;text-align:center;">Belum ada permintaan</div>';
+            return;
+        }
+
+        let html = '<div class="table-wrapper"><table><thead><tr>' +
+            '<th>No PI</th><th>Brand</th><th>Jenis</th><th>Qty Diminta</th><th>Butuh Tgl</th><th>Diminta Oleh</th><th>Status</th><th>Aksi</th>' +
+            '</tr></thead><tbody>';
+
+        for (const r of rows) {
+            const statusBadge = r.status === 'SELESAI'
+                ? '<span class="status-badge status-selesai">✅ SELESAI</span>'
+                : '<span class="status-badge status-pending">⏳ PENDING</span>';
+
+            let aksi = '-';
+            if (r.status === 'PENDING' && isAdminUser) {
+                aksi = `<button class="btn-proses" onclick="prosesPermintaan(${r.id})">🚚 Proses</button>`;
+            } else if (r.status === 'SELESAI') {
+                aksi = `<span class="info-text">Qty diberikan: ${r.qty_diberikan ?? '-'}</span>`;
+            }
+
+            html += `<tr>
+                <td><b>${r.no_pi}</b></td>
+                <td>${r.brand}</td>
+                <td>${r.jenis}</td>
+                <td>${r.qty_diminta}</td>
+                <td>${r.tanggal_dibutuhkan || '-'}</td>
+                <td style="font-size:11px;">${r.requested_by || '-'}</td>
+                <td>${statusBadge}</td>
+                <td>${aksi}</td>
+            </tr>`;
+        }
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    function prosesPermintaan(id) {
+        sb.from('permintaan_produksi').select('*').eq('id', id).single().then(({ data: r }) => {
+            if (!r) { alert('Permintaan tidak ditemukan!'); return; }
+            const params = new URLSearchParams({
+                request_id: r.id,
+                pi_id: r.pi_id,
+                item_id: r.detail_id,
+                qty: r.qty_diminta
+            });
+            window.location.href = 'stock-out.html?' + params.toString();
+        });
+    }
+
+    async function loadHalaman() {
+        document.getElementById('mainContent').innerHTML = `
+            <div class="card">
+                <div class="card-title">🙋 Ajukan Permintaan Barang</div>
+                <div id="msgReq"></div>
+
+                <label>Pilih No PI</label>
+                <select id="req_pi_select" onchange="onReqPiChange()">
+                    <option value="">Loading...</option>
+                </select>
+
+                <label>Pilih Item Barang</label>
+                <select id="req_item_select">
+                    <option value="">-- Pilih PI dulu --</option>
+                </select>
+
+                <label>Jumlah Diminta</label>
+                <input type="number" id="req_qty" placeholder="Qty">
+
+                <label>Tanggal Dibutuhkan (opsional)</label>
+                <input type="date" id="req_tanggal">
+
+                <label>Catatan (opsional)</label>
+                <textarea id="req_catatan" placeholder="Contoh: untuk line A, urgent, dll."></textarea>
+
+                <button onclick="simpanPermintaan()">🙋 Ajukan Permintaan</button>
+                <span class="info-text">📌 Permintaan akan langsung masuk antrian dan diproses oleh gudang via Barang Keluar.</span>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📋 Daftar Permintaan</div>
+                <div class="filter-row">
+                    <select id="filterStatusReq" onchange="loadDaftarPermintaan()">
+                        <option value="all">Semua Status</option>
+                        <option value="PENDING">⏳ Pending</option>
+                        <option value="SELESAI">✅ Selesai</option>
+                    </select>
+                </div>
+                <div id="daftarPermintaanList">
+                    <div class="info-text">⏳ Memuat...</div>
+                </div>
+            </div>
+        `;
+        await loadPiList();
+        await loadDaftarPermintaan();
+    }
+
+    function goToMenu(menu) {
+        const files = {
+            dashboard: 'dashboard.html',
+            'pi-input': 'pi-input.html',
+            'stock-in': 'stock-in.html',
+            'stock-out': 'stock-out.html',
+            'stock-report': 'stock-report.html',
+            'stok-pendukung': 'stok-pendukung.html',
+            'barcode-generator': 'barcode-generator.html',
+            'scan-barcode': 'scan-barcode.html',
+            'permintaan-produksi': 'permintaan-produksi.html',
+            'material-tracking': 'material-tracking.html',
+            'material-inbound': 'material-inbound.html',
+            'qc-inspection': 'qc-inspection.html',
+            'diecut-process': 'diecut-process.html',
+            'production-send': 'production-send.html',
+            'ng-report': 'ng-report.html',
+            'export-backup': 'export-backup.html',
+            executive: 'executive-report.html',
+            'manage-users': 'manage-users.html',
+            'log-aktivitas': 'log-aktivitas.html',
+            export: 'export-final3.html'
+        };
+        window.location.href = files[menu] || 'dashboard.html';
+    }
+
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+    function toggleSidebar() { if (document.getElementById('sidebar').classList.contains('open')) closeSidebar(); else openSidebar(); }
+
+    async function logout() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+
+    function setupEventListeners() {
+        document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('overlay').addEventListener('click', closeSidebar);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('logoutMenu').addEventListener('click', logout);
+        document.querySelectorAll('.menu-item[data-menu]').forEach(item => {
+            item.addEventListener('click', () => goToMenu(item.getAttribute('data-menu')));
+        });
+    }
+
+    async function init() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card" style="text-align:center; padding:30px">
+                    <h3>⚠️ Belum Login</h3>
+                    <button onclick="window.location.href='login.html'" style="margin-top:15px; padding:10px 20px; background:#3b82f6; color:white; border:none; border-radius:8px">Ke Halaman Login</button>
+                </div>
+            `;
+            return;
+        }
+
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+            const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
+            isAdminUser = profile?.role === 'admin';
+            if (!isAdminUser) {
+                document.querySelectorAll('.menu-admin-only').forEach(el => el.style.display = 'none');
+            }
+        }
+
+        setupEventListeners();
+        await loadHalaman();
+    }
+
+    window.onReqPiChange = onReqPiChange;
+    window.simpanPermintaan = simpanPermintaan;
+    window.loadDaftarPermintaan = loadDaftarPermintaan;
+    window.prosesPermintaan = prosesPermintaan;
+
+    init();
+</script>
+</body>
+</html>
