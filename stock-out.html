@@ -154,6 +154,10 @@
             <span class="icon">📦</span>
             <span class="text">Stok Pendukung</span>
         </div>
+        <div class="menu-item" data-menu="permintaan-produksi">
+            <span class="icon">🙋</span>
+            <span class="text">Permintaan Produksi</span>
+        </div>
         <div class="menu-item" data-menu="barcode-generator">
             <span class="icon">🏷️</span>
             <span class="text">QR Code</span>
@@ -249,6 +253,8 @@
         let currentStok = 0;
         let currentPiId = null;
         let currentItemId = null;
+        let currentRequestId = null;
+        let currentRequestQty = null;
         
         async function loadPiList() {
             const { data: headers } = await sb.from('pi_header').select('*').eq('is_archived', false).order('created_at', { ascending: false });
@@ -549,18 +555,39 @@
             }
             
             const { data: { user } } = await sb.auth.getUser();
-            const { error } = await sb.from('barang_keluar').insert([{
+            const { data: inserted, error } = await sb.from('barang_keluar').insert([{
                 detail_id: parseInt(itemId),
                 tanggal: tanggal,
                 qty: parseInt(qty),
                 keterangan: keterangan || '-',
                 created_by: user.email
-            }]);
+            }]).select();
             
             if (error) {
                 alert('Gagal: ' + error.message);
             } else {
-                alert('✅ Barang keluar dicatat!');
+                let pesanTambahan = '';
+                
+                // ✅ Jika ini berasal dari Permintaan Produksi, otomatis tandai SELESAI
+                if (currentRequestId && inserted && inserted.length > 0) {
+                    const { error: reqErr } = await sb.from('permintaan_produksi').update({
+                        status: 'SELESAI',
+                        processed_by: user.email,
+                        processed_at: new Date().toISOString(),
+                        barang_keluar_id: inserted[0].id,
+                        qty_diberikan: parseInt(qty)
+                    }).eq('id', currentRequestId);
+                    
+                    if (!reqErr) {
+                        pesanTambahan = '\n✅ Permintaan Produksi otomatis ditandai SELESAI.';
+                        currentRequestId = null;
+                        currentRequestQty = null;
+                    } else {
+                        pesanTambahan = '\n⚠️ Gagal menandai Permintaan Produksi selesai: ' + reqErr.message;
+                    }
+                }
+                
+                alert('✅ Barang keluar dicatat!' + pesanTambahan);
                 
                 // RESET hanya qty dan keterangan, PI dan item tetap
                 document.getElementById('qty_keluar').value = '';
@@ -588,6 +615,7 @@ function goToMenu(menu) {
         'stock-in': 'stock-in.html',
         'stock-out': 'stock-out.html',
         'stock-report': 'stock-report.html',
+        'permintaan-produksi': 'permintaan-produksi.html',
         'stok-pendukung': 'stok-pendukung.html',
         'barcode-generator': 'barcode-generator.html',
         'scan-barcode': 'scan-barcode.html',
@@ -664,17 +692,32 @@ function goToMenu(menu) {
             
             setupEventListeners();
             
+            // Cek parameter URL untuk pre-fill PI / Item / Qty (dari Permintaan Produksi)
+            const urlParams = new URLSearchParams(window.location.search);
+            const piIdParam = urlParams.get('pi_id');
+            const itemIdParam = urlParams.get('item_id');
+            const qtyParam = urlParams.get('qty');
+            const requestIdParam = urlParams.get('request_id');
+            if (piIdParam) currentPiId = piIdParam;
+            if (itemIdParam) currentItemId = itemIdParam;
+            if (qtyParam) currentRequestQty = qtyParam;
+            if (requestIdParam) currentRequestId = requestIdParam;
+            
             const today = new Date().toISOString().split('T')[0];
+            const requestBanner = currentRequestId
+                ? `<div class="alert alert-warning" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;">🙋 Sedang memproses <b>Permintaan Produksi</b> — setelah disimpan, permintaan ini otomatis ditandai SELESAI.</div>`
+                : '';
             document.getElementById('mainContent').innerHTML = `
                 <div class="card">
                     <div class="card-title">📤 Barang Keluar</div>
+                    ${requestBanner}
                     <div id="msg"></div>
                     <select id="pi_select" onchange="onPiChange()"><option>Loading...</option></select>
                     <select id="item_select" onchange="onItemChange()"><option>-- Pilih PI dulu --</option></select>
                     <div id="itemInfo"></div>
                     <div id="stokInfo"></div>
                     <input type="date" id="tanggal_keluar" value="${today}">
-                    <input type="number" id="qty_keluar" placeholder="Jumlah Keluar">
+                    <input type="number" id="qty_keluar" placeholder="Jumlah Keluar" value="${currentRequestQty || ''}">
                     <input type="text" id="keterangan" placeholder="Keterangan (opsional)">
                     <button onclick="simpanKeluar()">📤 Simpan Barang Keluar</button>
                 </div>
@@ -683,13 +726,6 @@ function goToMenu(menu) {
                     <div id="historyList">Pilih item terlebih dahulu</div>
                 </div>
             `;
-            
-            // Cek parameter URL untuk pre-fill PI
-            const urlParams = new URLSearchParams(window.location.search);
-            const piIdParam = urlParams.get('pi_id');
-            if (piIdParam) {
-                currentPiId = piIdParam;
-            }
             
             await loadPiList();
         }
