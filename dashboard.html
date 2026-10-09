@@ -1095,37 +1095,43 @@
         // ============================================================
         // INIT
         // ============================================================
-        async function init() {
+       async function init() {
     await cekSession();
-    
-    // Set user info jika ada session
+
     try {
         const { data: { user } } = await sb.auth.getUser();
         if (user) {
+            const email = user.email || 'User';
             const nameEl = document.getElementById('userName');
             const roleEl = document.getElementById('userRole');
             const welcomeEl = document.getElementById('welcomeText');
-            
-            const email = user.email || 'User';
+
             nameEl.textContent = email.split('@')[0];
             welcomeEl.textContent = '👋 Welcome, ' + email.split('@')[0];
-            
-            const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single();
+
+            const { data: profile, error: profErr } = await sb
+                .from('user_profiles')              // ← DIUBAH
+                .select('role')
+                .eq('email', email)                  // ← DIUBAH
+                .maybeSingle();                       // ← DIUBAH
+
+            if (profErr) console.warn('Gagal ambil profile:', profErr.message);
+
             if (profile?.role === 'admin') {
                 roleEl.textContent = 'Administrator';
             } else {
-                roleEl.textContent = 'User';
-                document.querySelectorAll('.menu-admin-only').forEach(el => el.style.display = 'none');
+                // ⛔ BUKAN ADMIN → tendang ke Permintaan Produksi
+                window.location.href = 'permintaan-produksi.html';   // ← DIUBAH
+                return;
             }
         }
     } catch(e) {
-        console.log('User info not available');
+        console.log('User info not available:', e);
     }
-    
+
     setupEventListeners();
     await loadData();
 }
-
         // Expose functions ke global
         window.filterData = filterData;
         window.tarikDashboard = tarikDashboard;
