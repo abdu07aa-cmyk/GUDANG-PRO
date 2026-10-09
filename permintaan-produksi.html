@@ -66,6 +66,22 @@
         .item-row .btn-remove { flex: 0; width: auto; background: #ef4444; padding: 10px 14px; margin: 0; }
         .btn-add { background: #10b981; margin-top: 5px; }
 
+        .req-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .req-card-disabled { opacity: 0.7; background: #fffbeb; border-color: #fde68a; }
+        .req-card-title { font-weight: 600; font-size: 14px; color: #1e293b; }
+        .req-card-sub { font-size: 12px; color: #64748b; margin: 2px 0 8px 0; }
+        .req-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+        .req-stat { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; min-width: 80px; text-align: center; }
+        .req-stat span { display: block; font-size: 10px; color: #64748b; }
+        .req-stat b { font-size: 15px; color: #1e293b; }
+        .req-stat-kurang { background: #fef2f2; border-color: #fecaca; }
+        .req-stat-kurang b { color: #dc2626; }
+        .req-stat-sedang { background: #eff6ff; border-color: #bfdbfe; }
+        .req-stat-sedang b { color: #1d4ed8; }
+        .req-input-row { display: flex; gap: 8px; align-items: center; }
+        .req-input-row input { flex: 1; margin: 0; }
+        .btn-isi { width: auto; margin: 0; padding: 10px 12px; font-size: 12px; background: #64748b; white-space: nowrap; }
+
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; vertical-align: top; }
@@ -148,8 +164,8 @@
 
 <script>
     let isAdminUser = false;
-    let reqItemList = [{ detailId: '', qty: '' }];
-    let piItemOptions = []; // {id, brand, jenis, paper, size}
+    let piItems = [];        // item PI yang masih kurang (belum selesai)
+    let piSelesaiCount = 0;  // jumlah item PI yang sudah selesai (disembunyikan)
 
     async function loadPiList() {
         const { data: headers } = await sb.from('pi_header').select('*').eq('is_archived', false).order('created_at', { ascending: false });
@@ -162,75 +178,122 @@
         document.getElementById('req_pi_select').innerHTML = options;
     }
 
+    function fmt(n) { return (n || 0).toLocaleString('id-ID'); }
+
     async function onReqPiChange() {
         const piId = document.getElementById('req_pi_select').value;
-        if (!piId) {
-            piItemOptions = [];
-            reqItemList = [{ detailId: '', qty: '' }];
-            renderItemRows();
-            return;
-        }
-        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId)).order('id', { ascending: true });
-        piItemOptions = details || [];
-        reqItemList = [{ detailId: '', qty: '' }];
-        renderItemRows();
-    }
+        piItems = [];
+        piSelesaiCount = 0;
+        if (!piId) { renderItemRows(); return; }
 
-    function itemOptionsHtml(selectedId) {
-        let html = '<option value="">-- Pilih Item --</option>';
-        for (const it of piItemOptions) {
-            const sel = String(it.id) === String(selectedId) ? 'selected' : '';
-            html += `<option value="${it.id}" ${sel}>${it.brand} | ${it.jenis} | Paper:${it.paper || '-'} | Size:${it.size || '-'}</option>`;
+        document.getElementById('reqItemContainer').innerHTML = '<div class="info-text">⏳ Memuat item PI...</div>';
+
+        const { data: details } = await sb.from('pi_detail').select('*').eq('pi_id', parseInt(piId)).order('id', { ascending: true });
+        const ids = (details || []).map(d => d.id);
+
+        const keluarMap = {};   // barang yang benar-benar sudah keluar ke produksi (NG otomatis tidak dihitung)
+        const sedangMap = {};   // sudah diminta tapi belum selesai (PENDING / DISETUJUI)
+        if (ids.length > 0) {
+            const [keluarRes, reqRes] = await Promise.all([
+                sb.from('barang_keluar').select('detail_id, qty, keterangan').in('detail_id', ids),
+                sb.from('permintaan_produksi').select('detail_id, qty_diminta, approved_qty, status').in('detail_id', ids).in('status', ['PENDING', 'DISETUJUI'])
+            ]);
+            (keluarRes.data || []).forEach(k => {
+                if (!(k.keterangan || '').startsWith('NG ')) {
+                    keluarMap[k.detail_id] = (keluarMap[k.detail_id] || 0) + (k.qty || 0);
+                }
+            });
+            (reqRes.data || []).forEach(r => {
+                const q = r.status === 'DISETUJUI' ? (r.approved_qty || 0) : (r.qty_diminta || 0);
+                sedangMap[r.detail_id] = (sedangMap[r.detail_id] || 0) + q;
+            });
         }
-        return html;
+
+        for (const d of (details || [])) {
+            const sudah = keluarMap[d.id] || 0;
+            const kurang = (d.qty_pi || 0) - sudah;
+            if (kurang <= 0) { piSelesaiCount++; continue; }   // item selesai tidak ditampilkan
+            const sedang = sedangMap[d.id] || 0;
+            piItems.push({
+                id: d.id, brand: d.brand, jenis: d.jenis, paper: d.paper, size: d.size,
+                qtyPi: d.qty_pi || 0, sudah, kurang, sedang,
+                maxMinta: Math.max(0, kurang - sedang)
+            });
+        }
+        renderItemRows();
     }
 
     function renderItemRows() {
         const container = document.getElementById('reqItemContainer');
         if (!container) return;
-        let html = '';
-        for (let i = 0; i < reqItemList.length; i++) {
+        const piId = document.getElementById('req_pi_select')?.value;
+
+        if (!piId) {
+            container.innerHTML = '<div class="info-text">Pilih No PI dulu. Semua item yang masih kurang akan muncul di sini.</div>';
+            return;
+        }
+        if (piItems.length === 0) {
+            container.innerHTML = '<div class="alert alert-success">✅ Semua item di PI ini sudah terpenuhi, tidak ada yang perlu diminta.</div>';
+            return;
+        }
+
+        let html = '<div class="info-text" style="margin-bottom:8px;">Isi jumlah hanya untuk item yang mau diminta sekarang. Item yang dikosongkan akan dilewati.</div>';
+        for (const it of piItems) {
+            const habis = it.maxMinta <= 0;
             html += `
-                <div class="item-row">
-                    <select onchange="updateReqItem(${i}, 'detailId', this.value)">${itemOptionsHtml(reqItemList[i].detailId)}</select>
-                    <input type="number" placeholder="Qty" value="${reqItemList[i].qty}" onchange="updateReqItem(${i}, 'qty', this.value)">
-                    <button type="button" class="btn-remove" onclick="hapusReqItem(${i})">✖</button>
+                <div class="req-card ${habis ? 'req-card-disabled' : ''}">
+                    <div class="req-card-title">${it.brand} | ${it.jenis}</div>
+                    <div class="req-card-sub">Paper: ${it.paper || '-'} · Size: ${it.size || '-'}</div>
+                    <div class="req-stats">
+                        <div class="req-stat"><span>Qty PI</span><b>${fmt(it.qtyPi)}</b></div>
+                        <div class="req-stat"><span>Sudah Keluar</span><b>${fmt(it.sudah)}</b></div>
+                        <div class="req-stat req-stat-kurang"><span>Kurang</span><b>${fmt(it.kurang)}</b></div>
+                        ${it.sedang > 0 ? `<div class="req-stat req-stat-sedang"><span>Sedang Diminta</span><b>${fmt(it.sedang)}</b></div>` : ''}
+                    </div>
+                    ${habis
+                        ? '<div class="info-text" style="color:#92400e;">⏳ Seluruh kekurangan sudah diminta dan menunggu diproses gudang.</div>'
+                        : `<div class="req-input-row">
+                               <input type="number" id="reqQty_${it.id}" min="1" max="${it.maxMinta}" placeholder="Jumlah diminta (maks ${fmt(it.maxMinta)})">
+                               <button type="button" class="btn-isi" onclick="isiKurang(${it.id})">Isi ${fmt(it.maxMinta)}</button>
+                           </div>`}
                 </div>
             `;
         }
-        html += `<button type="button" class="btn-add" onclick="tambahReqItem()">+ Tambah Jenis Lain (dari PI yang sama)</button>`;
+        if (piSelesaiCount > 0) {
+            html += `<div class="info-text">✅ ${piSelesaiCount} item lain di PI ini sudah selesai dan tidak ditampilkan.</div>`;
+        }
         container.innerHTML = html;
     }
 
-    function tambahReqItem() {
-        if (piItemOptions.length === 0) { alert('Pilih No PI dulu!'); return; }
-        reqItemList.push({ detailId: '', qty: '' });
-        renderItemRows();
-    }
-
-    function hapusReqItem(index) {
-        if (reqItemList.length > 1) {
-            reqItemList.splice(index, 1);
-            renderItemRows();
-        } else {
-            alert('Minimal 1 item!');
-        }
-    }
-
-    function updateReqItem(index, field, value) {
-        reqItemList[index][field] = value;
+    function isiKurang(id) {
+        const it = piItems.find(x => x.id === id);
+        const el = document.getElementById('reqQty_' + id);
+        if (it && el) el.value = it.maxMinta;
     }
 
     async function simpanPermintaan() {
         const piId = document.getElementById('req_pi_select').value;
         const tanggalButuh = document.getElementById('req_tanggal').value;
         const catatan = document.getElementById('req_catatan').value;
+        const msg = document.getElementById('msgReq');
 
-        if (!piId) { document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Pilih No PI dulu!</div>'; return; }
+        if (!piId) { msg.innerHTML = '<div class="alert alert-error">Pilih No PI dulu!</div>'; return; }
 
-        const validItems = reqItemList.filter(it => it.detailId && it.qty && parseInt(it.qty) > 0);
-        if (validItems.length === 0) {
-            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">Pilih minimal 1 item dan isi Qty!</div>';
+        // Kumpulkan hanya item yang diisi jumlahnya
+        const dipilih = [];
+        for (const it of piItems) {
+            const el = document.getElementById('reqQty_' + it.id);
+            if (!el || el.value === '') continue;
+            const qty = parseInt(el.value);
+            if (!qty || qty <= 0) { msg.innerHTML = `<div class="alert alert-error">Jumlah untuk ${it.brand} - ${it.jenis} tidak valid!</div>`; return; }
+            if (qty > it.maxMinta) {
+                msg.innerHTML = `<div class="alert alert-error">Jumlah ${it.brand} - ${it.jenis} (${fmt(qty)}) melebihi sisa yang boleh diminta (${fmt(it.maxMinta)})!</div>`;
+                return;
+            }
+            dipilih.push({ it, qty });
+        }
+        if (dipilih.length === 0) {
+            msg.innerHTML = '<div class="alert alert-error">Isi jumlah minimal untuk 1 item!</div>';
             return;
         }
 
@@ -238,37 +301,34 @@
         const { data: { user } } = await sb.auth.getUser();
         const batchId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-        const rows = validItems.map(it => {
-            const detail = piItemOptions.find(d => String(d.id) === String(it.detailId));
-            return {
-                pi_id: parseInt(piId),
-                detail_id: parseInt(it.detailId),
-                no_pi: header?.no_pi || '-',
-                brand: detail?.brand || '-',
-                jenis: detail?.jenis || '-',
-                qty_diminta: parseInt(it.qty),
-                tanggal_dibutuhkan: tanggalButuh || null,
-                catatan: catatan || null,
-                status: 'PENDING',
-                requested_by: user.email,
-                batch_id: batchId
-            };
-        });
+        const rows = dipilih.map(({ it, qty }) => ({
+            pi_id: parseInt(piId),
+            detail_id: it.id,
+            no_pi: header?.no_pi || '-',
+            brand: it.brand || '-',
+            jenis: it.jenis || '-',
+            qty_diminta: qty,
+            tanggal_dibutuhkan: tanggalButuh || null,
+            catatan: catatan || null,
+            status: 'PENDING',
+            requested_by: user.email,
+            batch_id: batchId
+        }));
 
         const { error } = await sb.from('permintaan_produksi').insert(rows);
 
         if (error) {
-            document.getElementById('msgReq').innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
+            msg.innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
         } else {
             if (typeof addLog === 'function') {
                 try { await addLog('PERMINTAAN PRODUKSI', `${user.email} mengajukan ${rows.length} jenis untuk PI ${header?.no_pi}`); } catch(e) {}
             }
-            document.getElementById('msgReq').innerHTML = `<div class="alert alert-success">✅ ${rows.length} permintaan berhasil diajukan! Menunggu persetujuan gudang.</div>`;
+            msg.innerHTML = `<div class="alert alert-success">✅ ${rows.length} permintaan berhasil diajukan! Menunggu persetujuan gudang.</div>`;
             document.getElementById('req_tanggal').value = '';
             document.getElementById('req_catatan').value = '';
             document.getElementById('req_pi_select').value = '';
-            piItemOptions = [];
-            reqItemList = [{ detailId: '', qty: '' }];
+            piItems = [];
+            piSelesaiCount = 0;
             renderItemRows();
             await loadDaftarPermintaan();
         }
@@ -407,7 +467,7 @@
                     <option value="">Loading...</option>
                 </select>
 
-                <label>Item yang Diminta</label>
+                <label>Item di PI ini</label>
                 <div id="reqItemContainer"></div>
 
                 <label>Tanggal Dibutuhkan (opsional)</label>
@@ -417,7 +477,7 @@
                 <textarea id="req_catatan" placeholder="Contoh: untuk line A, urgent, dll."></textarea>
 
                 <button onclick="simpanPermintaan()">🙋 Ajukan Permintaan</button>
-                <span class="info-text">📌 Bisa pilih beberapa jenis sekaligus dari PI yang sama. Setiap jenis akan disetujui/ditolak terpisah oleh gudang.</span>
+                <span class="info-text">📌 Semua item PI yang masih kurang muncul otomatis. "Sudah Keluar" hanya menghitung barang yang benar-benar sudah diserahkan ke produksi. Setiap item disetujui/ditolak terpisah oleh gudang.</span>
             </div>
 
             <div class="card">
@@ -497,9 +557,7 @@
     }
 
     window.onReqPiChange = onReqPiChange;
-    window.tambahReqItem = tambahReqItem;
-    window.hapusReqItem = hapusReqItem;
-    window.updateReqItem = updateReqItem;
+    window.isiKurang = isiKurang;
     window.simpanPermintaan = simpanPermintaan;
     window.loadDaftarPermintaan = loadDaftarPermintaan;
     window.setujuiPermintaan = setujuiPermintaan;
