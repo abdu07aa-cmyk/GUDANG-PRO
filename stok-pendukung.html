@@ -714,11 +714,46 @@
             });
         }
         
-        async function init() {
-            await cekSession();
-            setupEventListeners();
-            await loadData();
+       async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        document.getElementById('mainContent').innerHTML = `
+            <div class="card" style="text-align:center; padding:30px">
+                <h3>⚠️ Belum Login</h3>
+                <button onclick="window.location.href='login.html'">Ke Halaman Login</button>
+            </div>
+        `;
+        return;
+    }
+
+    // ===== CEK ROLE ADMIN =====
+    try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+            const { data: profile } = await sb
+                .from('user_profiles')
+                .select('role')
+                .eq('email', user.email)
+                .maybeSingle();
+
+            if (profile?.role !== 'admin') {
+                document.getElementById('mainContent').innerHTML = `
+                    <div class="card" style="text-align:center; padding:30px">
+                        <h3>⛔ Akses Ditolak</h3>
+                        <p>Halaman ini hanya untuk ADMIN.</p>
+                        <button onclick="window.location.href='permintaan-produksi.html'">Ke Permintaan Produksi</button>
+                    </div>
+                `;
+                return;
+            }
         }
+    } catch (e) {
+        console.warn('Error cek role:', e);
+    }
+
+    setupEventListeners();
+    await loadHalaman();
+}
         
         window.showAddModal = showAddModal;
         window.editItem = editItem;
