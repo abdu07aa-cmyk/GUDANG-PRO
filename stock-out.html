@@ -554,6 +554,15 @@
                 return;
             }
             
+            // ✅ Jika berasal dari Permintaan Produksi, pastikan permintaannya masih DISETUJUI
+            if (currentRequestId) {
+                const { data: req } = await sb.from('permintaan_produksi').select('status').eq('id', currentRequestId).single();
+                if (!req || req.status !== 'DISETUJUI') {
+                    alert('Permintaan ini sudah tidak berstatus DISETUJUI (mungkin dibatalkan atau sudah diproses). Barang keluar TIDAK disimpan. Kembali ke menu Permintaan Produksi.');
+                    return;
+                }
+            }
+            
             const { data: { user } } = await sb.auth.getUser();
             const { data: inserted, error } = await sb.from('barang_keluar').insert([{
                 detail_id: parseInt(itemId),
@@ -576,7 +585,7 @@
                         processed_at: new Date().toISOString(),
                         barang_keluar_id: inserted[0].id,
                         qty_diberikan: parseInt(qty)
-                    }).eq('id', currentRequestId);
+                    }).eq('id', currentRequestId).eq('status', 'DISETUJUI');
                     
                     if (!reqErr) {
                         pesanTambahan = '\n✅ Permintaan Produksi otomatis ditandai SELESAI.';
