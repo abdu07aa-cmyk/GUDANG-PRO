@@ -43,7 +43,7 @@
         .logo { font-size: 18px; font-weight: bold; color: #1e293b; }
         .logout-btn { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
 
-        .container { padding: 15px; max-width: 1000px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 1100px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
 
@@ -55,15 +55,10 @@
         .alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
         .alert-success { background: #d1fae5; color: #065f46; }
         .alert-error { background: #fee2e2; color: #991b1b; }
+        .alert-strip { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; margin-bottom: 10px; }
         .info-text { font-size: 12px; color: #64748b; margin-top: 5px; }
+        .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 
-        .item-row {
-            display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;
-            background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;
-        }
-        .item-row select { flex: 2; min-width: 200px; margin: 0; }
-        .item-row input { flex: 1; min-width: 90px; margin: 0; }
-        .item-row .btn-remove { flex: 0; width: auto; background: #ef4444; padding: 10px 14px; margin: 0; }
         .btn-add { background: #10b981; margin-top: 5px; }
 
         .req-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
@@ -82,19 +77,25 @@
         .req-input-row input { flex: 1; margin: 0; }
         .btn-isi { width: auto; margin: 0; padding: 10px 12px; font-size: 12px; background: #64748b; white-space: nowrap; }
 
+        .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .chip { width: auto; margin: 0; padding: 6px 12px; border-radius: 20px; background: #e2e8f0; color: #334155; font-size: 12px; }
+        .chip.active { background: #3b82f6; color: white; }
+        .chip .n { font-weight: 700; margin-left: 6px; }
+        .search-input { margin: 0 0 12px 0; }
+        .btn-refresh { width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #64748b; }
+
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; min-width: 760px; }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; vertical-align: top; }
         th { background: #f8fafc; color: #64748b; font-weight: 500; }
-
-        .filter-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
-        .filter-row select { width: auto; flex: 1; min-width: 140px; }
+        td.catatan { max-width: 170px; word-wrap: break-word; }
 
         .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
         .status-pending { background: #fef3c7; color: #92400e; }
         .status-disetujui { background: #dbeafe; color: #1e40af; }
         .status-ditolak { background: #fee2e2; color: #991b1b; }
         .status-selesai { background: #d1fae5; color: #065f46; }
+        .status-dibatalkan { background: #e5e7eb; color: #4b5563; }
 
         .btn-small { width: auto; padding: 6px 10px; margin: 2px 2px 2px 0; font-size: 11px; }
         .btn-setujui { background: #10b981; }
@@ -103,12 +104,20 @@
         .btn-tolak:hover { background: #dc2626; }
         .btn-proses { background: #8b5cf6; }
         .btn-proses:hover { background: #7c3aed; }
+        .btn-edit { background: #f59e0b; }
+        .btn-batal { background: #6b7280; }
+        .btn-buka { background: #0ea5e9; }
         .qty-approve-input { width: 70px; display: inline-block; padding: 5px; margin: 0 4px; font-size: 12px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; border-radius: 12px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 22px; }
+        .modal-content h3 { margin-bottom: 8px; color: #1e293b; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 12px; }
+        .modal-footer button { margin: 0; }
+        .btn-batal-modal { background: #e2e8f0; color: #1e293b; }
 
         @media (max-width: 600px) {
             th, td { font-size: 10px; padding: 6px 4px; }
-            .filter-row select { width: 100%; }
-            .item-row { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -162,23 +171,77 @@
 
 <div class="container" id="mainContent"></div>
 
+<!-- MODAL EDIT PERMINTAAN -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3>✏️ Edit Permintaan</h3>
+        <div id="editInfo" class="info-text"></div>
+        <div id="editMsg" style="margin-top:8px;"></div>
+
+        <label id="editQtyLabel" style="font-size:13px;display:block;margin-top:8px;">Jumlah diminta</label>
+        <input type="number" id="editQty" min="1">
+        <div id="editBatas" class="info-text"></div>
+
+        <label style="font-size:13px;display:block;margin-top:8px;">Tanggal dibutuhkan</label>
+        <input type="date" id="editTanggal">
+
+        <label style="font-size:13px;display:block;margin-top:8px;">Catatan</label>
+        <textarea id="editCatatan" placeholder="Catatan (opsional)"></textarea>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-batal-modal" onclick="tutupEdit()">Batal</button>
+            <button type="button" onclick="simpanEdit()">💾 Simpan Perubahan</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let isAdminUser = false;
+    let currentUserEmail = '';
     let piItems = [];        // item PI yang masih kurang (belum selesai)
     let piSelesaiCount = 0;  // jumlah item PI yang sudah selesai (disembunyikan)
+    let allRequests = [];    // daftar permintaan yang termuat
+    let stokMap = {};        // detail_id -> stok gudang (khusus admin)
+    let activeStatus = 'all';
+    let editingId = null;
+    let editMode = 'diminta';
+    let editStatus = '';
+    let editBatas = null;
 
+    const STATUS_LABEL = {
+        PENDING: '⏳ PENDING', DISETUJUI: '✅ DISETUJUI', DITOLAK: '❌ DITOLAK',
+        SELESAI: '📦 SELESAI', DIBATALKAN: '🚫 DIBATALKAN'
+    };
+
+    // ---------- helper ----------
+    function esc(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function fmt(n) { return (n || 0).toLocaleString('id-ID'); }
+    function fmtTanggal(s) {
+        if (!s) return '-';
+        const p = String(s).split('-');
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
+    }
+    function fmtWaktu(iso) {
+        if (!iso) return '-';
+        return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
+    }
+    function namaPendek(email) { return (email || '-').split('@')[0]; }
+
+    // ============================================================
+    // FORM AJUKAN PERMINTAAN
+    // ============================================================
     async function loadPiList() {
         const { data: headers } = await sb.from('pi_header').select('*').eq('is_archived', false).order('created_at', { ascending: false });
         let options = '<option value="">-- Pilih No PI --</option>';
         if (headers) {
             for (const h of headers) {
-                options += `<option value="${h.id}">${h.no_pi} - ${h.tanggal}</option>`;
+                options += `<option value="${h.id}">${esc(h.no_pi)} - ${esc(h.tanggal)}</option>`;
             }
         }
         document.getElementById('req_pi_select').innerHTML = options;
     }
-
-    function fmt(n) { return (n || 0).toLocaleString('id-ID'); }
 
     async function onReqPiChange() {
         const piId = document.getElementById('req_pi_select').value;
@@ -242,8 +305,8 @@
             const habis = it.maxMinta <= 0;
             html += `
                 <div class="req-card ${habis ? 'req-card-disabled' : ''}">
-                    <div class="req-card-title">${it.brand} | ${it.jenis}</div>
-                    <div class="req-card-sub">Paper: ${it.paper || '-'} · Size: ${it.size || '-'}</div>
+                    <div class="req-card-title">${esc(it.brand)} | ${esc(it.jenis)}</div>
+                    <div class="req-card-sub">Paper: ${esc(it.paper || '-')} · Size: ${esc(it.size || '-')}</div>
                     <div class="req-stats">
                         <div class="req-stat"><span>Qty PI</span><b>${fmt(it.qtyPi)}</b></div>
                         <div class="req-stat"><span>Sudah Keluar</span><b>${fmt(it.sudah)}</b></div>
@@ -279,15 +342,14 @@
 
         if (!piId) { msg.innerHTML = '<div class="alert alert-error">Pilih No PI dulu!</div>'; return; }
 
-        // Kumpulkan hanya item yang diisi jumlahnya
         const dipilih = [];
         for (const it of piItems) {
             const el = document.getElementById('reqQty_' + it.id);
             if (!el || el.value === '') continue;
             const qty = parseInt(el.value);
-            if (!qty || qty <= 0) { msg.innerHTML = `<div class="alert alert-error">Jumlah untuk ${it.brand} - ${it.jenis} tidak valid!</div>`; return; }
+            if (!qty || qty <= 0) { msg.innerHTML = `<div class="alert alert-error">Jumlah untuk ${esc(it.brand)} - ${esc(it.jenis)} tidak valid!</div>`; return; }
             if (qty > it.maxMinta) {
-                msg.innerHTML = `<div class="alert alert-error">Jumlah ${it.brand} - ${it.jenis} (${fmt(qty)}) melebihi sisa yang boleh diminta (${fmt(it.maxMinta)})!</div>`;
+                msg.innerHTML = `<div class="alert alert-error">Jumlah ${esc(it.brand)} - ${esc(it.jenis)} (${fmt(qty)}) melebihi sisa yang boleh diminta (${fmt(it.maxMinta)})!</div>`;
                 return;
             }
             dipilih.push({ it, qty });
@@ -318,10 +380,10 @@
         const { error } = await sb.from('permintaan_produksi').insert(rows);
 
         if (error) {
-            msg.innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
+            msg.innerHTML = '<div class="alert alert-error">' + esc(error.message) + '</div>';
         } else {
             if (typeof addLog === 'function') {
-                try { await addLog('PERMINTAAN PRODUKSI', `${user.email} mengajukan ${rows.length} jenis untuk PI ${header?.no_pi}`); } catch(e) {}
+                try { await addLog('PERMINTAAN PRODUKSI', `${user.email} mengajukan ${rows.length} jenis untuk PI ${header?.no_pi}`); } catch (e) {}
             }
             msg.innerHTML = `<div class="alert alert-success">✅ ${rows.length} permintaan berhasil diajukan! Menunggu persetujuan gudang.</div>`;
             document.getElementById('req_tanggal').value = '';
@@ -334,128 +396,367 @@
         }
     }
 
-    async function loadDaftarPermintaan() {
-        const filterStatus = document.getElementById('filterStatusReq')?.value || 'all';
-        const { data, error } = await sb.from('permintaan_produksi').select('*').order('batch_id', { ascending: false }).order('id', { ascending: true });
+    // ============================================================
+    // BATAS PERMINTAAN (kurang PI - permintaan lain yang masih berjalan)
+    // ============================================================
+    async function hitungBatas(detailId, excludeId) {
+        const [d, k, rq] = await Promise.all([
+            sb.from('pi_detail').select('qty_pi').eq('id', detailId).single(),
+            sb.from('barang_keluar').select('qty, keterangan').eq('detail_id', detailId),
+            sb.from('permintaan_produksi').select('id, qty_diminta, approved_qty, status').eq('detail_id', detailId).in('status', ['PENDING', 'DISETUJUI'])
+        ]);
+        const qtyPi = d.data?.qty_pi || 0;
+        let sudah = 0;
+        (k.data || []).forEach(x => { if (!(x.keterangan || '').startsWith('NG ')) sudah += x.qty || 0; });
+        let sedangLain = 0;
+        (rq.data || []).forEach(x => {
+            if (String(x.id) === String(excludeId)) return;
+            sedangLain += x.status === 'DISETUJUI' ? (x.approved_qty || 0) : (x.qty_diminta || 0);
+        });
+        const kurang = qtyPi - sudah;
+        return { qtyPi, sudah, kurang, sedangLain, maxMinta: Math.max(0, kurang - sedangLain) };
+    }
 
+    // ============================================================
+    // DAFTAR PERMINTAAN
+    // ============================================================
+    async function loadDaftarPermintaan() {
         const container = document.getElementById('daftarPermintaanList');
+        let q = sb.from('permintaan_produksi').select('*')
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: true })
+            .limit(300);
+        if (!isAdminUser) q = q.eq('requested_by', currentUserEmail);
+        const { data, error } = await q;
+
         if (error) {
-            container.innerHTML = '<div class="info-text">❌ Error: ' + error.message + '</div>';
+            container.innerHTML = '<div class="info-text">❌ Error: ' + esc(error.message) + '</div>';
             return;
         }
+        allRequests = data || [];
 
-        let rows = (data || []).filter(r => filterStatus === 'all' || r.status === filterStatus);
+        // Admin: hitung stok gudang untuk item yang masih aktif
+        stokMap = {};
+        if (isAdminUser) {
+            const ids = [...new Set(allRequests.filter(r => ['PENDING', 'DISETUJUI'].includes(r.status)).map(r => r.detail_id))];
+            if (ids.length > 0) {
+                const [m, k] = await Promise.all([
+                    sb.from('barang_masuk').select('detail_id, qty').in('detail_id', ids),
+                    sb.from('barang_keluar').select('detail_id, qty').in('detail_id', ids)
+                ]);
+                ids.forEach(id => { stokMap[id] = 0; });
+                (m.data || []).forEach(x => { stokMap[x.detail_id] += x.qty || 0; });
+                (k.data || []).forEach(x => { stokMap[x.detail_id] -= x.qty || 0; });
+            }
+        }
+
+        renderDaftar();
+        if (window.refreshPermBadge) window.refreshPermBadge();
+    }
+
+    function hitungStatus() {
+        const c = { all: allRequests.length, PENDING: 0, DISETUJUI: 0, DITOLAK: 0, SELESAI: 0, DIBATALKAN: 0 };
+        allRequests.forEach(r => { if (c[r.status] !== undefined) c[r.status]++; });
+        return c;
+    }
+
+    function setStatusFilter(k) {
+        activeStatus = k;
+        renderDaftar();
+    }
+
+    function renderChips() {
+        const c = hitungStatus();
+        const defs = [['all', 'Semua'], ['PENDING', '⏳ Pending'], ['DISETUJUI', '✅ Disetujui'], ['DITOLAK', '❌ Ditolak'], ['SELESAI', '📦 Selesai'], ['DIBATALKAN', '🚫 Dibatalkan']];
+        document.getElementById('chipsBar').innerHTML = defs.map(([k, l]) =>
+            `<button type="button" class="chip ${activeStatus === k ? 'active' : ''}" onclick="setStatusFilter('${k}')">${l}<span class="n">${c[k]}</span></button>`
+        ).join('');
+
+        const info = document.getElementById('ringkasanAdmin');
+        if (info) {
+            info.innerHTML = (isAdminUser && (c.PENDING + c.DISETUJUI) > 0)
+                ? `<div class="alert alert-strip">🔔 ${c.PENDING} menunggu persetujuan · ${c.DISETUJUI} siap diproses</div>`
+                : '';
+        }
+    }
+
+    function stokHtml(r) {
+        if (!['PENDING', 'DISETUJUI'].includes(r.status)) return '<span class="sub">-</span>';
+        const stok = stokMap[r.detail_id];
+        if (stok === undefined) return '<span class="sub">-</span>';
+        const butuh = r.status === 'DISETUJUI' ? (r.approved_qty || 0) : (r.qty_diminta || 0);
+        const kurang = stok < butuh;
+        return `<b style="color:${kurang ? '#dc2626' : '#065f46'};">${fmt(stok)}</b>${kurang ? '<div class="sub" style="color:#dc2626;">⚠️ kurang</div>' : ''}`;
+    }
+
+    function qtyDisetujuiHtml(r) {
+        if (r.status === 'DISETUJUI') {
+            const beda = r.approved_qty !== r.qty_diminta;
+            return `<b${beda ? ' style="color:#b45309;"' : ''}>${fmt(r.approved_qty)}</b>`;
+        }
+        if (r.status === 'SELESAI') {
+            const beda = r.qty_diberikan !== r.qty_diminta;
+            return `<b${beda ? ' style="color:#b45309;"' : ''}>${fmt(r.qty_diberikan)}</b><div class="sub">diberikan</div>`;
+        }
+        return '<span class="sub">-</span>';
+    }
+
+    function aksiHtml(r) {
+        const own = r.requested_by === currentUserEmail;
+        if (isAdminUser) {
+            if (r.status === 'PENDING') {
+                return `<div style="white-space:nowrap;">
+                    <input type="number" class="qty-approve-input" id="approveQty_${r.id}" value="${r.qty_diminta}" min="1">
+                    <button class="btn-small btn-setujui" onclick="setujuiPermintaan(${r.id})">✅ Setujui</button>
+                    <button class="btn-small btn-tolak" onclick="tolakPermintaan(${r.id})">❌ Tolak</button>
+                    <button class="btn-small btn-edit" title="Edit" onclick="bukaEdit(${r.id})">✏️</button>
+                    <button class="btn-small btn-batal" title="Batalkan" onclick="batalkanPermintaan(${r.id})">🚫</button>
+                </div>`;
+            }
+            if (r.status === 'DISETUJUI') {
+                return `<div style="white-space:nowrap;">
+                    <button class="btn-small btn-proses" onclick="prosesPermintaan(${r.id})">🚚 Proses (${fmt(r.approved_qty)})</button>
+                    <button class="btn-small btn-edit" title="Edit" onclick="bukaEdit(${r.id})">✏️</button>
+                    <button class="btn-small btn-batal" title="Batalkan" onclick="batalkanPermintaan(${r.id})">🚫</button>
+                </div>`;
+            }
+            if (r.status === 'DITOLAK' || r.status === 'DIBATALKAN') {
+                return `<button class="btn-small btn-buka" onclick="bukaKembali(${r.id})">🔄 Buka Kembali</button>`;
+            }
+            return `<span class="sub">Diproses ${fmtWaktu(r.processed_at)}${r.processed_by ? ' oleh ' + esc(namaPendek(r.processed_by)) : ''}</span>`;
+        }
+        // leader
+        if (r.status === 'PENDING' && own) {
+            return `<div style="white-space:nowrap;">
+                <button class="btn-small btn-edit" onclick="bukaEdit(${r.id})">✏️ Edit</button>
+                <button class="btn-small btn-batal" onclick="batalkanPermintaan(${r.id})">🚫 Batalkan</button>
+            </div>`;
+        }
+        if (r.status === 'PENDING') return '<span class="sub">Menunggu persetujuan gudang</span>';
+        if (r.status === 'DISETUJUI') return '<span class="sub">Disetujui, menunggu diproses gudang</span>';
+        if (r.status === 'SELESAI') return `<span class="sub">Sudah diserahkan ${fmtWaktu(r.processed_at)}</span>`;
+        return '<span class="sub">-</span>';
+    }
+
+    function renderDaftar() {
+        renderChips();
+        const container = document.getElementById('daftarPermintaanList');
+        const cari = (document.getElementById('searchReq')?.value || '').toLowerCase().trim();
+
+        const rows = allRequests.filter(r => {
+            if (activeStatus !== 'all' && r.status !== activeStatus) return false;
+            if (!cari) return true;
+            return [r.no_pi, r.brand, r.jenis, r.requested_by, r.catatan].join(' ').toLowerCase().includes(cari);
+        });
 
         if (rows.length === 0) {
-            container.innerHTML = '<div class="info-text" style="padding:15px;text-align:center;">Belum ada permintaan</div>';
+            container.innerHTML = '<div class="info-text" style="padding:15px;text-align:center;">Tidak ada permintaan</div>';
             return;
         }
 
-        const statusMap = {
-            PENDING: '<span class="status-badge status-pending">⏳ PENDING</span>',
-            DISETUJUI: '<span class="status-badge status-disetujui">✅ DISETUJUI</span>',
-            DITOLAK: '<span class="status-badge status-ditolak">❌ DITOLAK</span>',
-            SELESAI: '<span class="status-badge status-selesai">📦 SELESAI</span>'
-        };
-
         let html = '<div class="table-wrapper"><table><thead><tr>' +
-            '<th>No PI</th><th>Brand</th><th>Jenis</th><th>Qty Diminta</th><th>Diminta Oleh</th><th>Status</th><th>Aksi</th>' +
+            '<th>Diajukan</th><th>PI / Barang</th><th>Diminta</th><th>Disetujui</th>' +
+            (isAdminUser ? '<th>Stok Gudang</th>' : '') +
+            '<th>Butuh Tgl</th><th>Catatan</th><th>Status</th><th>Aksi</th>' +
             '</tr></thead><tbody>';
 
         for (const r of rows) {
-            let aksi = '-';
-            if (r.status === 'PENDING') {
-                if (isAdminUser) {
-                    aksi = `
-                        <div style="white-space:nowrap;">
-                            <input type="number" class="qty-approve-input" id="approveQty_${r.id}" value="${r.qty_diminta}" min="1">
-                            <button class="btn-small btn-setujui" onclick="setujuiPermintaan(${r.id})">✅ Setujui</button>
-                            <button class="btn-small btn-tolak" onclick="tolakPermintaan(${r.id})">❌ Tolak</button>
-                        </div>
-                    `;
-                } else {
-                    aksi = '<span class="info-text">Menunggu persetujuan gudang</span>';
-                }
-            } else if (r.status === 'DISETUJUI') {
-                aksi = isAdminUser
-                    ? `<button class="btn-small btn-proses" onclick="prosesPermintaan(${r.id})">🚚 Proses (${r.approved_qty})</button>`
-                    : `<span class="info-text">Disetujui: ${r.approved_qty}, menunggu diproses gudang</span>`;
-            } else if (r.status === 'DITOLAK') {
-                aksi = `<span class="info-text" style="color:#991b1b;">Alasan: ${r.alasan_tolak || '-'}</span>`;
-            } else if (r.status === 'SELESAI') {
-                aksi = `<span class="info-text">Qty diberikan: ${r.qty_diberikan ?? '-'}</span>`;
-            }
-
+            const alasan = (r.status === 'DITOLAK' || r.status === 'DIBATALKAN') && r.alasan_tolak
+                ? `<div class="sub" style="color:#991b1b;">Alasan: ${esc(r.alasan_tolak)}</div>` : '';
             html += `<tr>
-                <td><b>${r.no_pi}</b></td>
-                <td>${r.brand}</td>
-                <td>${r.jenis}</td>
-                <td>${r.qty_diminta}</td>
-                <td style="font-size:11px;">${r.requested_by || '-'}</td>
-                <td>${statusMap[r.status] || r.status}</td>
-                <td>${aksi}</td>
+                <td>${fmtWaktu(r.created_at)}${isAdminUser ? `<div class="sub">${esc(namaPendek(r.requested_by))}</div>` : ''}</td>
+                <td><b>${esc(r.no_pi)}</b><div class="sub">${esc(r.brand)} | ${esc(r.jenis)}</div></td>
+                <td>${fmt(r.qty_diminta)}</td>
+                <td>${qtyDisetujuiHtml(r)}</td>
+                ${isAdminUser ? `<td>${stokHtml(r)}</td>` : ''}
+                <td>${fmtTanggal(r.tanggal_dibutuhkan)}</td>
+                <td class="catatan">${esc(r.catatan || '-')}</td>
+                <td><span class="status-badge status-${esc(String(r.status).toLowerCase())}">${STATUS_LABEL[r.status] || esc(r.status)}</span>${alasan}</td>
+                <td>${aksiHtml(r)}</td>
             </tr>`;
         }
         html += '</tbody></table></div>';
         container.innerHTML = html;
     }
 
-    async function setujuiPermintaan(id) {
-        const qtyInput = document.getElementById('approveQty_' + id);
-        const approvedQty = parseInt(qtyInput.value);
-        if (!approvedQty || approvedQty <= 0) { alert('Qty disetujui tidak valid!'); return; }
-
-        const { data: r } = await sb.from('permintaan_produksi').select('*').eq('id', id).single();
-        if (!confirm(`Setujui permintaan "${r.brand} - ${r.jenis}" sebanyak ${approvedQty}?${approvedQty != r.qty_diminta ? '\n(Beda dari yang diminta: ' + r.qty_diminta + ')' : ''}`)) return;
-
-        const { data: { user } } = await sb.auth.getUser();
-        const { error } = await sb.from('permintaan_produksi').update({
-            status: 'DISETUJUI',
-            approved_qty: approvedQty,
-            approved_by: user.email,
-            approved_at: new Date().toISOString()
-        }).eq('id', id);
-
-        if (error) { alert('Gagal: ' + error.message); return; }
+    // ============================================================
+    // AKSI (dengan penjagaan status supaya tidak bentrok)
+    // ============================================================
+    async function ubahStatus(id, dariStatus, patch, logAksi, logDetail) {
+        const { data, error } = await sb.from('permintaan_produksi').update(patch).eq('id', id).in('status', dariStatus).select();
+        if (error) { alert('Gagal: ' + error.message); return false; }
+        if (!data || data.length === 0) {
+            alert('Status permintaan ini sudah berubah (mungkin sudah diproses atau dibatalkan). Daftar akan dimuat ulang.');
+            await loadDaftarPermintaan();
+            return false;
+        }
         if (typeof addLog === 'function') {
-            try { await addLog('SETUJUI PERMINTAAN', `${user.email} menyetujui permintaan #${id} (${r.brand} - ${r.jenis}) sebanyak ${approvedQty}`); } catch(e) {}
+            try { await addLog(logAksi, logDetail); } catch (e) {}
         }
         await loadDaftarPermintaan();
+        return true;
+    }
+
+    async function setujuiPermintaan(id) {
+        const r = allRequests.find(x => x.id === id);
+        if (!r) return;
+        const approvedQty = parseInt(document.getElementById('approveQty_' + id).value);
+        if (!approvedQty || approvedQty <= 0) { alert('Qty disetujui tidak valid!'); return; }
+
+        const batas = await hitungBatas(r.detail_id, id);
+        let pesan = `Setujui "${r.brand} - ${r.jenis}" sebanyak ${fmt(approvedQty)}?`;
+        if (approvedQty !== r.qty_diminta) pesan += `\n(Beda dari yang diminta: ${fmt(r.qty_diminta)})`;
+        if (approvedQty > batas.maxMinta) pesan += `\n\n⚠️ Melebihi batas kekurangan PI (maks ${fmt(batas.maxMinta)}).`;
+        const stok = stokMap[r.detail_id];
+        if (stok !== undefined && approvedQty > stok) pesan += `\n⚠️ Stok gudang saat ini hanya ${fmt(stok)}.`;
+        if (!confirm(pesan)) return;
+
+        const { data: { user } } = await sb.auth.getUser();
+        await ubahStatus(id, ['PENDING'], {
+            status: 'DISETUJUI', approved_qty: approvedQty, approved_by: user.email, approved_at: new Date().toISOString()
+        }, 'SETUJUI PERMINTAAN', `${user.email} menyetujui permintaan #${id} (${r.brand} - ${r.jenis}) sebanyak ${approvedQty}`);
     }
 
     async function tolakPermintaan(id) {
         const alasan = prompt('Alasan menolak permintaan ini?');
         if (alasan === null) return;
         if (!alasan.trim()) { alert('Alasan wajib diisi!'); return; }
+        const { data: { user } } = await sb.auth.getUser();
+        await ubahStatus(id, ['PENDING'], {
+            status: 'DITOLAK', alasan_tolak: alasan.trim(), approved_by: user.email, approved_at: new Date().toISOString()
+        }, 'TOLAK PERMINTAAN', `${user.email} menolak permintaan #${id}: ${alasan.trim()}`);
+    }
+
+    async function batalkanPermintaan(id) {
+        const r = allRequests.find(x => x.id === id);
+        if (!r) return;
+        if (!confirm(`Batalkan permintaan "${r.brand} - ${r.jenis}" (${fmt(r.qty_diminta)})?`)) return;
+
+        let alasan = null;
+        if (isAdminUser && r.requested_by !== currentUserEmail) {
+            alasan = prompt('Alasan pembatalan (opsional, akan terlihat oleh pemohon):');
+            if (alasan === null) return;
+        }
+        const { data: { user } } = await sb.auth.getUser();
+        await ubahStatus(id, isAdminUser ? ['PENDING', 'DISETUJUI'] : ['PENDING'], {
+            status: 'DIBATALKAN', alasan_tolak: (alasan && alasan.trim()) ? alasan.trim() : null
+        }, 'BATAL PERMINTAAN', `${user.email} membatalkan permintaan #${id} (${r.brand} - ${r.jenis})`);
+    }
+
+    async function bukaKembali(id) {
+        const r = allRequests.find(x => x.id === id);
+        if (!r) return;
+        if (!confirm(`Buka kembali permintaan "${r.brand} - ${r.jenis}" (${fmt(r.qty_diminta)}) menjadi PENDING?`)) return;
+        const { data: { user } } = await sb.auth.getUser();
+        await ubahStatus(id, ['DITOLAK', 'DIBATALKAN'], {
+            status: 'PENDING', alasan_tolak: null, approved_qty: null, approved_by: null, approved_at: null
+        }, 'BUKA KEMBALI PERMINTAAN', `${user.email} membuka kembali permintaan #${id} (${r.brand} - ${r.jenis})`);
+    }
+
+    async function prosesPermintaan(id) {
+        const { data: r } = await sb.from('permintaan_produksi').select('*').eq('id', id).single();
+        if (!r) { alert('Permintaan tidak ditemukan!'); return; }
+        if (r.status !== 'DISETUJUI') {
+            alert('Permintaan ini tidak lagi berstatus DISETUJUI (status sekarang: ' + r.status + ').');
+            await loadDaftarPermintaan();
+            return;
+        }
+        const params = new URLSearchParams({
+            request_id: r.id, pi_id: r.pi_id, item_id: r.detail_id, qty: r.approved_qty
+        });
+        window.location.href = 'stock-out.html?' + params.toString();
+    }
+
+    // ============================================================
+    // EDIT
+    // ============================================================
+    async function bukaEdit(id) {
+        const { data: r } = await sb.from('permintaan_produksi').select('*').eq('id', id).single();
+        if (!r) { alert('Permintaan tidak ditemukan!'); return; }
+        const own = r.requested_by === currentUserEmail;
+        const boleh = isAdminUser ? ['PENDING', 'DISETUJUI'].includes(r.status) : (own && r.status === 'PENDING');
+        if (!boleh) {
+            alert('Permintaan ini sudah tidak bisa diedit (status: ' + r.status + ').');
+            await loadDaftarPermintaan();
+            return;
+        }
+
+        editingId = id;
+        editStatus = r.status;
+        editMode = r.status === 'DISETUJUI' ? 'disetujui' : 'diminta';
+        editBatas = null;
+
+        document.getElementById('editInfo').innerHTML =
+            `<b>${esc(r.no_pi)}</b> · ${esc(r.brand)} | ${esc(r.jenis)} · Diminta: ${fmt(r.qty_diminta)}` +
+            (r.status === 'DISETUJUI' ? ` · Disetujui: ${fmt(r.approved_qty)}` : '');
+        document.getElementById('editQtyLabel').textContent = editMode === 'disetujui' ? 'Jumlah disetujui' : 'Jumlah diminta';
+        document.getElementById('editQty').value = editMode === 'disetujui' ? r.approved_qty : r.qty_diminta;
+        document.getElementById('editTanggal').value = r.tanggal_dibutuhkan || '';
+        document.getElementById('editCatatan').value = r.catatan || '';
+        document.getElementById('editMsg').innerHTML = '';
+        document.getElementById('editBatas').textContent = 'Menghitung batas...';
+        document.getElementById('editModal').style.display = 'flex';
+
+        editBatas = await hitungBatas(r.detail_id, r.id);
+        document.getElementById('editBatas').innerHTML =
+            `Qty PI: ${fmt(editBatas.qtyPi)} · Sudah keluar: ${fmt(editBatas.sudah)} · Kurang: <b>${fmt(editBatas.kurang)}</b> · ` +
+            `Permintaan lain yang berjalan: ${fmt(editBatas.sedangLain)} · <b>Maks: ${fmt(editBatas.maxMinta)}</b>`;
+    }
+
+    function tutupEdit() {
+        document.getElementById('editModal').style.display = 'none';
+        editingId = null;
+    }
+
+    async function simpanEdit() {
+        if (!editingId) return;
+        const msg = document.getElementById('editMsg');
+        const qty = parseInt(document.getElementById('editQty').value);
+        const tanggal = document.getElementById('editTanggal').value || null;
+        const catatan = document.getElementById('editCatatan').value.trim();
+
+        if (!qty || qty <= 0) { msg.innerHTML = '<div class="alert alert-error">Jumlah harus lebih dari 0!</div>'; return; }
+
+        const { data: cur } = await sb.from('permintaan_produksi').select('*').eq('id', editingId).single();
+        if (!cur || cur.status !== editStatus) {
+            alert('Status permintaan sudah berubah, edit dibatalkan. Daftar akan dimuat ulang.');
+            tutupEdit();
+            await loadDaftarPermintaan();
+            return;
+        }
+
+        if (!editBatas) editBatas = await hitungBatas(cur.detail_id, cur.id);
+        if (qty > editBatas.maxMinta) {
+            if (!isAdminUser) {
+                msg.innerHTML = `<div class="alert alert-error">Jumlah ${fmt(qty)} melebihi batas yang boleh diminta (${fmt(editBatas.maxMinta)}).</div>`;
+                return;
+            }
+            if (!confirm(`Jumlah ${fmt(qty)} melebihi batas kekurangan PI (maks ${fmt(editBatas.maxMinta)}). Tetap simpan?`)) return;
+        }
+
+        const patch = { tanggal_dibutuhkan: tanggal, catatan: catatan || null };
+        if (editMode === 'disetujui') patch.approved_qty = qty; else patch.qty_diminta = qty;
+
+        const { data, error } = await sb.from('permintaan_produksi').update(patch).eq('id', editingId).eq('status', editStatus).select();
+        if (error) { msg.innerHTML = '<div class="alert alert-error">' + esc(error.message) + '</div>'; return; }
+        if (!data || data.length === 0) {
+            alert('Status permintaan sudah berubah, edit tidak tersimpan.');
+            tutupEdit();
+            await loadDaftarPermintaan();
+            return;
+        }
 
         const { data: { user } } = await sb.auth.getUser();
-        const { error } = await sb.from('permintaan_produksi').update({
-            status: 'DITOLAK',
-            alasan_tolak: alasan.trim(),
-            approved_by: user.email,
-            approved_at: new Date().toISOString()
-        }).eq('id', id);
-
-        if (error) { alert('Gagal: ' + error.message); return; }
         if (typeof addLog === 'function') {
-            try { await addLog('TOLAK PERMINTAAN', `${user.email} menolak permintaan #${id}: ${alasan.trim()}`); } catch(e) {}
+            try { await addLog('EDIT PERMINTAAN', `${user.email} mengubah permintaan #${editingId} (${cur.brand} - ${cur.jenis}) jumlah ${editMode === 'disetujui' ? cur.approved_qty : cur.qty_diminta} → ${qty}`); } catch (e) {}
         }
+        tutupEdit();
         await loadDaftarPermintaan();
     }
 
-    function prosesPermintaan(id) {
-        sb.from('permintaan_produksi').select('*').eq('id', id).single().then(({ data: r }) => {
-            if (!r) { alert('Permintaan tidak ditemukan!'); return; }
-            const params = new URLSearchParams({
-                request_id: r.id,
-                pi_id: r.pi_id,
-                item_id: r.detail_id,
-                qty: r.approved_qty
-            });
-            window.location.href = 'stock-out.html?' + params.toString();
-        });
-    }
-
+    // ============================================================
+    // HALAMAN
+    // ============================================================
     async function loadHalaman() {
         document.getElementById('mainContent').innerHTML = `
             <div class="card">
@@ -481,16 +782,13 @@
             </div>
 
             <div class="card">
-                <div class="card-title">📋 Daftar Permintaan</div>
-                <div class="filter-row">
-                    <select id="filterStatusReq" onchange="loadDaftarPermintaan()">
-                        <option value="all">Semua Status</option>
-                        <option value="PENDING">⏳ Pending</option>
-                        <option value="DISETUJUI">✅ Disetujui</option>
-                        <option value="DITOLAK">❌ Ditolak</option>
-                        <option value="SELESAI">📦 Selesai</option>
-                    </select>
+                <div class="card-title">
+                    <span>${isAdminUser ? '📋 Daftar Permintaan (semua pemohon)' : '📋 Permintaan Saya'}</span>
+                    <button type="button" class="btn-refresh" onclick="loadDaftarPermintaan()">🔄 Refresh</button>
                 </div>
+                <div id="ringkasanAdmin"></div>
+                <div id="chipsBar" class="chips"></div>
+                <input type="text" id="searchReq" class="search-input" placeholder="🔍 Cari No PI, brand, jenis${isAdminUser ? ', pemohon' : ''}..." oninput="renderDaftar()">
                 <div id="daftarPermintaanList">
                     <div class="info-text">⏳ Memuat...</div>
                 </div>
@@ -545,6 +843,7 @@
 
         const { data: { user } } = await sb.auth.getUser();
         if (user) {
+            currentUserEmail = user.email;
             const { data: profile } = await sb.from('user_profiles').select('role').eq('email', user.email).single();
             isAdminUser = profile?.role === 'admin';
             if (!isAdminUser) {
@@ -560,9 +859,16 @@
     window.isiKurang = isiKurang;
     window.simpanPermintaan = simpanPermintaan;
     window.loadDaftarPermintaan = loadDaftarPermintaan;
+    window.renderDaftar = renderDaftar;
+    window.setStatusFilter = setStatusFilter;
     window.setujuiPermintaan = setujuiPermintaan;
     window.tolakPermintaan = tolakPermintaan;
+    window.batalkanPermintaan = batalkanPermintaan;
+    window.bukaKembali = bukaKembali;
     window.prosesPermintaan = prosesPermintaan;
+    window.bukaEdit = bukaEdit;
+    window.tutupEdit = tutupEdit;
+    window.simpanEdit = simpanEdit;
 
     init();
 </script>
