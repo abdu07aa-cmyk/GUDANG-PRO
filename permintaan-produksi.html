@@ -115,6 +115,10 @@
         .modal-footer { display: flex; gap: 10px; margin-top: 12px; }
         .modal-footer button { margin: 0; }
         .btn-batal-modal { background: #e2e8f0; color: #1e293b; }
+        .btn-hapus-modal { background: #ef4444; width: auto; margin-right: auto !important; display: none; }
+        .btn-hapus-modal:hover { background: #dc2626; }
+        .btn-hapus { background: #ef4444; }
+        .btn-hapus:hover { background: #dc2626; }
 
         @media (max-width: 600px) {
             th, td { font-size: 10px; padding: 6px 4px; }
@@ -189,6 +193,7 @@
         <textarea id="editCatatan" placeholder="Catatan (opsional)"></textarea>
 
         <div class="modal-footer">
+            <button type="button" id="btnHapusEdit" class="btn-hapus-modal" onclick="hapusPermintaan(editingId)">🗑️ Hapus</button>
             <button type="button" class="btn-batal-modal" onclick="tutupEdit()">Batal</button>
             <button type="button" onclick="simpanEdit()">💾 Simpan Perubahan</button>
         </div>
@@ -521,9 +526,15 @@
                 </div>`;
             }
             if (r.status === 'DITOLAK' || r.status === 'DIBATALKAN') {
-                return `<button class="btn-small btn-buka" onclick="bukaKembali(${r.id})">🔄 Buka Kembali</button>`;
+                return `<div style="white-space:nowrap;">
+                    <button class="btn-small btn-buka" onclick="bukaKembali(${r.id})">🔄 Buka Kembali</button>
+                    <button class="btn-small btn-hapus" title="Hapus permanen" onclick="hapusPermintaan(${r.id})">🗑️</button>
+                </div>`;
             }
-            return `<span class="sub">Diproses ${fmtWaktu(r.processed_at)}${r.processed_by ? ' oleh ' + esc(namaPendek(r.processed_by)) : ''}</span>`;
+            return `<div style="white-space:nowrap;">
+                <span class="sub">Diproses ${fmtWaktu(r.processed_at)}${r.processed_by ? ' oleh ' + esc(namaPendek(r.processed_by)) : ''}</span>
+                <button class="btn-small btn-hapus" title="Hapus permanen" onclick="hapusPermintaan(${r.id})">🗑️</button>
+            </div>`;
         }
         // leader
         if (r.status === 'PENDING' && own) {
@@ -668,6 +679,40 @@
     }
 
     // ============================================================
+    // HAPUS PERMANEN (khusus admin)
+    // ============================================================
+    async function hapusPermintaan(id) {
+        if (!isAdminUser || !id) return;
+        const { data: r } = await sb.from('permintaan_produksi').select('*').eq('id', id).single();
+        if (!r) {
+            alert('Permintaan tidak ditemukan (mungkin sudah dihapus). Daftar akan dimuat ulang.');
+            tutupEdit();
+            await loadDaftarPermintaan();
+            return;
+        }
+
+        let pesan = `HAPUS PERMANEN permintaan "${r.brand} - ${r.jenis}" (${fmt(r.qty_diminta)}) dari ${namaPendek(r.requested_by)}?\n\nData tidak bisa dikembalikan.`;
+        if (r.status === 'SELESAI') {
+            pesan += '\n\n⚠️ Permintaan ini sudah SELESAI. Catatan Barang Keluar-nya TIDAK ikut terhapus. Kalau itu juga data uji coba, hapus juga di histori Barang Keluar.';
+        }
+        if (!confirm(pesan)) return;
+
+        const { data: terhapus, error } = await sb.from('permintaan_produksi').delete().eq('id', id).select();
+        if (error) { alert('Gagal menghapus: ' + error.message); return; }
+        if (!terhapus || terhapus.length === 0) {
+            alert('Tidak ada data yang terhapus (kemungkinan ditolak oleh aturan akses database). Pastikan akun ini admin.');
+            return;
+        }
+
+        const { data: { user } } = await sb.auth.getUser();
+        if (typeof addLog === 'function') {
+            try { await addLog('HAPUS PERMINTAAN', `${user.email} menghapus permintaan #${id} (${r.brand} - ${r.jenis}, ${r.qty_diminta}, status ${r.status})`); } catch (e) {}
+        }
+        tutupEdit();
+        await loadDaftarPermintaan();
+    }
+
+    // ============================================================
     // EDIT
     // ============================================================
     async function bukaEdit(id) {
@@ -695,6 +740,7 @@
         document.getElementById('editCatatan').value = r.catatan || '';
         document.getElementById('editMsg').innerHTML = '';
         document.getElementById('editBatas').textContent = 'Menghitung batas...';
+        document.getElementById('btnHapusEdit').style.display = isAdminUser ? 'inline-block' : 'none';
         document.getElementById('editModal').style.display = 'flex';
 
         editBatas = await hitungBatas(r.detail_id, r.id);
@@ -869,6 +915,7 @@
     window.bukaEdit = bukaEdit;
     window.tutupEdit = tutupEdit;
     window.simpanEdit = simpanEdit;
+    window.hapusPermintaan = hapusPermintaan;
 
     init();
 </script>
