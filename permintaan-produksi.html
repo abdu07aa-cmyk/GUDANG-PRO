@@ -115,6 +115,18 @@
         .modal-footer { display: flex; gap: 10px; margin-top: 12px; }
         .modal-footer button { margin: 0; }
         .btn-batal-modal { background: #e2e8f0; color: #1e293b; }
+        .req-list-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .req-list-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .req-list-pi { font-weight: 700; color: #1e293b; font-size: 14px; }
+        .req-list-barang { font-size: 13px; color: #334155; margin-top: 2px; }
+        .req-list-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; margin: 10px 0; }
+        .req-list-grid span { display: block; font-size: 10px; color: #64748b; }
+        .req-list-grid b { font-size: 14px; color: #1e293b; }
+        .req-list-meta { font-size: 11px; color: #64748b; }
+        .req-list-note { font-size: 12px; color: #334155; background: #f8fafc; border-radius: 6px; padding: 6px 8px; margin-top: 6px; word-wrap: break-word; }
+        .req-list-aksi { margin-top: 10px; }
+        .req-list-aksi div { white-space: normal !important; }
+        .req-list-aksi .qty-approve-input { width: 90px; }
         .btn-hapus-modal { background: #ef4444; width: auto; margin-right: auto !important; display: none; }
         .btn-hapus-modal:hover { background: #dc2626; }
         .btn-hapus { background: #ef4444; }
@@ -549,6 +561,38 @@
         return '<span class="sub">-</span>';
     }
 
+    function layarHP() {
+        return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 700px)').matches;
+    }
+
+    function renderCards(rows) {
+        let html = '';
+        for (const r of rows) {
+            let lbl = 'Disetujui', val = '-', beda = false;
+            if (r.status === 'DISETUJUI') { val = fmt(r.approved_qty); beda = r.approved_qty !== r.qty_diminta; }
+            else if (r.status === 'SELESAI') { lbl = 'Diberikan'; val = fmt(r.qty_diberikan); beda = r.qty_diberikan !== r.qty_diminta; }
+            const alasan = (r.status === 'DITOLAK' || r.status === 'DIBATALKAN') && r.alasan_tolak
+                ? `<div class="req-list-note" style="color:#991b1b;">Alasan: ${esc(r.alasan_tolak)}</div>` : '';
+            const catatan = r.catatan ? `<div class="req-list-note">📝 ${esc(r.catatan)}</div>` : '';
+            html += `<div class="req-list-card">
+                <div class="req-list-head">
+                    <div><div class="req-list-pi">${esc(r.no_pi)}</div><div class="req-list-barang">${esc(r.brand)} | ${esc(r.jenis)}</div></div>
+                    <span class="status-badge status-${esc(String(r.status).toLowerCase())}">${STATUS_LABEL[r.status] || esc(r.status)}</span>
+                </div>
+                <div class="req-list-grid">
+                    <div><span>Diminta</span><b>${fmt(r.qty_diminta)}</b></div>
+                    <div><span>${lbl}</span><b${beda ? ' style="color:#b45309;"' : ''}>${val}</b></div>
+                    ${isAdminUser ? `<div><span>Stok Gudang</span>${stokHtml(r)}</div>` : ''}
+                    <div><span>Butuh Tgl</span><b>${fmtTanggal(r.tanggal_dibutuhkan)}</b></div>
+                </div>
+                <div class="req-list-meta">Diajukan ${fmtWaktu(r.created_at)}${isAdminUser ? ' oleh ' + esc(namaPendek(r.requested_by)) : ''}</div>
+                ${catatan}${alasan}
+                <div class="req-list-aksi">${aksiHtml(r)}</div>
+            </div>`;
+        }
+        return html;
+    }
+
     function renderDaftar() {
         renderChips();
         const container = document.getElementById('daftarPermintaanList');
@@ -562,6 +606,11 @@
 
         if (rows.length === 0) {
             container.innerHTML = '<div class="info-text" style="padding:15px;text-align:center;">Tidak ada permintaan</div>';
+            return;
+        }
+
+        if (layarHP()) {
+            container.innerHTML = renderCards(rows);
             return;
         }
 
@@ -841,6 +890,15 @@
             </div>
         `;
         renderItemRows();
+
+        // Ganti tampilan tabel <-> kartu otomatis saat ukuran layar berubah (mis. HP diputar)
+        if (typeof window.matchMedia === 'function') {
+            const mq = window.matchMedia('(max-width: 700px)');
+            const saatBerubah = () => { if (allRequests.length) renderDaftar(); };
+            if (mq.addEventListener) mq.addEventListener('change', saatBerubah);
+            else if (mq.addListener) mq.addListener(saatBerubah);
+        }
+
         await loadPiList();
         await loadDaftarPermintaan();
     }
