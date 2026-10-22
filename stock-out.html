@@ -154,7 +154,11 @@
             <span class="icon">📦</span>
             <span class="text">Stok Pendukung</span>
         </div>
-            <div class="menu-item" data-menu="barcode-generator">
+        <div class="menu-item" data-menu="permintaan-produksi">
+            <span class="icon">🙋</span>
+            <span class="text">Permintaan Produksi</span>
+        </div>
+        <div class="menu-item" data-menu="barcode-generator">
             <span class="icon">🏷️</span>
             <span class="text">QR Code</span>
         </div>
@@ -514,12 +518,34 @@
         }
         
         async function hapusHistory(id) {
-            if (confirm('Hapus histori ini?')) {
+            // Cek apakah histori ini hasil dari Permintaan Produksi (supaya statusnya ikut dikembalikan)
+            let terkait = [];
+            try {
+                const { data } = await sb.from('permintaan_produksi').select('id, brand, jenis, qty_diberikan')
+                    .eq('barang_keluar_id', id).eq('status', 'SELESAI');
+                terkait = data || [];
+            } catch (e) { terkait = []; }
+            const adaTerkait = terkait.length > 0;
+            const pesanKonfirmasi = adaTerkait
+                ? `Histori ini berasal dari Permintaan Produksi (${terkait[0].brand} - ${terkait[0].jenis}, ${terkait[0].qty_diberikan}).\n\nJika dihapus, permintaan tersebut KEMBALI ke status DISETUJUI (siap diproses ulang).\n\nHapus histori ini?`
+                : 'Hapus histori ini?';
+
+            if (confirm(pesanKonfirmasi)) {
                 const { error } = await sb.from('barang_keluar').delete().eq('id', id);
                 if (error) {
                     alert('Gagal: ' + error.message);
                 } else {
-                    alert('✅ Histori berhasil dihapus');
+                    let tambahan = '';
+                    if (adaTerkait) {
+                        const { error: reqErr } = await sb.from('permintaan_produksi').update({
+                            status: 'DISETUJUI', processed_by: null, processed_at: null,
+                            barang_keluar_id: null, qty_diberikan: null
+                        }).eq('barang_keluar_id', id);
+                        tambahan = reqErr
+                            ? '\n⚠️ Gagal mengembalikan status permintaan: ' + reqErr.message
+                            : '\nPermintaan Produksi terkait kembali ke status DISETUJUI.';
+                    }
+                    alert('✅ Histori berhasil dihapus' + tambahan);
                     // Refresh stok dan histori tanpa reload halaman
                     await onPiChange();
                     if (currentItemId) {
