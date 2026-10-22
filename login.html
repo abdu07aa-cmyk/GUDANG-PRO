@@ -55,6 +55,8 @@
         .msg { padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
         .error { background: #fee2e2; color: #991b1b; }
         .success { background: #d1fae5; color: #065f46; }
+        .lupa-link { display: block; margin-top: 14px; font-size: 13px; color: #3b82f6; text-decoration: none; cursor: pointer; }
+        .lupa-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -66,6 +68,7 @@
         <input type="password" id="password" placeholder="Password">
         <button onclick="login()">Login</button>
         <button class="btn-secondary" onclick="register()">Daftar Akun</button>
+        <a class="lupa-link" onclick="lupaPassword(); return false;">Lupa password?</a>
     </div>
 
     <script>
@@ -110,10 +113,25 @@
             }
         }
         
-        function showMsg(msg, type) {
+        async function lupaPassword() {
+            const email = document.getElementById('email').value.trim();
+            if (!email) {
+                showMsg('Isi dulu alamat email di kolom Email, lalu klik "Lupa password?"', 'error', 5000);
+                return;
+            }
+            const redirectTo = new URL('reset-password.html', window.location.href).href;
+            const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+            if (error) {
+                showMsg('Gagal mengirim email: ' + error.message, 'error', 6000);
+            } else {
+                showMsg('Jika email terdaftar, link reset password sudah dikirim. Cek inbox atau folder spam.', 'success', 8000);
+            }
+        }
+
+        function showMsg(msg, type, ms) {
             const div = document.getElementById('msg');
             div.innerHTML = `<div class="msg ${type}">${msg}</div>`;
-            setTimeout(() => div.innerHTML = '', 3000);
+            setTimeout(() => div.innerHTML = '', ms || 3000);
         }
     </script>
 </body>
